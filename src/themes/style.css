@@ -1,0 +1,111 @@
+@import url("light.css") (prefers-color-scheme: light);
+@import url("dark.css") (prefers-color-scheme: dark);
+
+@media (prefers-color-scheme: dark) {
+  body, textarea, select, select > option:hover {
+    background-color: #0f1419;
+  }
+
+  select {
+    color: #e6e1cf;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  body, textarea, select, select > option:hover {
+    background-color: #fafafa;
+  }
+
+  select {
+    color: #0f1419;
+  }
+}
+
+body {
+  font-family: "JetBrains Mono", monospace;
+  margin: 2em;
+}
+
+pre {
+  font-size: 14pt;
+  line-height: 1.6rem;
+}
+
+select {
+  width: 100%;
+  font-family: "JetBrains Mono", monospace;
+  border: none;
+}
+
+select > option:hover {
+  background-color: #39bae6;
+  color: #0f1419;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 4fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr 20fr;
+  grid-gap: 2em;
+  height: 100vh;
+  align-items: stretch;
+  justify-items: stretch;
+}
+
+.content {
+  grid-area: content;
+  grid-column: 1/2;
+  grid-row: 1/5;
+}
+
+.content > textarea {
+  width: 100%;
+  height: 90%;
+  border: none;
+  font-size: 14pt;
+  line-height: 1.6rem;
+  resize: none;
+}
+
+.content > textarea:focus {
+  outline: none !important;
+}
+
+.extensions-list {
+  grid-row: 1/2;
+}
+
+.expiration-list {
+  grid-row: 2/3;
+}
+
+.paste-button {
+  grid-row: 3/4;
+}
+
+.paste-button > button {
+  width: 100%;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14pt;
+  padding: 1em;
+  border: none;
+  background-color: #39bae6;
+}
+
+.paste-box {
+  position: fixed;
+  top: 0px;
+  right: 0px;
+  padding: 2em;
+  color: #e6e1cf;
+}
+
+.paste-box > a {
+  font-size: 14pt;
+  color: #39bae6;
+  text-decoration: none;
+}
+
+.paste-box > a:visited {
+  text-decoration: none;
+}

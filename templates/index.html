@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+    <form action="/" method="post">
+      <div class="container">
+        <div class="content">
+          <textarea name="text" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text here>"></textarea>
+        </div>
+        <div class="expiration-list">
+          <select name="expires" size="5">
+            <option selected="" value="">never</option>
+            <option value="600">10 minutes</option>
+            <option value="3600">1 hour</option>
+            <option value="86400">1 day</option>
+            <option value="604800">1 week</option>
+            <option value="215308800">1 year</option>
+            <option value="burn">🔥 after reading</option>
+          </select>
+        </div>
+        <div class="extensions-list">
+          <select name="extension" size="21">
+          {% for syntax in syntaxes -%}
+            {% if syntax.file_extensions.len() > 0 %}
+              <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
+            {% endif %}
+          {% endfor %}
+          </select>
+        </div>
+        <div class="paste-button">
+          <button type="submit" title="Paste">Paste</button>
+        </div>
+      </div>
+    </form>
+{% endblock %}

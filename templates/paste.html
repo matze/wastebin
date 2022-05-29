@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+  <div>
+    <div>
+      <pre class="code">{{ formatted|safe }}</pre>
+    </div>
+    <div class="paste-box">
+      <a href="/api/entries/{{ id }}"/>raw</a> • <a href="/">new</a>
+    </div>
+  </div>
+{% endblock %}

@@ -6,6 +6,7 @@ A minimal pastebin shamelessly copied from
 * sqlite3 and axum backend
 * light/dark mode
 * paste expiration
+* line numbers
 
 <p align="center"><img src="https://raw.githubusercontent.com/matze/wastebin/master/assets/screenshot.webp"></p>
 

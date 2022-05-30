@@ -5,8 +5,8 @@ use axum::response::IntoResponse;
 use once_cell::sync::Lazy;
 use std::io::Cursor;
 use syntect::highlighting::ThemeSet;
-use syntect::html::{css_for_theme_with_class_style, ClassStyle, ClassedHTMLGenerator};
-use syntect::parsing::SyntaxSet;
+use syntect::html::{css_for_theme_with_class_style, line_tokens_to_classed_spans, ClassStyle};
+use syntect::parsing::{ParseState, ScopeStack, SyntaxSet};
 use syntect::util::LinesWithEndings;
 
 pub static DATA: Lazy<Data> = Lazy::new(|| {
@@ -60,18 +60,30 @@ impl<'a> Data<'a> {
             None => DATA.syntax_set.find_syntax_by_extension("txt").unwrap(),
         };
 
-        let mut generator = ClassedHTMLGenerator::new_with_class_style(
-            syntax_ref,
-            &self.syntax_set,
-            ClassStyle::Spaced,
-        );
+        let mut parse_state = ParseState::new(syntax_ref);
+        let mut open_spans = 0;
+        let mut html = String::new();
+        let mut scope_stack = ScopeStack::new();
 
-        for line in LinesWithEndings::from(&entry.text) {
-            generator
-                .parse_html_for_line_which_includes_newline(line)
-                .unwrap();
+        for (line_number, line) in LinesWithEndings::from(&entry.text).enumerate() {
+            let parsed = parse_state.parse_line(line, &self.syntax_set).unwrap();
+            let (formatted, delta) = line_tokens_to_classed_spans(
+                line,
+                parsed.as_slice(),
+                ClassStyle::Spaced,
+                &mut scope_stack,
+            )
+            .unwrap();
+
+            open_spans += delta;
+            let anchor = format!(
+                r#"<span class="line-number"><a href=#{line_number}>{line_number:>4}</a></span>"#
+            );
+            html.push_str(&anchor);
+            html.push_str(formatted.as_str());
         }
 
-        Ok(generator.finalize())
+        html.push_str(&"</span>".repeat(open_spans.max(0) as usize));
+        Ok(html)
     }
 }

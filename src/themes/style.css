@@ -109,3 +109,19 @@ select > option:hover {
 .paste-box > a:visited {
   text-decoration: none;
 }
+
+.line-number {
+  padding-right: 1em;
+}
+
+.line-number > a, a:visited, a:hover {
+  text-decoration: none;
+}
+
+.line-number > a, a:visited {
+  color: #abb0b6;
+}
+
+.line-number > a:hover, a:focus {
+  color: #fa6e32;
+}

@@ -1,22 +1,34 @@
 use crate::Error;
 use std::convert::{From, TryFrom};
+use std::fmt;
 
+#[derive(Clone, Copy)]
 pub struct Id {
-    s: String,
     n: u32,
 }
 
-impl Id {
-    pub fn as_str(&self) -> &str {
-        &self.s
-    }
+impl fmt::Display for Id {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut s = String::with_capacity(6);
 
+        s.push(CHAR_TABLE[(((self.n >> 26) & 0x3f) as usize)]);
+        s.push(CHAR_TABLE[(((self.n >> 20) & 0x3f) as usize)]);
+        s.push(CHAR_TABLE[(((self.n >> 14) & 0x3f) as usize)]);
+        s.push(CHAR_TABLE[(((self.n >> 8) & 0x3f) as usize)]);
+        s.push(CHAR_TABLE[(((self.n >> 2) & 0x3f) as usize)]);
+        s.push(CHAR_TABLE[((self.n & 0x3) as usize)]);
+
+        write!(f, "{s}")
+    }
+}
+
+impl Id {
     pub fn as_u32(&self) -> u32 {
         self.n
     }
 }
 
-static CHAR_TABLE: &'static [char; 64] = &[
+static CHAR_TABLE: &[char; 64] = &[
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
     't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
     'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4',
@@ -54,25 +66,13 @@ impl TryFrom<&str> for Id {
             }
         }
 
-        Ok(Self {
-            s: value.to_string(),
-            n,
-        })
+        Ok(Self { n })
     }
 }
 
 impl From<u32> for Id {
     fn from(n: u32) -> Self {
-        let mut s = String::with_capacity(6);
-
-        s.push(CHAR_TABLE[(((n >> 26) & 0x3f) as usize)]);
-        s.push(CHAR_TABLE[(((n >> 20) & 0x3f) as usize)]);
-        s.push(CHAR_TABLE[(((n >> 14) & 0x3f) as usize)]);
-        s.push(CHAR_TABLE[(((n >> 8) & 0x3f) as usize)]);
-        s.push(CHAR_TABLE[(((n >> 2) & 0x3f) as usize)]);
-        s.push(CHAR_TABLE[((n & 0x3) as usize)]);
-
-        Self { s, n }
+        Self { n }
     }
 }
 
@@ -83,11 +83,11 @@ mod tests {
     #[test]
     fn convert_u32_to_id_and_back() {
         let id = Id::from(0);
-        assert_eq!(id.as_str(), "aaaaaa");
+        assert_eq!(id.to_string(), "aaaaaa");
         assert_eq!(id.as_u32(), 0);
 
         let id = Id::from(0xffffffff);
-        assert_eq!(id.as_str(), "+++++d");
+        assert_eq!(id.to_string(), "+++++d");
         assert_eq!(id.as_u32(), 0xffffffff);
     }
 

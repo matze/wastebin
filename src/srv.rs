@@ -127,15 +127,17 @@ async fn insert(entry: Entry, db: Extension<Database>) -> Redirect {
     .unwrap()
     .into();
 
+    let id_string = id.to_string();
+
     let url = match entry.extension {
-        Some(ref ext) => format!("/{}.{}", id.as_str(), ext),
-        None => format!("/{}", id.as_str()),
+        Some(ref ext) => format!("/{}.{}", id_string, ext),
+        None => format!("/{}", id_string),
     };
 
     let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
 
     // TODO: sanitize
-    db.insert(&id, entry).await.unwrap();
+    db.insert(id, entry).await.unwrap();
 
     if burn_after_reading {
         Redirect::to("/")
@@ -161,20 +163,18 @@ async fn show(
         Some((id, ext)) => (Id::try_from(id)?, Some(ext.to_string())),
     };
 
-    let entry: Entry = db.get(&id).await?.into();
+    let entry = db.get(id).await?;
+    let id = id.to_string();
 
     let formatted = tokio::task::spawn_blocking(move || DATA.highlight(entry, ext))
         .await
         .map_err(Error::from)??;
 
-    let id = id.as_str().to_string();
-
     Ok(Paste { formatted, id })
 }
 
 async fn raw(Path(id): Path<String>, db: Extension<Database>) -> Result<String, ErrorHtml> {
-    let data: Entry = db.get(&Id::try_from(id.as_str())?).await?.into();
-    Ok(data.text)
+    Ok(db.get(Id::try_from(id.as_str())?).await?.text)
 }
 
 pub fn new_router(db: Database) -> Router {

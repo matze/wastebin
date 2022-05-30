@@ -40,7 +40,7 @@ impl Database {
         })
     }
 
-    pub async fn insert(&self, id: &Id, entry: Entry) -> Result<(), Error> {
+    pub async fn insert(&self, id: Id, entry: Entry) -> Result<(), Error> {
         let conn = self.conn.clone();
         let id = id.as_u32();
 
@@ -64,7 +64,7 @@ impl Database {
         Ok(())
     }
 
-    pub async fn get(&self, id: &Id) -> Result<Entry, Error> {
+    pub async fn get(&self, id: Id) -> Result<Entry, Error> {
         let conn = self.conn.clone();
         let id = id.as_u32();
 
@@ -140,12 +140,12 @@ mod tests {
         };
 
         let id = Id::from(1234);
-        db.insert(&id, entry).await?;
+        db.insert(id, entry).await?;
 
-        let entry = db.get(&id).await?;
+        let entry = db.get(id).await?;
         assert_eq!(entry.text, "hello world");
 
-        let result = db.get(&Id::from(5678)).await;
+        let result = db.get(Id::from(5678)).await;
         assert!(result.is_err());
 
         Ok(())
@@ -161,9 +161,9 @@ mod tests {
             burn_after_reading: Some(true),
         };
         let id = Id::from(1234);
-        db.insert(&id, entry).await?;
-        assert!(db.get(&id).await.is_ok());
-        assert!(db.get(&id).await.is_err());
+        db.insert(id, entry).await?;
+        assert!(db.get(id).await.is_ok());
+        assert!(db.get(id).await.is_err());
 
         Ok(())
     }
@@ -180,12 +180,12 @@ mod tests {
         };
 
         let id = Id::from(1234);
-        db.insert(&id, entry).await?;
-        assert!(db.get(&id).await.is_ok());
+        db.insert(id, entry).await?;
+        assert!(db.get(id).await.is_ok());
 
         tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
         db.purge().await?;
-        assert!(db.get(&id).await.is_err());
+        assert!(db.get(id).await.is_err());
 
         Ok(())
     }

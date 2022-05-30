@@ -13,8 +13,8 @@ pub struct Database {
     conn: Arc<Mutex<Connection>>,
 }
 
+#[derive(Debug)]
 pub enum Open {
-    #[cfg(test)]
     Memory,
     Path(PathBuf),
 }
@@ -26,8 +26,9 @@ static MIGRATIONS: Lazy<Migrations> = Lazy::new(|| {
 
 impl Database {
     pub fn new(method: Open) -> Result<Self, Error> {
+        tracing::debug!("opening {method:?}");
+
         let mut conn = match method {
-            #[cfg(test)]
             Open::Memory => Connection::open_in_memory()?,
             Open::Path(path) => Connection::open(&path)?,
         };

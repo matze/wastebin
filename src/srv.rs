@@ -1,21 +1,16 @@
 use crate::db::Database;
+use crate::highlight::DATA;
 use crate::id::Id;
 use crate::Error;
 use askama::Template;
 use axum::extract::{Form, Path};
-use axum::http::{header, StatusCode};
+use axum::http::StatusCode;
 use axum::response::Redirect;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
-use once_cell::sync::Lazy;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
-use std::io::Cursor;
-use syntect::highlighting::ThemeSet;
-use syntect::html::{css_for_theme_with_class_style, ClassStyle, ClassedHTMLGenerator};
-use syntect::parsing::SyntaxSet;
-use syntect::util::LinesWithEndings;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Entry {
@@ -79,28 +74,6 @@ struct Paste {
     formatted: String,
 }
 
-struct Styles<'a> {
-    main: &'a str,
-    dark: String,
-    light: String,
-}
-
-static SYNTAX_SET: Lazy<SyntaxSet> = Lazy::new(|| SyntaxSet::load_defaults_newlines());
-
-static STYLES: Lazy<Styles> = Lazy::new(|| {
-    let data = include_str!("themes/ayu-light.tmTheme");
-    let light_theme = ThemeSet::load_from_reader(&mut Cursor::new(data)).unwrap();
-
-    let data = include_str!("themes/ayu-dark.tmTheme");
-    let dark_theme = ThemeSet::load_from_reader(&mut Cursor::new(data)).unwrap();
-
-    Styles {
-        main: include_str!("themes/style.css"),
-        light: css_for_theme_with_class_style(&light_theme, ClassStyle::Spaced).unwrap(),
-        dark: css_for_theme_with_class_style(&dark_theme, ClassStyle::Spaced).unwrap(),
-    }
-});
-
 type ErrorResponse = (StatusCode, Json<ErrorPayload>);
 
 impl From<Error> for ErrorResponse {
@@ -141,7 +114,7 @@ impl From<Error> for ErrorHtml {
 
 async fn index<'a>() -> Index<'a> {
     Index {
-        syntaxes: SYNTAX_SET.syntaxes(),
+        syntaxes: DATA.syntax_set.syntaxes(),
     }
 }
 
@@ -188,29 +161,11 @@ async fn show(
         Some((id, ext)) => (Id::try_from(id)?, Some(ext.to_string())),
     };
 
-    let data: Entry = db.get(&id).await?.into();
+    let entry: Entry = db.get(&id).await?.into();
 
-    let formatted = tokio::task::spawn_blocking(move || {
-        let syntax_ref = match ext {
-            Some(ext) => SYNTAX_SET
-                .find_syntax_by_extension(&ext)
-                .unwrap_or_else(|| SYNTAX_SET.find_syntax_by_extension("txt").unwrap()),
-            None => SYNTAX_SET.find_syntax_by_extension("txt").unwrap(),
-        };
-
-        let mut generator =
-            ClassedHTMLGenerator::new_with_class_style(syntax_ref, &SYNTAX_SET, ClassStyle::Spaced);
-
-        for line in LinesWithEndings::from(&data.text) {
-            generator
-                .parse_html_for_line_which_includes_newline(line)
-                .unwrap();
-        }
-
-        Ok::<String, Error>(generator.finalize())
-    })
-    .await
-    .map_err(Error::from)??;
+    let formatted = tokio::task::spawn_blocking(move || DATA.highlight(entry, ext))
+        .await
+        .map_err(Error::from)??;
 
     let id = id.as_str().to_string();
 
@@ -225,18 +180,9 @@ async fn raw(Path(id): Path<String>, db: Extension<Database>) -> Result<String, 
 pub fn new_router(db: Database) -> Router {
     Router::new()
         .route("/", get(index).post(insert_via_form))
-        .route(
-            "/style.css",
-            get(|| async { ([(header::CONTENT_TYPE, "text/css")], STYLES.main) }),
-        )
-        .route(
-            "/dark.css",
-            get(|| async { ([(header::CONTENT_TYPE, "text/css")], STYLES.dark.clone()) }),
-        )
-        .route(
-            "/light.css",
-            get(|| async { ([(header::CONTENT_TYPE, "text/css")], STYLES.light.clone()) }),
-        )
+        .route("/style.css", get(|| async { DATA.main().await }))
+        .route("/dark.css", get(|| async { DATA.dark().await }))
+        .route("/light.css", get(|| async { DATA.light().await }))
         .route("/:id", get(show))
         .route("/api/entries", post(insert_via_api))
         .route("/api/entries/:id", get(raw))

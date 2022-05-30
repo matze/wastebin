@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use tower_http::trace::TraceLayer;
 
 mod db;
+mod highlight;
 mod id;
 mod srv;
 

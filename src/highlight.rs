@@ -31,17 +31,24 @@ pub struct Data<'a> {
     pub syntax_set: SyntaxSet,
 }
 
+fn common_headers() -> [(header::HeaderName, &'static str); 2] {
+    [
+        (header::CONTENT_TYPE, "text/css"),
+        (header::CACHE_CONTROL, "max-age=3600"),
+    ]
+}
+
 impl<'a> Data<'a> {
     pub async fn main(&self) -> impl IntoResponse {
-        ([(header::CONTENT_TYPE, "text/css")], DATA.main.to_string())
+        (common_headers(), DATA.main.to_string())
     }
 
     pub async fn dark(&self) -> impl IntoResponse {
-        ([(header::CONTENT_TYPE, "text/css")], DATA.dark.clone())
+        (common_headers(), DATA.dark.clone())
     }
 
     pub async fn light(&self) -> impl IntoResponse {
-        ([(header::CONTENT_TYPE, "text/css")], DATA.light.clone())
+        (common_headers(), DATA.light.clone())
     }
 
     pub fn highlight(&self, entry: Entry, ext: Option<String>) -> Result<String, Error> {

@@ -11,6 +11,7 @@ use axum::{Extension, Json, Router};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
+use tower_http::compression::CompressionLayer;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Entry {
@@ -186,5 +187,6 @@ pub fn new_router(db: Database) -> Router {
         .route("/:id", get(show))
         .route("/api/entries", post(insert_via_api))
         .route("/api/entries/:id", get(raw))
+        .layer(CompressionLayer::new())
         .layer(Extension(db))
 }

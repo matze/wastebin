@@ -7,6 +7,11 @@ A minimal pastebin shamelessly copied from
 * light/dark mode
 * paste expiration
 
+<p align="center"><img src="https://raw.githubusercontent.com/matze/wastebin/master/assets/screenshot.webp"></p>
+
+<p align="center"><strong><a href="https://wastebin-pkue.onrender.com">DEMO</a></strong> (might be a bit slow 🐌)</p>
+
+
 ## Configuration
 
 The following environment variables can be set to configure the server:

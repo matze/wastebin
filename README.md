@@ -1,5 +1,7 @@
 # wastebin
 
+[![Rust](https://github.com/matze/wastebin/actions/workflows/rust.yml/badge.svg)](https://github.com/matze/wastebin/actions/workflows/rust.yml)
+
 A minimal pastebin shamelessly copied from
 [bin](https://github.com/WantGuns/bin). Things different from bin:
 

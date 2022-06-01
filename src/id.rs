@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::{Entry, Error};
 use std::convert::{From, TryFrom};
 use std::fmt;
 
@@ -25,6 +25,13 @@ impl fmt::Display for Id {
 impl Id {
     pub fn as_u32(&self) -> u32 {
         self.n
+    }
+
+    pub fn to_url_path(self, entry: &Entry) -> String {
+        match entry.extension {
+            Some(ref ext) => format!("/{}.{}", self, ext),
+            None => format!("/{}", self),
+        }
     }
 }
 

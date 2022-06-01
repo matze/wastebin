@@ -1,6 +1,5 @@
 use crate::id::Id;
-use crate::srv::Entry;
-use crate::Error;
+use crate::{Entry, Error};
 use once_cell::sync::Lazy;
 use rusqlite::{params, Connection};
 use rusqlite_migration::{Migrations, M};

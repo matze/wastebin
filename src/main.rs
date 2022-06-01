@@ -1,14 +1,19 @@
 use crate::db::Database;
+use axum::http::StatusCode;
 use axum::Server;
+use axum::{Extension, Router};
+use serde::{Deserialize, Serialize};
 use std::env::{self, VarError};
 use std::io;
 use std::path::PathBuf;
+use tower_http::compression::CompressionLayer;
 use tower_http::trace::TraceLayer;
 
 mod db;
 mod highlight;
 mod id;
-mod srv;
+mod rest;
+mod web;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -20,7 +25,7 @@ pub enum Error {
     WrongSize,
     #[error("illegal characters")]
     IllegalCharacters,
-    #[error("join error")]
+    #[error("join error: {0}")]
     Join(#[from] tokio::task::JoinError),
     #[error("syntax highlighting error: {0}")]
     SyntaxHighlighting(#[from] syntect::Error),
@@ -28,6 +33,33 @@ pub enum Error {
     SyntaxParsing(#[from] syntect::parsing::ParsingError),
     #[error("time formatting error: {0}")]
     TimeFormatting(#[from] time::error::Format),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Entry {
+    /// Content
+    pub text: String,
+    /// File extension
+    pub extension: Option<String>,
+    /// Expiration in seconds from now
+    pub expires: Option<u32>,
+    /// Delete if read
+    pub burn_after_reading: Option<bool>,
+}
+
+impl From<Error> for StatusCode {
+    fn from(err: Error) -> Self {
+        match err {
+            Error::Sqlite(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::Migration(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::TimeFormatting(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::IllegalCharacters => StatusCode::BAD_REQUEST,
+            Error::WrongSize => StatusCode::BAD_REQUEST,
+            Error::Join(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::SyntaxHighlighting(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::SyntaxParsing(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
 }
 
 #[tokio::main]
@@ -46,10 +78,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr_port =
         env::var("WASTEBIN_ADDRESS_PORT").unwrap_or_else(|_| "0.0.0.0:8088".to_string());
 
-    let router = srv::new_router(database.clone()).layer(TraceLayer::new_for_http());
+    let service = Router::new()
+        .merge(web::routes())
+        .merge(rest::routes())
+        .layer(Extension(database.clone()))
+        .layer(TraceLayer::new_for_http())
+        .layer(CompressionLayer::new())
+        .into_make_service();
 
     let server = Server::bind(&addr_port.parse()?)
-        .serve(router.into_make_service())
+        .serve(service)
         .with_graceful_shutdown(async {
             tokio::signal::ctrl_c()
                 .await

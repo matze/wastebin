@@ -1,5 +1,4 @@
-use crate::srv::Entry;
-use crate::Error;
+use crate::{Entry, Error};
 use axum::http::header;
 use axum::response::IntoResponse;
 use once_cell::sync::Lazy;

@@ -61,11 +61,10 @@ impl<'a> Data<'a> {
         };
 
         let mut parse_state = ParseState::new(syntax_ref);
-        let mut open_spans = 0;
-        let mut html = String::new();
+        let mut html = String::from("<table><tbody>");
         let mut scope_stack = ScopeStack::new();
 
-        for (line_number, line) in LinesWithEndings::from(&entry.text).enumerate() {
+        for (mut line_number, line) in LinesWithEndings::from(&entry.text).enumerate() {
             let parsed = parse_state.parse_line(line, &self.syntax_set).unwrap();
             let (formatted, delta) = line_tokens_to_classed_spans(
                 line,
@@ -75,15 +74,21 @@ impl<'a> Data<'a> {
             )
             .unwrap();
 
-            open_spans += delta;
-            let anchor = format!(
-                r#"<span class="line-number"><a href=#{line_number}>{line_number:>4}</a></span>"#
+            line_number += 1;
+            let formatted_str = formatted.as_str();
+            let line_number = format!(
+                r#"<td class="line-number"><a href=#L{line_number}>{line_number:>4}</a></td>"#
             );
-            html.push_str(&anchor);
-            html.push_str(formatted.as_str());
+            html.push_str(&line_number);
+
+            let line = format!(r#"<td class="line">{formatted_str}"#);
+            html.push_str(&line);
+            html.push_str(&"</span>".repeat(delta.max(0) as usize));
+            html.push_str("</td></tr>");
         }
 
-        html.push_str(&"</span>".repeat(open_spans.max(0) as usize));
+        html.push_str("</tbody></table>");
+
         Ok(html)
     }
 }

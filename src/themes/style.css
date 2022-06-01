@@ -28,7 +28,6 @@ body {
 
 pre {
   font-size: 14pt;
-  line-height: 1.6rem;
 }
 
 select {
@@ -110,6 +109,10 @@ select > option:hover {
   text-decoration: none;
 }
 
+td.line-number {
+  user-select: none;
+}
+
 .line-number {
   padding-right: 1em;
 }
@@ -124,4 +127,9 @@ select > option:hover {
 
 .line-number > a:hover, a:focus {
   color: #fa6e32;
+}
+
+.line {
+  word-wrap: normal;
+  white-space: pre;
 }

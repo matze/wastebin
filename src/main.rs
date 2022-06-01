@@ -23,7 +23,9 @@ pub enum Error {
     #[error("join error")]
     Join(#[from] tokio::task::JoinError),
     #[error("syntax highlighting error: {0}")]
-    Syntax(#[from] syntect::Error),
+    SyntaxHighlighting(#[from] syntect::Error),
+    #[error("syntax parsing error: {0}")]
+    SyntaxParsing(#[from] syntect::parsing::ParsingError),
     #[error("time formatting error: {0}")]
     TimeFormatting(#[from] time::error::Format),
 }

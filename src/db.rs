@@ -74,10 +74,10 @@ impl Database {
                 params![id],
                 |row| {
                     Ok(Entry {
-                        text: row.get(0).unwrap(),
+                        text: row.get(0)?,
                         extension: None,
                         expires: None,
-                        burn_after_reading: row.get(1).unwrap(),
+                        burn_after_reading: row.get(1)?,
                     })
                 },
             )

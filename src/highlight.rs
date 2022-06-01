@@ -65,7 +65,7 @@ impl<'a> Data<'a> {
         let mut scope_stack = ScopeStack::new();
 
         for (mut line_number, line) in LinesWithEndings::from(&entry.text).enumerate() {
-            let parsed = parse_state.parse_line(line, &self.syntax_set).unwrap();
+            let parsed = parse_state.parse_line(line, &self.syntax_set)?;
             let (formatted, delta) = line_tokens_to_classed_spans(
                 line,
                 parsed.as_slice(),

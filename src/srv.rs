@@ -98,7 +98,8 @@ impl From<Error> for StatusCode {
             Error::IllegalCharacters => StatusCode::BAD_REQUEST,
             Error::WrongSize => StatusCode::BAD_REQUEST,
             Error::Join(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Error::Syntax(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::SyntaxHighlighting(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::SyntaxParsing(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -119,13 +120,12 @@ async fn index<'a>() -> Index<'a> {
     }
 }
 
-async fn insert(entry: Entry, db: Extension<Database>) -> Redirect {
+async fn insert(entry: Entry, db: Extension<Database>) -> Result<Redirect, Error> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
         rng.gen::<u32>()
     })
-    .await
-    .unwrap()
+    .await?
     .into();
 
     let id_string = id.to_string();
@@ -137,22 +137,27 @@ async fn insert(entry: Entry, db: Extension<Database>) -> Redirect {
 
     let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
 
-    // TODO: sanitize
-    db.insert(id, entry).await.unwrap();
+    db.insert(id, entry).await?;
 
     if burn_after_reading {
-        Redirect::to("/")
+        Ok(Redirect::to("/"))
     } else {
-        Redirect::to(&url)
+        Ok(Redirect::to(&url))
     }
 }
 
-async fn insert_via_form(Form(entry): Form<FormEntry>, db: Extension<Database>) -> Redirect {
-    insert(entry.into(), db).await
+async fn insert_via_form(
+    Form(entry): Form<FormEntry>,
+    db: Extension<Database>,
+) -> Result<Redirect, ErrorHtml> {
+    Ok(insert(entry.into(), db).await?)
 }
 
-async fn insert_via_api(Json(entry): Json<Entry>, db: Extension<Database>) -> Redirect {
-    insert(entry, db).await
+async fn insert_via_api(
+    Json(entry): Json<Entry>,
+    db: Extension<Database>,
+) -> Result<Redirect, ErrorResponse> {
+    Ok(insert(entry, db).await?)
 }
 
 async fn show(

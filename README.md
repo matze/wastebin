@@ -15,14 +15,24 @@ A minimal pastebin shamelessly copied from
 <p align="center"><strong><a href="https://wastebin-pkue.onrender.com">DEMO</a></strong> (might be a bit slow 🐌)</p>
 
 
-## Build and run
+## Build from source
 
 Install a Rust 2021 toolchain with [rustup](https://rustup.rs) and run the
 server binary with
 
     $ cargo run --release
 
-Alternative use the provided `Dockerfile`.
+
+## Run pre-built binaries
+
+We provide pre-built, statically compiled [Linux
+binaries](https://github.com/matze/wastebin/releases). Just download and archive
+and run the contained `wastebin` binary.
+
+Alternative you can run a pre-built Docker image pushed to `quxfoo/wastebin`
+with
+
+    $ docker run quxfoo/wastebin:latest
 
 
 ## Configuration

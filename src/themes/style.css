@@ -117,7 +117,7 @@ td.line-number {
   padding-right: 1em;
 }
 
-.line-number > a, a:visited, a:hover {
+.line-number > a, a, a:visited, a:hover {
   text-decoration: none;
 }
 
@@ -125,11 +125,18 @@ td.line-number {
   color: #abb0b6;
 }
 
-.line-number > a:hover, a:focus {
+.line-number > a:hover, a:focus, a {
   color: #fa6e32;
 }
 
 .line {
   word-wrap: normal;
   white-space: pre;
+}
+
+.center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }

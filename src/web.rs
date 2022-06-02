@@ -51,6 +51,12 @@ struct Paste {
 }
 
 #[derive(Template)]
+#[template(path = "burn.html")]
+struct BurnPage {
+    id: String,
+}
+
+#[derive(Template)]
 #[template(path = "error.html")]
 struct ErrorPage {
     error: String,
@@ -93,7 +99,7 @@ async fn insert(
     db.insert(id, entry).await?;
 
     if burn_after_reading {
-        Ok(Redirect::to("/"))
+        Ok(Redirect::to(&format!("/burn{url}")))
     } else {
         Ok(Redirect::to(&url))
     }
@@ -118,10 +124,15 @@ async fn show(
     Ok(Paste { formatted, id })
 }
 
+async fn burn_link(Path(id): Path<String>) -> BurnPage {
+    BurnPage { id }
+}
+
 pub fn routes() -> Router {
     Router::new()
         .route("/", get(index).post(insert))
         .route("/:id", get(show))
+        .route("/burn/:id", get(burn_link))
         .route("/style.css", get(|| async { DATA.main().await }))
         .route("/dark.css", get(|| async { DATA.dark().await }))
         .route("/light.css", get(|| async { DATA.light().await }))

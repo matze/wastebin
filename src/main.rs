@@ -50,7 +50,10 @@ pub struct Entry {
 impl From<Error> for StatusCode {
     fn from(err: Error) -> Self {
         match err {
-            Error::Sqlite(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::Sqlite(err) => match err {
+                rusqlite::Error::QueryReturnedNoRows => StatusCode::NOT_FOUND,
+                _ => StatusCode::INTERNAL_SERVER_ERROR,
+            },
             Error::Migration(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Error::TimeFormatting(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Error::IllegalCharacters => StatusCode::BAD_REQUEST,

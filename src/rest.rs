@@ -30,6 +30,10 @@ impl From<Error> for ErrorResponse {
     }
 }
 
+async fn health() -> StatusCode {
+    StatusCode::OK
+}
+
 async fn insert(
     Json(entry): Json<Entry>,
     db: Extension<Database>,
@@ -54,6 +58,7 @@ async fn raw(Path(id): Path<String>, db: Extension<Database>) -> Result<String, 
 
 pub fn routes() -> Router {
     Router::new()
+        .route("/api/health", get(health))
         .route("/api/entries", post(insert))
         .route("/api/entries/:id", get(raw))
 }

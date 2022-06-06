@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::env::{self, VarError};
 use std::io;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use tower_http::compression::CompressionLayer;
 use tower_http::trace::TraceLayer;
 
@@ -47,6 +48,8 @@ pub struct Entry {
     pub burn_after_reading: Option<bool>,
 }
 
+pub type Cache = Arc<Mutex<lru::LruCache<String, String>>>;
+
 impl From<Error> for StatusCode {
     fn from(err: Error) -> Self {
         match err {
@@ -81,10 +84,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr_port =
         env::var("WASTEBIN_ADDRESS_PORT").unwrap_or_else(|_| "0.0.0.0:8088".to_string());
 
+    let cache_size =
+        env::var("WASTEBIN_CACHE_SIZE").map_or_else(|_| Ok(128), |s| s.parse::<usize>())?;
+
+    tracing::debug!("Caching {cache_size} paste highlights");
+
+    let cache: Cache = Arc::new(Mutex::new(lru::LruCache::new(cache_size)));
+
     let service = Router::new()
         .merge(web::routes())
         .merge(rest::routes())
         .layer(Extension(database.clone()))
+        .layer(Extension(cache))
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new())
         .into_make_service();

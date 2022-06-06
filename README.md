@@ -43,6 +43,8 @@ The following environment variables can be set to configure the server:
   in-memory database is used.
 * `WASTEBIN_ADDRESS_PORT` string that determines which address and port to bind
   a. If not set, it binds by default to `0.0.0.0:8088`.
+* `WASTEBIN_CACHE_SIZE` number of rendered syntax highlight items to cache.
+  Defaults to 128 and can be disabled by setting to 0.
 
 Additionally you can use the `RUST_LOG` environment variable to influence
 logging. Besides the typical `trace`, `debug`, `info` etc. keys, you can also

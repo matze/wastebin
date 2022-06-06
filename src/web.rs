@@ -1,7 +1,7 @@
 use crate::db::Database;
 use crate::highlight::DATA;
 use crate::id::Id;
-use crate::{Entry, Error};
+use crate::{Cache, Entry, Error};
 use askama::Template;
 use askama_axum::IntoResponse;
 use axum::extract::{Form, Path};
@@ -111,11 +111,21 @@ async fn insert(
 async fn show(
     Path(id_with_opt_ext): Path<String>,
     db: Extension<Database>,
+    cache: Extension<Cache>,
 ) -> Result<Paste, ErrorHtml> {
     let (id, ext) = match id_with_opt_ext.split_once('.') {
         None => (Id::try_from(id_with_opt_ext.as_str())?, None),
         Some((id, ext)) => (Id::try_from(id)?, Some(ext.to_string())),
     };
+
+    if let Some(cached) = cache.lock().unwrap().get(&id_with_opt_ext) {
+        tracing::debug!(id = %id_with_opt_ext, "Found cached item");
+
+        return Ok(Paste {
+            formatted: cached.to_string(),
+            id: id.to_string(),
+        });
+    }
 
     let entry = db.get(id).await?;
     let id = id.to_string();
@@ -123,6 +133,13 @@ async fn show(
     let formatted = tokio::task::spawn_blocking(move || DATA.highlight(entry, ext))
         .await
         .map_err(Error::from)??;
+
+    tracing::debug!(id = %id_with_opt_ext, "No cached item");
+
+    cache
+        .lock()
+        .unwrap()
+        .put(id_with_opt_ext, formatted.clone());
 
     Ok(Paste { formatted, id })
 }

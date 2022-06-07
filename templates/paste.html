@@ -1,4 +1,20 @@
 {% extends "base.html" %}
+
+{% block head %}
+<script>
+  document.addEventListener('keydown', onKey);
+
+  function onKey(e) {
+    if (e.key == 'n') {
+      window.location.href = '/';
+    }
+    else if (e.key == 'r') {
+      window.location.href = '/api/entries/{{ id }}';
+    }
+  }
+</script>
+{% endblock %}
+
 {% block content %}
   <div>
     <div>

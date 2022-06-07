@@ -12,7 +12,7 @@ A minimal pastebin shamelessly copied from
 
 <p align="center"><img src="https://raw.githubusercontent.com/matze/wastebin/master/assets/screenshot.webp"></p>
 
-<p align="center"><strong><a href="https://wastebin-pkue.onrender.com">DEMO</a></strong> (might be a bit slow 🐌)</p>
+<p align="center"><strong><a href="https://wastebin-pkue.onrender.com">DEMO</a></strong> (might be a bit slow on first request 🐌)</p>
 
 
 ## Build from source
@@ -33,6 +33,12 @@ Alternative you can run a pre-built Docker image pushed to `quxfoo/wastebin`
 with
 
     $ docker run quxfoo/wastebin:latest
+
+
+## Navigation
+
+On a paste view you can use <kbd>r</kbd> and <kbd>n</kbd> to go to the raw view
+and back to the index page.
 
 
 ## Configuration

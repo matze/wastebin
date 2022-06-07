@@ -7,7 +7,9 @@ use std::env::{self, VarError};
 use std::io;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tower_http::compression::CompressionLayer;
+use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
 mod db;
@@ -96,6 +98,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(rest::routes())
         .layer(Extension(database.clone()))
         .layer(Extension(cache))
+        .layer(TimeoutLayer::new(Duration::from_secs(5)))
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new())
         .into_make_service();

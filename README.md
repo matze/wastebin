@@ -35,7 +35,7 @@ with
     $ docker run quxfoo/wastebin:latest
 
 
-## Navigation
+### Navigation
 
 On a paste view you can use <kbd>r</kbd> and <kbd>n</kbd> to go to the raw view
 and back to the index page.
@@ -51,6 +51,8 @@ The following environment variables can be set to configure the server:
   a. If not set, it binds by default to `0.0.0.0:8088`.
 * `WASTEBIN_CACHE_SIZE` number of rendered syntax highlight items to cache.
   Defaults to 128 and can be disabled by setting to 0.
+* `WASTEBIN_MAX_BODY_SIZE` number of bytes to accept for POST requests. Defaults
+  to 1 MB.
 
 Additionally you can use the `RUST_LOG` environment variable to influence
 logging. Besides the typical `trace`, `debug`, `info` etc. keys, you can also
@@ -58,7 +60,7 @@ set the `tower_http` key to some log level to get additional information request
 and response logs.
 
 
-## REST API endpoints
+## API endpoints
 
 Wastebin exposes endpoints to submit a paste and retrieve it again.
 

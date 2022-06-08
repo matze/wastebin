@@ -1360,6 +1360,7 @@ dependencies = [
  "askama_axum",
  "axum",
  "bytes",
+ "http-body",
  "lru",
  "mime",
  "once_cell",

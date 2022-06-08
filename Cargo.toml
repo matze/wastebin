@@ -8,6 +8,7 @@ askama = { git = "https://github.com/djc/askama", features = ["with-axum"] }
 askama_axum = { git = "https://github.com/djc/askama" }
 axum = { version = "0.5", features = ["headers", "json"] }
 bytes = "1"
+http-body = "0"
 lru = "0"
 mime = "0"
 once_cell = "1"
@@ -20,6 +21,6 @@ syntect = { version = "5", default-features = false, features = ["default-syntax
 thiserror = "1"
 time = { version = "0.3", features = ["macros", "serde"] }
 tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0", features = ["compression-br", "compression-deflate", "compression-gzip", "timeout", "trace"] }
+tower-http = { version = "0", features = ["compression-br", "compression-deflate", "compression-gzip", "limit", "timeout", "trace"] }
 tracing = "0"
 tracing-subscriber = "0"

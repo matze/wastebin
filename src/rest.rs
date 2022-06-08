@@ -1,10 +1,10 @@
 use crate::db::Database;
 use crate::id::Id;
-use crate::{Entry, Error};
+use crate::{Entry, Error, Router};
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::routing::{get, post};
-use axum::{Extension, Json, Router};
+use axum::{Extension, Json};
 use rand::Rng;
 use serde::Serialize;
 

@@ -1,14 +1,14 @@
 use crate::db::Database;
 use crate::highlight::DATA;
 use crate::id::Id;
-use crate::{Cache, Entry, Error};
+use crate::{Cache, Entry, Error, Router};
 use askama::Template;
 use askama_axum::IntoResponse;
 use axum::extract::{Form, Path};
 use axum::http::StatusCode;
 use axum::response::Redirect;
 use axum::routing::get;
-use axum::{headers, Extension, Router, TypedHeader};
+use axum::{headers, Extension, TypedHeader};
 use bytes::Bytes;
 use rand::Rng;
 use serde::Deserialize;

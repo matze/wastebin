@@ -1,7 +1,6 @@
 use crate::db::Database;
 use axum::http::StatusCode;
-use axum::Server;
-use axum::{Extension, Router};
+use axum::{Extension, Server};
 use serde::{Deserialize, Serialize};
 use std::env::{self, VarError};
 use std::io;
@@ -9,6 +8,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tower_http::compression::CompressionLayer;
+use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
@@ -50,6 +50,8 @@ pub struct Entry {
     pub burn_after_reading: Option<bool>,
 }
 
+pub type Router = axum::Router<http_body::Limited<axum::body::Body>>;
+
 pub type Cache = Arc<Mutex<lru::LruCache<String, String>>>;
 
 impl From<Error> for StatusCode {
@@ -89,7 +91,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cache_size =
         env::var("WASTEBIN_CACHE_SIZE").map_or_else(|_| Ok(128), |s| s.parse::<usize>())?;
 
-    tracing::debug!("Caching {cache_size} paste highlights");
+    let max_body_size = env::var("WASTEBIN_MAX_BODY_SIZE")
+        .map_or_else(|_| Ok(1024 * 1024), |s| s.parse::<usize>())?;
+
+    tracing::debug!("serving on {addr_port}");
+    tracing::debug!("caching {cache_size} paste highlights");
+    tracing::debug!("restricting maximum body size to {max_body_size} bytes");
 
     let cache: Cache = Arc::new(Mutex::new(lru::LruCache::new(cache_size)));
 
@@ -101,6 +108,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .layer(TimeoutLayer::new(Duration::from_secs(5)))
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new())
+        .layer(RequestBodyLimitLayer::new(max_body_size))
         .into_make_service();
 
     let server = Server::bind(&addr_port.parse()?)

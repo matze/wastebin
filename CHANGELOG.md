@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 1.2.0
+
+**2022-06-08**
+
 ### Changed
 
 - Timeout with status code 408 after five seconds.

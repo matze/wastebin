@@ -39,15 +39,15 @@ fn common_headers() -> impl IntoResponseParts {
 }
 
 impl<'a> Data<'a> {
-    pub async fn main(&self) -> impl IntoResponse {
+    pub fn main(&self) -> impl IntoResponse {
         (common_headers(), DATA.main.to_string())
     }
 
-    pub async fn dark(&self) -> impl IntoResponse {
+    pub fn dark(&self) -> impl IntoResponse {
         (common_headers(), DATA.dark.clone())
     }
 
-    pub async fn light(&self) -> impl IntoResponse {
+    pub fn light(&self) -> impl IntoResponse {
         (common_headers(), DATA.light.clone())
     }
 

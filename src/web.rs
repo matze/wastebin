@@ -160,7 +160,7 @@ pub fn routes() -> Router {
         .route("/:id", get(show))
         .route("/burn/:id", get(burn_link))
         .route("/favicon.png", get(favicon))
-        .route("/style.css", get(|| async { DATA.main().await }))
-        .route("/dark.css", get(|| async { DATA.dark().await }))
-        .route("/light.css", get(|| async { DATA.light().await }))
+        .route("/style.css", get(|| async { DATA.main() }))
+        .route("/dark.css", get(|| async { DATA.dark() }))
+        .route("/light.css", get(|| async { DATA.light() }))
 }

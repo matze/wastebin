@@ -5,11 +5,10 @@ use crate::{Cache, Entry, Error};
 use askama::Template;
 use askama_axum::IntoResponse;
 use axum::extract::{Form, Path};
-use axum::http::header;
 use axum::http::StatusCode;
 use axum::response::Redirect;
 use axum::routing::get;
-use axum::{Extension, Router};
+use axum::{headers, Extension, Router, TypedHeader};
 use bytes::Bytes;
 use rand::Rng;
 use serde::Deserialize;
@@ -150,7 +149,7 @@ async fn burn_link(Path(id): Path<String>) -> BurnPage {
 
 async fn favicon() -> impl IntoResponse {
     (
-        [(header::CONTENT_TYPE, "image/png")],
+        TypedHeader(headers::ContentType::png()),
         Bytes::from_static(include_bytes!("../assets/favicon.png")),
     )
 }

@@ -1,8 +1,9 @@
 use crate::{Entry, Error};
-use axum::http::header;
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, IntoResponseParts};
+use axum::{headers, TypedHeader};
 use once_cell::sync::Lazy;
 use std::io::Cursor;
+use std::time::Duration;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, line_tokens_to_classed_spans, ClassStyle};
 use syntect::parsing::{ParseState, ScopeStack, SyntaxSet};
@@ -30,11 +31,11 @@ pub struct Data<'a> {
     pub syntax_set: SyntaxSet,
 }
 
-fn common_headers() -> [(header::HeaderName, &'static str); 2] {
-    [
-        (header::CONTENT_TYPE, "text/css"),
-        (header::CACHE_CONTROL, "max-age=3600"),
-    ]
+fn common_headers() -> impl IntoResponseParts {
+    (
+        TypedHeader(headers::ContentType::from(mime::TEXT_CSS)),
+        TypedHeader(headers::CacheControl::new().with_max_age(Duration::from_secs(3600))),
+    )
 }
 
 impl<'a> Data<'a> {

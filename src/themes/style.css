@@ -41,6 +41,10 @@ select > option:hover {
   color: #0f1419;
 }
 
+a, a:visited, a:hover {
+  text-decoration: none;
+}
+
 .container {
   display: grid;
   grid-template-columns: 4fr 1fr;
@@ -101,7 +105,7 @@ select > option:hover {
 
 .paste-box > a {
   font-size: 14pt;
-  color: #39bae6;
+  /* color: #39bae6; */
   text-decoration: none;
 }
 
@@ -117,15 +121,11 @@ td.line-number {
   padding-right: 1em;
 }
 
-.line-number > a, a, a:visited, a:hover {
-  text-decoration: none;
-}
-
-.line-number > a, a:visited {
+.line-number > a, .line-number > a:visited {
   color: #abb0b6;
 }
 
-.line-number > a:hover, a:focus, a {
+.line-number > a:hover, .line-number > a:focus {
   color: #fa6e32;
 }
 

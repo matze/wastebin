@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Set bright color for textarea in dark mode.
+
 
 ## 1.2.0
 

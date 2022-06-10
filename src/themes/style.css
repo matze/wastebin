@@ -4,6 +4,7 @@
 @media (prefers-color-scheme: dark) {
   body, textarea, select, select > option:hover {
     background-color: #0f1419;
+    color: #e6e1cf;
   }
 
   select {

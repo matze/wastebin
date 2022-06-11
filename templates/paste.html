@@ -11,6 +11,9 @@
     else if (e.key == 'r') {
       window.location.href = '/api/entries/{{ id }}';
     }
+    else if (e.key == 'y') {
+      navigator.clipboard.writeText(window.location.href);
+    }
   }
 </script>
 {% endblock %}

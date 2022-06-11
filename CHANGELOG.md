@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- <kbd>y</kbd> keybind to copy the paste URL to the clipboard
+
 
 ## 1.2.1
 
@@ -16,10 +20,13 @@
 
 **2022-06-08**
 
+### Added
+
+- Add <kbd>r</kbd> and <kbd>n</kbd> keybinds on the paste view.
+
 ### Changed
 
 - Timeout with status code 408 after five seconds.
-- Add <kbd>r</kbd> and <kbd>n</kbd> keybinds on the paste view.
 - Limit maximum body size to 1 MB or a value set with `WASTEBIN_MAX_BODY_SIZE`
   in bytes.
 

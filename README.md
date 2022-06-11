@@ -35,10 +35,11 @@ with
     $ docker run quxfoo/wastebin:latest
 
 
-### Navigation
+### Browser interface
 
 On a paste view you can use <kbd>r</kbd> and <kbd>n</kbd> to go to the raw view
-and back to the index page.
+and back to the index page. Furthermore, you can use <kbd>y</kbd> to copy the
+paste URL to the clipboard.
 
 
 ## Configuration

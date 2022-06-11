@@ -7,6 +7,10 @@
 - <kbd>y</kbd> keybind to copy the paste URL to the clipboard
 - `WASTEBIN_TITLE` environment variable to override the HTML page title.
 
+### Changed
+
+- Reduced font size of pre and text area to 13pt.
+
 
 ## 1.2.1
 

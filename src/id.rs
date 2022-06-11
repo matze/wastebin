@@ -23,7 +23,7 @@ impl fmt::Display for Id {
 }
 
 impl Id {
-    pub fn as_u32(&self) -> u32 {
+    pub fn as_u32(self) -> u32 {
         self.n
     }
 
@@ -53,9 +53,9 @@ impl TryFrom<&str> for Id {
         let mut n: u32 = 0;
 
         for (pos, char) in value.chars().enumerate() {
-            let bits = CHAR_TABLE.iter().enumerate().find_map(|(bits, c)| {
+            let bits: Option<u32> = CHAR_TABLE.iter().enumerate().find_map(|(bits, c)| {
                 if char == *c {
-                    Some(bits as u32)
+                    Some(bits.try_into().expect("bits not 32 bits"))
                 } else {
                     None
                 }

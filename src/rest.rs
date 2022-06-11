@@ -30,6 +30,7 @@ impl From<Error> for ErrorResponse {
     }
 }
 
+#[allow(clippy::unused_async)]
 async fn health() -> StatusCode {
     StatusCode::OK
 }

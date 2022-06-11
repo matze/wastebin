@@ -4,6 +4,7 @@ use axum::{Extension, Server};
 use serde::{Deserialize, Serialize};
 use std::env::{self, VarError};
 use std::io;
+use std::num::TryFromIntError;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -28,6 +29,8 @@ pub enum Error {
     WrongSize,
     #[error("illegal characters")]
     IllegalCharacters,
+    #[error("integer conversion error: {0}")]
+    IntConversion(#[from] TryFromIntError),
     #[error("join error: {0}")]
     Join(#[from] tokio::task::JoinError),
     #[error("syntax highlighting error: {0}")]
@@ -61,13 +64,13 @@ impl From<Error> for StatusCode {
                 rusqlite::Error::QueryReturnedNoRows => StatusCode::NOT_FOUND,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             },
-            Error::Migration(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Error::TimeFormatting(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Error::IllegalCharacters => StatusCode::BAD_REQUEST,
-            Error::WrongSize => StatusCode::BAD_REQUEST,
-            Error::Join(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Error::SyntaxHighlighting(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Error::SyntaxParsing(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::IllegalCharacters | Error::WrongSize => StatusCode::BAD_REQUEST,
+            Error::Join(_)
+            | Error::IntConversion(_)
+            | Error::TimeFormatting(_)
+            | Error::Migration(_)
+            | Error::SyntaxHighlighting(_)
+            | Error::SyntaxParsing(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

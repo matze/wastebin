@@ -38,20 +38,20 @@ fn common_headers() -> impl IntoResponseParts {
     )
 }
 
+pub fn main() -> impl IntoResponse {
+    (common_headers(), DATA.main.to_string())
+}
+
+pub fn dark() -> impl IntoResponse {
+    (common_headers(), DATA.dark.clone())
+}
+
+pub fn light() -> impl IntoResponse {
+    (common_headers(), DATA.light.clone())
+}
+
 impl<'a> Data<'a> {
-    pub fn main(&self) -> impl IntoResponse {
-        (common_headers(), DATA.main.to_string())
-    }
-
-    pub fn dark(&self) -> impl IntoResponse {
-        (common_headers(), DATA.dark.clone())
-    }
-
-    pub fn light(&self) -> impl IntoResponse {
-        (common_headers(), DATA.light.clone())
-    }
-
-    pub fn highlight(&self, entry: Entry, ext: Option<String>) -> Result<String, Error> {
+    pub fn highlight(&self, entry: &Entry, ext: Option<String>) -> Result<String, Error> {
         let syntax_ref = match ext {
             Some(ext) => self
                 .syntax_set
@@ -83,7 +83,7 @@ impl<'a> Data<'a> {
 
             let line = format!(r#"<td class="line">{formatted_str}"#);
             html.push_str(&line);
-            html.push_str(&"</span>".repeat(delta.max(0) as usize));
+            html.push_str(&"</span>".repeat(delta.max(0).try_into()?));
             html.push_str("</td></tr>");
         }
 

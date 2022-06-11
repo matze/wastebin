@@ -1,5 +1,5 @@
 use crate::db::Database;
-use crate::highlight::DATA;
+use crate::highlight::{self, DATA};
 use crate::id::Id;
 use crate::{Cache, Entry, Error, Router};
 use askama::Template;
@@ -30,8 +30,7 @@ impl From<FormEntry> for Entry {
         let burn_after_reading = Some(entry.expires == "burn");
 
         let expires = match entry.expires.parse::<u32>() {
-            Err(_) => None,
-            Ok(0) => None,
+            Ok(0) | Err(_) => None,
             Ok(secs) => Some(secs),
         };
 
@@ -86,6 +85,7 @@ impl From<Error> for ErrorHtml<'_> {
     }
 }
 
+#[allow(clippy::unused_async)]
 async fn index<'a>() -> Index<'a> {
     Index {
         title: &TITLE,
@@ -143,7 +143,7 @@ async fn show(
     let entry = db.get(id).await?;
     let id = id.to_string();
 
-    let formatted = tokio::task::spawn_blocking(move || DATA.highlight(entry, ext))
+    let formatted = tokio::task::spawn_blocking(move || DATA.highlight(&entry, ext))
         .await
         .map_err(Error::from)??;
 
@@ -156,15 +156,17 @@ async fn show(
 
     Ok(Paste {
         title,
-        formatted,
         id,
+        formatted,
     })
 }
 
+#[allow(clippy::unused_async)]
 async fn burn_link(Path(id): Path<String>) -> BurnPage<'static> {
     BurnPage { title: &TITLE, id }
 }
 
+#[allow(clippy::unused_async)]
 async fn favicon() -> impl IntoResponse {
     (
         TypedHeader(headers::ContentType::png()),
@@ -178,7 +180,7 @@ pub fn routes() -> Router {
         .route("/:id", get(show))
         .route("/burn/:id", get(burn_link))
         .route("/favicon.png", get(favicon))
-        .route("/style.css", get(|| async { DATA.main() }))
-        .route("/dark.css", get(|| async { DATA.dark() }))
-        .route("/light.css", get(|| async { DATA.light() }))
+        .route("/style.css", get(|| async { highlight::main() }))
+        .route("/dark.css", get(|| async { highlight::dark() }))
+        .route("/light.css", get(|| async { highlight::light() }))
 }

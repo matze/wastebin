@@ -5,6 +5,7 @@
 ### Added
 
 - <kbd>y</kbd> keybind to copy the paste URL to the clipboard
+- `WASTEBIN_TITLE` environment variable to override the HTML page title.
 
 
 ## 1.2.1

@@ -46,14 +46,15 @@ paste URL to the clipboard.
 
 The following environment variables can be set to configure the server:
 
-* `WASTEBIN_DATABASE_PATH` path to the sqlite3 database file. If not set, an
-  in-memory database is used.
 * `WASTEBIN_ADDRESS_PORT` string that determines which address and port to bind
   a. If not set, it binds by default to `0.0.0.0:8088`.
 * `WASTEBIN_CACHE_SIZE` number of rendered syntax highlight items to cache.
   Defaults to 128 and can be disabled by setting to 0.
+* `WASTEBIN_DATABASE_PATH` path to the sqlite3 database file. If not set, an
+  in-memory database is used.
 * `WASTEBIN_MAX_BODY_SIZE` number of bytes to accept for POST requests. Defaults
   to 1 MB.
+* `WASTEBIN_TITLE` overrides the HTML page title. Defaults to `wastebin`.
 
 Additionally you can use the `RUST_LOG` environment variable to influence
 logging. Besides the typical `trace`, `debug`, `info` etc. keys, you can also

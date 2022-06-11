@@ -10,8 +10,13 @@ use axum::response::Redirect;
 use axum::routing::get;
 use axum::{headers, Extension, TypedHeader};
 use bytes::Bytes;
+use once_cell::sync::Lazy;
 use rand::Rng;
 use serde::Deserialize;
+use std::env;
+
+pub static TITLE: Lazy<String> =
+    Lazy::new(|| env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string()));
 
 #[derive(Debug, Deserialize)]
 struct FormEntry {
@@ -42,33 +47,38 @@ impl From<FormEntry> for Entry {
 #[derive(Template)]
 #[template(path = "index.html")]
 struct Index<'a> {
+    title: &'a str,
     syntaxes: &'a [syntect::parsing::SyntaxReference],
 }
 
 #[derive(Template)]
 #[template(path = "paste.html")]
-struct Paste {
+struct Paste<'a> {
+    title: &'a str,
     id: String,
     formatted: String,
 }
 
 #[derive(Template)]
 #[template(path = "burn.html")]
-struct BurnPage {
+struct BurnPage<'a> {
+    title: &'a str,
     id: String,
 }
 
 #[derive(Template)]
 #[template(path = "error.html")]
-struct ErrorPage {
+struct ErrorPage<'a> {
+    title: &'a str,
     error: String,
 }
 
-type ErrorHtml = (StatusCode, ErrorPage);
+type ErrorHtml<'a> = (StatusCode, ErrorPage<'a>);
 
-impl From<Error> for ErrorHtml {
+impl From<Error> for ErrorHtml<'_> {
     fn from(err: Error) -> Self {
         let html = ErrorPage {
+            title: &TITLE,
             error: err.to_string(),
         };
 
@@ -78,6 +88,7 @@ impl From<Error> for ErrorHtml {
 
 async fn index<'a>() -> Index<'a> {
     Index {
+        title: &TITLE,
         syntaxes: DATA.syntax_set.syntaxes(),
     }
 }
@@ -85,7 +96,7 @@ async fn index<'a>() -> Index<'a> {
 async fn insert(
     Form(entry): Form<FormEntry>,
     db: Extension<Database>,
-) -> Result<Redirect, ErrorHtml> {
+) -> Result<Redirect, ErrorHtml<'static>> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
         rng.gen::<u32>()
@@ -111,16 +122,19 @@ async fn show(
     Path(id_with_opt_ext): Path<String>,
     db: Extension<Database>,
     cache: Extension<Cache>,
-) -> Result<Paste, ErrorHtml> {
+) -> Result<Paste<'static>, ErrorHtml<'static>> {
     let (id, ext) = match id_with_opt_ext.split_once('.') {
         None => (Id::try_from(id_with_opt_ext.as_str())?, None),
         Some((id, ext)) => (Id::try_from(id)?, Some(ext.to_string())),
     };
 
+    let title = &TITLE;
+
     if let Some(cached) = cache.lock().unwrap().get(&id_with_opt_ext) {
         tracing::debug!(id = %id_with_opt_ext, "Found cached item");
 
         return Ok(Paste {
+            title,
             formatted: cached.to_string(),
             id: id.to_string(),
         });
@@ -140,11 +154,15 @@ async fn show(
         .unwrap()
         .put(id_with_opt_ext, formatted.clone());
 
-    Ok(Paste { formatted, id })
+    Ok(Paste {
+        title,
+        formatted,
+        id,
+    })
 }
 
-async fn burn_link(Path(id): Path<String>) -> BurnPage {
-    BurnPage { id }
+async fn burn_link(Path(id): Path<String>) -> BurnPage<'static> {
+    BurnPage { title: &TITLE, id }
 }
 
 async fn favicon() -> impl IntoResponse {

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 1.3.0
+
+**2022-06-12**
+
 ### Added
 
 - <kbd>y</kbd> keybind to copy the paste URL to the clipboard

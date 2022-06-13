@@ -123,8 +123,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
 
     tokio::select! {
-        _ = server => {},
-        _ = db::purge_periodically(database) => {}
+        res = server => {
+            res?
+        },
+        res = db::purge_periodically(database) => {
+            res?
+        }
     }
 
     Ok(())

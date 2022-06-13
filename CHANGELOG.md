@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Do not swallow fatal errors from serving and database purging.
+
 
 ## 1.3.0
 

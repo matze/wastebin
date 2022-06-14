@@ -51,14 +51,11 @@ pub fn light() -> impl IntoResponse {
 }
 
 impl<'a> Data<'a> {
-    pub fn highlight(&self, entry: &Entry, ext: Option<String>) -> Result<String, Error> {
-        let syntax_ref = match ext {
-            Some(ext) => self
-                .syntax_set
-                .find_syntax_by_extension(&ext)
-                .unwrap_or_else(|| DATA.syntax_set.find_syntax_by_extension("txt").unwrap()),
-            None => DATA.syntax_set.find_syntax_by_extension("txt").unwrap(),
-        };
+    pub fn highlight(&self, entry: &Entry, ext: &str) -> Result<String, Error> {
+        let syntax_ref = self
+            .syntax_set
+            .find_syntax_by_extension(ext)
+            .unwrap_or_else(|| DATA.syntax_set.find_syntax_by_extension("txt").unwrap());
 
         let mut parse_state = ParseState::new(syntax_ref);
         let mut html = String::from("<table><tbody>");

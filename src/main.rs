@@ -6,13 +6,13 @@ use std::env::{self, VarError};
 use std::io;
 use std::num::TryFromIntError;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tower_http::compression::CompressionLayer;
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
+mod cache;
 mod db;
 mod highlight;
 mod id;
@@ -54,8 +54,6 @@ pub struct Entry {
 }
 
 pub type Router = axum::Router<http_body::Limited<axum::body::Body>>;
-
-pub type Cache = Arc<Mutex<lru::LruCache<String, String>>>;
 
 impl From<Error> for StatusCode {
     fn from(err: Error) -> Self {
@@ -101,7 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
 
-    let cache: Cache = Arc::new(Mutex::new(lru::LruCache::new(cache_size)));
+    let cache = cache::new(cache_size);
 
     let service = Router::new()
         .merge(web::routes())

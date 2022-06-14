@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Evict cached items for expired pastes.
+
 ### Changed
 
 - Do not swallow fatal errors from serving and database purging.

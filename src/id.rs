@@ -2,7 +2,7 @@ use crate::{Entry, Error};
 use std::convert::{From, TryFrom};
 use std::fmt;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Id {
     n: u32,
 }

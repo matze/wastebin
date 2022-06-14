@@ -77,20 +77,25 @@ impl From<Error> for StatusCode {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    let cache_size =
+        env::var("WASTEBIN_CACHE_SIZE").map_or_else(|_| Ok(128), |s| s.parse::<usize>())?;
+
+    let cache = cache::new(cache_size);
+
     let database = match env::var("WASTEBIN_DATABASE_PATH") {
-        Ok(path) => Ok(Database::new(db::Open::Path(PathBuf::from(path)))?),
+        Ok(path) => Ok(Database::new(
+            db::Open::Path(PathBuf::from(path)),
+            cache.clone(),
+        )?),
         Err(VarError::NotUnicode(_)) => Err(io::Error::new(
             io::ErrorKind::InvalidData,
             "WASTEBIN_DATABASE_PATH contains non-unicode data",
         )),
-        Err(VarError::NotPresent) => Ok(Database::new(db::Open::Memory)?),
+        Err(VarError::NotPresent) => Ok(Database::new(db::Open::Memory, cache.clone())?),
     }?;
 
     let addr_port =
         env::var("WASTEBIN_ADDRESS_PORT").unwrap_or_else(|_| "0.0.0.0:8088".to_string());
-
-    let cache_size =
-        env::var("WASTEBIN_CACHE_SIZE").map_or_else(|_| Ok(128), |s| s.parse::<usize>())?;
 
     let max_body_size = env::var("WASTEBIN_MAX_BODY_SIZE")
         .map_or_else(|_| Ok(1024 * 1024), |s| s.parse::<usize>())?;
@@ -98,8 +103,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("serving on {addr_port}");
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
-
-    let cache = cache::new(cache_size);
 
     let service = Router::new()
         .merge(web::routes())

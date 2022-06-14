@@ -1,3 +1,4 @@
+use crate::cache::Cache;
 use crate::id::Id;
 use crate::{Entry, Error};
 use once_cell::sync::Lazy;
@@ -10,6 +11,7 @@ use tokio::task::spawn_blocking;
 #[derive(Clone)]
 pub struct Database {
     conn: Arc<Mutex<Connection>>,
+    cache: Cache,
 }
 
 #[derive(Debug)]
@@ -24,7 +26,7 @@ static MIGRATIONS: Lazy<Migrations> = Lazy::new(|| {
 });
 
 impl Database {
-    pub fn new(method: Open) -> Result<Self, Error> {
+    pub fn new(method: Open, cache: Cache) -> Result<Self, Error> {
         tracing::debug!("opening {method:?}");
 
         let mut conn = match method {
@@ -36,6 +38,7 @@ impl Database {
 
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
+            cache,
         })
     }
 
@@ -102,11 +105,21 @@ impl Database {
         tracing::debug!("purging");
 
         let conn = self.conn.clone();
+        let cache = self.cache.clone();
 
         spawn_blocking(move || {
-            conn.lock()
-                .unwrap()
-                .execute("DELETE FROM entries WHERE expires < datetime('now')", [])
+            let conn = conn.lock().unwrap();
+
+            let mut stmt =
+                conn.prepare("SELECT id FROM entries WHERE expires < datetime('now')")?;
+
+            let mut cache = cache.lock().unwrap();
+
+            for id in stmt.query_map([], |row| Ok(Id::from(row.get::<_, u32>(0)?)))? {
+                cache.remove(id?);
+            }
+
+            conn.execute("DELETE FROM entries WHERE expires < datetime('now')", [])
         })
         .await??;
         Ok(())
@@ -126,10 +139,11 @@ pub async fn purge_periodically(db: Database) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cache;
 
     #[tokio::test]
     async fn insert() -> Result<(), Box<dyn std::error::Error>> {
-        let db = Database::new(Open::Memory)?;
+        let db = Database::new(Open::Memory, cache::new(0))?;
 
         let entry = Entry {
             text: "hello world".to_string(),
@@ -152,7 +166,7 @@ mod tests {
 
     #[tokio::test]
     async fn burn_after_reading() -> Result<(), Box<dyn std::error::Error>> {
-        let db = Database::new(Open::Memory)?;
+        let db = Database::new(Open::Memory, cache::new(0))?;
         let entry = Entry {
             text: "hello world".to_string(),
             extension: None,
@@ -169,7 +183,7 @@ mod tests {
 
     #[tokio::test]
     async fn expired_is_purged() -> Result<(), Box<dyn std::error::Error>> {
-        let db = Database::new(Open::Memory)?;
+        let db = Database::new(Open::Memory, cache::new(0))?;
 
         let entry = Entry {
             text: "hello world".to_string(),

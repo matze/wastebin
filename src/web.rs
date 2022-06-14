@@ -144,6 +144,7 @@ async fn show(
 
     let entry = db.get(id).await?;
     let id = id.to_string();
+    let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
 
     let formatted = tokio::task::spawn_blocking(move || DATA.highlight(&entry, &ext))
         .await
@@ -151,7 +152,9 @@ async fn show(
 
     tracing::debug!(id = %id_with_opt_ext, "No cached item");
 
-    cache.lock().unwrap().put(key, formatted.clone());
+    if !burn_after_reading {
+        cache.lock().unwrap().put(key, formatted.clone());
+    }
 
     Ok(Paste {
         title,

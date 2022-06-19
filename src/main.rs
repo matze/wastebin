@@ -77,22 +77,19 @@ impl From<Error> for StatusCode {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let cache_size =
-        env::var("WASTEBIN_CACHE_SIZE").map_or_else(|_| Ok(128), |s| s.parse::<usize>())?;
-
-    let cache = cache::new(cache_size);
-
     let database = match env::var("WASTEBIN_DATABASE_PATH") {
-        Ok(path) => Ok(Database::new(
-            db::Open::Path(PathBuf::from(path)),
-            cache.clone(),
-        )?),
+        Ok(path) => Ok(Database::new(db::Open::Path(PathBuf::from(path)))?),
         Err(VarError::NotUnicode(_)) => Err(io::Error::new(
             io::ErrorKind::InvalidData,
             "WASTEBIN_DATABASE_PATH contains non-unicode data",
         )),
-        Err(VarError::NotPresent) => Ok(Database::new(db::Open::Memory, cache.clone())?),
+        Err(VarError::NotPresent) => Ok(Database::new(db::Open::Memory)?),
     }?;
+
+    let cache_size =
+        env::var("WASTEBIN_CACHE_SIZE").map_or_else(|_| Ok(128), |s| s.parse::<usize>())?;
+
+    let cache_layer = cache::Layer::new(database.clone(), cache_size);
 
     let addr_port =
         env::var("WASTEBIN_ADDRESS_PORT").unwrap_or_else(|_| "0.0.0.0:8088".to_string());
@@ -107,8 +104,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service = Router::new()
         .merge(web::routes())
         .merge(rest::routes())
-        .layer(Extension(database.clone()))
-        .layer(Extension(cache))
+        .layer(Extension(cache_layer.clone()))
         .layer(TimeoutLayer::new(Duration::from_secs(5)))
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new())
@@ -127,7 +123,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         res = server => {
             res?
         },
-        res = db::purge_periodically(database) => {
+        res = cache::purge_periodically(cache_layer) => {
             res?
         }
     }

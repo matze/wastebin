@@ -1,4 +1,3 @@
-use crate::cache::Cache;
 use crate::id::Id;
 use crate::{Entry, Error};
 use once_cell::sync::Lazy;
@@ -11,7 +10,7 @@ use tokio::task::spawn_blocking;
 #[derive(Clone)]
 pub struct Database {
     conn: Arc<Mutex<Connection>>,
-    cache: Cache,
+    // cache: Cache,
 }
 
 #[derive(Debug)]
@@ -26,7 +25,7 @@ static MIGRATIONS: Lazy<Migrations> = Lazy::new(|| {
 });
 
 impl Database {
-    pub fn new(method: Open, cache: Cache) -> Result<Self, Error> {
+    pub fn new(method: Open) -> Result<Self, Error> {
         tracing::debug!("opening {method:?}");
 
         let mut conn = match method {
@@ -38,7 +37,6 @@ impl Database {
 
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
-            cache,
         })
     }
 
@@ -100,12 +98,11 @@ impl Database {
         Ok(entry)
     }
 
-    /// Remove all expired entries.
-    pub async fn purge(&self) -> Result<(), Error> {
+    /// Remove all expired entries and return their `Id`s.
+    pub async fn purge(&self) -> Result<Vec<Id>, Error> {
         tracing::debug!("purging");
 
         let conn = self.conn.clone();
-        let cache = self.cache.clone();
 
         spawn_blocking(move || {
             let conn = conn.lock().unwrap();
@@ -113,37 +110,25 @@ impl Database {
             let mut stmt =
                 conn.prepare("SELECT id FROM entries WHERE expires < datetime('now')")?;
 
-            let mut cache = cache.lock().unwrap();
+            let ids = stmt
+                .query_map([], |row| Ok(Id::from(row.get::<_, u32>(0)?)))?
+                .collect::<Result<Vec<_>, _>>()?;
 
-            for id in stmt.query_map([], |row| Ok(Id::from(row.get::<_, u32>(0)?)))? {
-                cache.remove(id?);
-            }
+            conn.execute("DELETE FROM entries WHERE expires < datetime('now')", [])?;
 
-            conn.execute("DELETE FROM entries WHERE expires < datetime('now')", [])
+            Ok(ids)
         })
-        .await??;
-        Ok(())
-    }
-}
-
-/// Purge `db` every minute.
-pub async fn purge_periodically(db: Database) -> Result<(), Error> {
-    let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
-
-    loop {
-        interval.tick().await;
-        db.purge().await?;
+        .await?
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cache;
 
     #[tokio::test]
     async fn insert() -> Result<(), Box<dyn std::error::Error>> {
-        let db = Database::new(Open::Memory, cache::new(0))?;
+        let db = Database::new(Open::Memory)?;
 
         let entry = Entry {
             text: "hello world".to_string(),
@@ -166,7 +151,7 @@ mod tests {
 
     #[tokio::test]
     async fn burn_after_reading() -> Result<(), Box<dyn std::error::Error>> {
-        let db = Database::new(Open::Memory, cache::new(0))?;
+        let db = Database::new(Open::Memory)?;
         let entry = Entry {
             text: "hello world".to_string(),
             extension: None,
@@ -183,7 +168,7 @@ mod tests {
 
     #[tokio::test]
     async fn expired_is_purged() -> Result<(), Box<dyn std::error::Error>> {
-        let db = Database::new(Open::Memory, cache::new(0))?;
+        let db = Database::new(Open::Memory)?;
 
         let entry = Entry {
             text: "hello world".to_string(),

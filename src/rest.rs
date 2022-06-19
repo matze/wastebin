@@ -1,4 +1,4 @@
-use crate::db::Database;
+use crate::cache::Layer;
 use crate::id::Id;
 use crate::{Entry, Error, Router};
 use axum::extract::Path;
@@ -37,7 +37,7 @@ async fn health() -> StatusCode {
 
 async fn insert(
     Json(entry): Json<Entry>,
-    db: Extension<Database>,
+    layer: Extension<Layer>,
 ) -> Result<Json<RedirectResponse>, ErrorResponse> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
@@ -49,12 +49,12 @@ async fn insert(
 
     let path = id.to_url_path(&entry);
 
-    db.insert(id, entry).await?;
+    layer.insert(id, entry).await?;
     Ok(Json::from(RedirectResponse { path }))
 }
 
-async fn raw(Path(id): Path<String>, db: Extension<Database>) -> Result<String, ErrorResponse> {
-    Ok(db.get(Id::try_from(id.as_str())?).await?.text)
+async fn raw(Path(id): Path<String>, layer: Extension<Layer>) -> Result<String, ErrorResponse> {
+    Ok(layer.get_raw(Id::try_from(id.as_str())?).await?)
 }
 
 pub fn routes() -> Router {

@@ -1,5 +1,4 @@
-use crate::cache::{Cache, Key};
-use crate::db::Database;
+use crate::cache::{Key, Layer};
 use crate::highlight::{self, DATA};
 use crate::id::Id;
 use crate::{Entry, Error, Router};
@@ -96,7 +95,7 @@ async fn index<'a>() -> Index<'a> {
 
 async fn insert(
     Form(entry): Form<FormEntry>,
-    db: Extension<Database>,
+    layer: Extension<Layer>,
 ) -> Result<Redirect, ErrorHtml<'static>> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
@@ -110,7 +109,7 @@ async fn insert(
     let url = id.to_url_path(&entry);
     let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
 
-    db.insert(id, entry).await?;
+    layer.insert(id, entry).await?;
 
     if burn_after_reading {
         Ok(Redirect::to(&format!("/burn{url}")))
@@ -121,8 +120,7 @@ async fn insert(
 
 async fn show(
     Path(id_with_opt_ext): Path<String>,
-    db: Extension<Database>,
-    cache: Extension<Cache>,
+    layer: Extension<Layer>,
 ) -> Result<Paste<'static>, ErrorHtml<'static>> {
     let (id, ext) = match id_with_opt_ext.split_once('.') {
         None => (Id::try_from(id_with_opt_ext.as_str())?, "txt".to_string()),
@@ -131,30 +129,8 @@ async fn show(
 
     let title = &TITLE;
     let key = Key::new(id, ext.clone());
-
-    if let Some(cached) = cache.lock().unwrap().get(&key) {
-        tracing::debug!(id = %id_with_opt_ext, "Found cached item");
-
-        return Ok(Paste {
-            title,
-            formatted: cached.to_string(),
-            id: id.to_string(),
-        });
-    }
-
-    let entry = db.get(id).await?;
+    let formatted = layer.get_formatted(key).await?;
     let id = id.to_string();
-    let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
-
-    let formatted = tokio::task::spawn_blocking(move || DATA.highlight(&entry, &ext))
-        .await
-        .map_err(Error::from)??;
-
-    tracing::debug!(id = %id_with_opt_ext, "No cached item");
-
-    if !burn_after_reading {
-        cache.lock().unwrap().put(key, formatted.clone());
-    }
 
     Ok(Paste {
         title,

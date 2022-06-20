@@ -10,7 +10,6 @@ use tokio::task::spawn_blocking;
 #[derive(Clone)]
 pub struct Database {
     conn: Arc<Mutex<Connection>>,
-    // cache: Cache,
 }
 
 #[derive(Debug)]

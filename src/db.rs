@@ -46,16 +46,17 @@ impl Database {
 
         spawn_blocking(move || match entry.expires {
             None => conn.lock().unwrap().execute(
-                "INSERT INTO entries (id, text, burn_after_reading) VALUES (?1, ?2, ?3)",
-                params![id, entry.text, entry.burn_after_reading],
+                "INSERT INTO entries (id, text, burn_after_reading, extension) VALUES (?1, ?2, ?3, ?4)",
+                params![id, entry.text, entry.burn_after_reading, entry.extension],
             ),
             Some(expires) => conn.lock().unwrap().execute(
-                "INSERT INTO entries (id, text, burn_after_reading, expires) VALUES (?1, ?2, ?3, datetime('now', ?4))",
+                "INSERT INTO entries (id, text, burn_after_reading, expires, extension) VALUES (?1, ?2, ?3, datetime('now', ?4)), ?5",
                 params![
                     id,
                     entry.text,
                     entry.burn_after_reading,
-                    format!("{expires} seconds")
+                    format!("{expires} seconds"),
+                    entry.extension,
                 ],
             ),
         })
@@ -70,14 +71,14 @@ impl Database {
 
         let entry = spawn_blocking(move || {
             conn.lock().unwrap().query_row(
-                "SELECT text, burn_after_reading FROM entries WHERE id=?1",
+                "SELECT text, extension, burn_after_reading FROM entries WHERE id=?1",
                 params![id],
                 |row| {
                     Ok(Entry {
                         text: row.get(0)?,
-                        extension: None,
+                        extension: row.get(1)?,
                         expires: None,
-                        burn_after_reading: row.get(1)?,
+                        burn_after_reading: row.get(2)?,
                     })
                 },
             )

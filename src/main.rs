@@ -21,6 +21,8 @@ mod web;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("axum http error: {0}")]
+    Axum(#[from] axum::http::Error),
     #[error("sqlite error: {0}")]
     Sqlite(#[from] rusqlite::Error),
     #[error("migrations error: {0}")]
@@ -68,7 +70,8 @@ impl From<Error> for StatusCode {
             | Error::TimeFormatting(_)
             | Error::Migration(_)
             | Error::SyntaxHighlighting(_)
-            | Error::SyntaxParsing(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            | Error::SyntaxParsing(_)
+            | Error::Axum(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

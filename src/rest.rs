@@ -1,8 +1,9 @@
 use crate::cache::Layer;
 use crate::id::Id;
 use crate::{Entry, Error, Router};
+use askama_axum::Response;
 use axum::extract::Path;
-use axum::http::StatusCode;
+use axum::http::{header, StatusCode};
 use axum::routing::{get, post};
 use axum::{Extension, Json};
 use rand::Rng;
@@ -57,9 +58,30 @@ async fn raw(Path(id): Path<String>, layer: Extension<Layer>) -> Result<String, 
     Ok(layer.get_raw(Id::try_from(id.as_str())?).await?)
 }
 
+async fn download(
+    Path(id): Path<String>,
+    layer: Extension<Layer>,
+) -> Result<Response<String>, ErrorResponse> {
+    let raw_string = raw(Path(id.clone()), layer.clone()).await?;
+    let extension = layer
+        .get_extension(Id::try_from(id.as_str())?)
+        .await?
+        .unwrap_or_else(|| "txt".to_string());
+    let filename = format!("{}.{}", id, extension);
+    let content_type = "text; charset=utf-8";
+    let content_disposition = format!("attachment; filename=\"{}\"", filename);
+
+    Ok(Response::builder()
+        .header(header::CONTENT_TYPE, content_type)
+        .header(header::CONTENT_DISPOSITION, content_disposition)
+        .body(raw_string)
+        .map_err(Error::from)?)
+}
+
 pub fn routes() -> Router {
     Router::new()
         .route("/api/health", get(health))
         .route("/api/entries", post(insert))
         .route("/api/entries/:id", get(raw))
+        .route("/api/download/:id", get(download))
 }

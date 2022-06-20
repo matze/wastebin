@@ -107,6 +107,11 @@ impl Layer {
         self.db.get(id).await.map(|e| e.text)
     }
 
+    /// Get extension for `id` or `None` if not found.
+    pub async fn get_extension(&self, id: Id) -> Result<Option<String>, Error> {
+        self.db.get(id).await.map(|e| e.extension)
+    }
+
     /// Purge expired items from database and cache.
     pub async fn purge(&self) -> Result<(), Error> {
         for id in self.db.purge().await? {

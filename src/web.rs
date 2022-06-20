@@ -33,7 +33,6 @@ impl From<FormEntry> for Entry {
             Ok(0) | Err(_) => None,
             Ok(secs) => Some(secs),
         };
-
         Self {
             text: entry.text,
             extension: entry.extension,

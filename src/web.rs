@@ -119,18 +119,13 @@ async fn insert(
 }
 
 async fn show(
-    Path(id_with_opt_ext): Path<String>,
+    id_with_opt_ext: Path<String>,
     layer: Extension<Layer>,
 ) -> Result<Paste<'static>, ErrorHtml<'static>> {
-    let (id, ext) = match id_with_opt_ext.split_once('.') {
-        None => (Id::try_from(id_with_opt_ext.as_str())?, "txt".to_string()),
-        Some((id, ext)) => (Id::try_from(id)?, ext.to_string()),
-    };
-
     let title = &TITLE;
-    let key = Key::new(id, ext.clone());
+    let key = Key::try_from(id_with_opt_ext)?;
+    let id = key.id();
     let formatted = layer.get_formatted(key).await?;
-    let id = id.to_string();
 
     Ok(Paste {
         title,

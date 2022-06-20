@@ -2,6 +2,7 @@ use crate::db::Database;
 use crate::highlight::DATA;
 use crate::id::Id;
 use crate::{Entry, Error};
+use axum::extract::Path;
 use lru::LruCache;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -23,6 +24,23 @@ type Cache = Arc<Mutex<Inner>>;
 impl Key {
     pub fn new(id: Id, ext: String) -> Key {
         Self { id, ext }
+    }
+
+    pub fn id(&self) -> String {
+        self.id.to_string()
+    }
+}
+
+impl TryFrom<Path<String>> for Key {
+    type Error = Error;
+
+    fn try_from(value: Path<String>) -> Result<Self, Self::Error> {
+        let (id, ext) = match value.split_once('.') {
+            None => (Id::try_from(value.as_str())?, "txt".to_string()),
+            Some((id, ext)) => (Id::try_from(id)?, ext.to_string()),
+        };
+
+        Ok(Self { id, ext })
     }
 }
 

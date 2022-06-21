@@ -2,12 +2,13 @@ use crate::db::Database;
 use crate::highlight::DATA;
 use crate::id::Id;
 use crate::{Entry, Error};
+use axum::extract::Path;
 use lru::LruCache;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::{Arc, Mutex};
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Key {
     id: Id,
     ext: String,
@@ -23,6 +24,23 @@ type Cache = Arc<Mutex<Inner>>;
 impl Key {
     pub fn new(id: Id, ext: String) -> Key {
         Self { id, ext }
+    }
+
+    pub fn id(&self) -> String {
+        self.id.to_string()
+    }
+}
+
+impl TryFrom<Path<String>> for Key {
+    type Error = Error;
+
+    fn try_from(value: Path<String>) -> Result<Self, Self::Error> {
+        let (id, ext) = match value.split_once('.') {
+            None => (Id::try_from(value.as_str())?, "txt".to_string()),
+            Some((id, ext)) => (Id::try_from(id)?, ext.to_string()),
+        };
+
+        Ok(Self { id, ext })
     }
 }
 
@@ -129,5 +147,36 @@ pub async fn purge_periodically(layer: Layer) -> Result<(), Error> {
     loop {
         interval.tick().await;
         layer.purge().await?;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db;
+
+    #[tokio::test]
+    async fn expired_is_purged() -> Result<(), Box<dyn std::error::Error>> {
+        let db = Database::new(db::Open::Memory)?;
+        let layer = Layer::new(db, 128);
+
+        let entry = Entry {
+            text: "hello world".to_string(),
+            extension: None,
+            expires: Some(1),
+            burn_after_reading: None,
+        };
+
+        let id = Id::from(1234);
+        let key = Key::new(id, "rs".to_string());
+        layer.insert(id, entry).await?;
+        assert!(layer.get_formatted(key.clone()).await.is_ok());
+
+        tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+        layer.purge().await?;
+        assert!(layer.db.get(id).await.is_err());
+        assert!(layer.get_formatted(key).await.is_err());
+
+        Ok(())
     }
 }

@@ -106,7 +106,6 @@ a, a:visited, a:hover {
 
 .paste-box > a {
   font-size: 14pt;
-  /* color: #39bae6; */
   text-decoration: none;
 }
 
@@ -140,4 +139,8 @@ td.line-number {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+}
+
+.text-center {
+  text-align: center;
 }

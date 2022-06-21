@@ -10,6 +10,10 @@
 
 - Do not swallow fatal errors from serving and database purging.
 
+### Added
+
+- Link to error page to go back to the index.
+
 
 ## 1.3.0
 

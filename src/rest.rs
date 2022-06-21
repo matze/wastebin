@@ -59,14 +59,10 @@ async fn raw(Path(id): Path<String>, layer: Extension<Layer>) -> Result<String, 
 }
 
 async fn download(
-    Path(id): Path<String>,
+    Path((id, extension)): Path<(String, String)>,
     layer: Extension<Layer>,
 ) -> Result<Response<String>, ErrorResponse> {
     let raw_string = raw(Path(id.clone()), layer.clone()).await?;
-    let extension = layer
-        .get_extension(Id::try_from(id.as_str())?)
-        .await?
-        .unwrap_or_else(|| "txt".to_string());
     let filename = format!("{}.{}", id, extension);
     let content_type = "text; charset=utf-8";
     let content_disposition = format!("attachment; filename=\"{}\"", filename);
@@ -83,5 +79,5 @@ pub fn routes() -> Router {
         .route("/api/health", get(health))
         .route("/api/entries", post(insert))
         .route("/api/entries/:id", get(raw))
-        .route("/api/download/:id", get(download))
+        .route("/api/download/:id/:extension", get(download))
 }

@@ -1,8 +1,10 @@
 use crate::cache::Layer;
+use crate::highlight::DATA;
 use crate::id::Id;
 use crate::{Entry, Error, Router};
 use askama_axum::Response;
 use axum::extract::Path;
+use axum::headers::HeaderValue;
 use axum::http::{header, StatusCode};
 use axum::routing::{get, post};
 use axum::{Extension, Json};
@@ -63,12 +65,20 @@ async fn download(
     layer: Extension<Layer>,
 ) -> Result<Response<String>, ErrorResponse> {
     let raw_string = raw(Path(id.clone()), layer.clone()).await?;
-    let filename = format!("{}.{}", id, extension);
     let content_type = "text; charset=utf-8";
+
+    // validate Id and extension
+    Id::try_from(id.as_str())?;
+    let _ = DATA
+        .syntax_set
+        .find_syntax_by_extension(extension.as_str())
+        .ok_or(Error::IllegalCharacters)?;
+
+    let filename = format!("{}.{}", id, extension);
     let content_disposition = format!("attachment; filename=\"{}\"", filename);
 
     Ok(Response::builder()
-        .header(header::CONTENT_TYPE, content_type)
+        .header(header::CONTENT_TYPE, HeaderValue::from_static(content_type))
         .header(header::CONTENT_DISPOSITION, content_disposition)
         .body(raw_string)
         .map_err(Error::from)?)

@@ -5,8 +5,9 @@ use crate::{Entry, Error, Router};
 use askama::Template;
 use askama_axum::IntoResponse;
 use axum::extract::{Form, Path};
-use axum::http::StatusCode;
-use axum::response::Redirect;
+use axum::headers::HeaderValue;
+use axum::http::{header, StatusCode};
+use axum::response::{Redirect, Response};
 use axum::routing::get;
 use axum::{headers, Extension, TypedHeader};
 use bytes::Bytes;
@@ -142,6 +143,30 @@ async fn burn_link(Path(id): Path<String>) -> BurnPage<'static> {
     BurnPage { title: &TITLE, id }
 }
 
+async fn download(
+    Path((id, extension)): Path<(String, String)>,
+    layer: Extension<Layer>,
+) -> Result<Response<String>, ErrorHtml<'static>> {
+    let raw_string = layer.get_raw(Id::try_from(id.as_str())?).await?;
+    let content_type = "text; charset=utf-8";
+
+    // validate Id and extension
+    Id::try_from(id.as_str())?;
+    let _ = DATA
+        .syntax_set
+        .find_syntax_by_extension(extension.as_str())
+        .ok_or(Error::IllegalCharacters)?;
+
+    let filename = format!("{}.{}", id, extension);
+    let content_disposition = format!("attachment; filename=\"{}\"", filename);
+
+    Ok(Response::builder()
+        .header(header::CONTENT_TYPE, HeaderValue::from_static(content_type))
+        .header(header::CONTENT_DISPOSITION, content_disposition)
+        .body(raw_string)
+        .map_err(Error::from)?)
+}
+
 #[allow(clippy::unused_async)]
 async fn favicon() -> impl IntoResponse {
     (
@@ -155,6 +180,7 @@ pub fn routes() -> Router {
         .route("/", get(index).post(insert))
         .route("/:id", get(show))
         .route("/burn/:id", get(burn_link))
+        .route("/download/:id/:extension", get(download))
         .route("/favicon.png", get(favicon))
         .route("/style.css", get(|| async { highlight::main() }))
         .route("/dark.css", get(|| async { highlight::dark() }))

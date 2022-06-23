@@ -13,6 +13,7 @@
 ### Added
 
 - Link to error page to go back to the index.
+- Link to download a paste (@yannickfunk).
 
 
 ## 1.3.0

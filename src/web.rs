@@ -147,18 +147,14 @@ async fn download(
     Path((id, extension)): Path<(String, String)>,
     layer: Extension<Layer>,
 ) -> Result<Response<String>, ErrorHtml<'static>> {
+    // Validate extension.
+    if !extension.is_ascii() {
+        Err(Error::IllegalCharacters)?
+    }
+
     let raw_string = layer.get_raw(Id::try_from(id.as_str())?).await?;
     let content_type = "text; charset=utf-8";
-
-    // validate Id and extension
-    Id::try_from(id.as_str())?;
-    let _ = DATA
-        .syntax_set
-        .find_syntax_by_extension(extension.as_str())
-        .ok_or(Error::IllegalCharacters)?;
-
-    let filename = format!("{}.{}", id, extension);
-    let content_disposition = format!("attachment; filename=\"{}\"", filename);
+    let content_disposition = format!(r#"attachment; filename="{id}.{extension}"#);
 
     Ok(Response::builder()
         .header(header::CONTENT_TYPE, HeaderValue::from_static(content_type))

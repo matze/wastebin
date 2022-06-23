@@ -171,7 +171,7 @@ mod tests {
         layer.insert(id, entry).await?;
         assert!(layer.get_formatted(key.clone()).await.is_ok());
 
-        tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+        tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
         layer.purge().await?;
         assert!(layer.db.get(id).await.is_err());
         assert!(layer.get_formatted(key).await.is_err());

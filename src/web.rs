@@ -56,6 +56,7 @@ struct Paste<'a> {
     title: &'a str,
     id: String,
     formatted: String,
+    extension: String,
 }
 
 #[derive(Template)]
@@ -125,12 +126,14 @@ async fn show(
     let title = &TITLE;
     let key = Key::try_from(id_with_opt_ext)?;
     let id = key.id();
+    let extension = key.extension();
     let formatted = layer.get_formatted(key).await?;
 
     Ok(Paste {
         title,
         id,
         formatted,
+        extension,
     })
 }
 

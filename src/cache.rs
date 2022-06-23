@@ -29,6 +29,10 @@ impl Key {
     pub fn id(&self) -> String {
         self.id.to_string()
     }
+
+    pub fn extension(&self) -> String {
+        self.ext.clone()
+    }
 }
 
 impl TryFrom<Path<String>> for Key {

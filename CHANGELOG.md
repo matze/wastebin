@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 1.4.0
+
+**2022-06-27**
+
 ### Fixed
 
 - Evict cached items for expired pastes.

@@ -19,8 +19,12 @@ pub enum Open {
 }
 
 static MIGRATIONS: Lazy<Migrations> = Lazy::new(|| {
-    Migrations::new(vec![M::up(include_str!("migrations/0001-up-initial.sql"))
-        .down(include_str!("migrations/0001-down-initial.sql"))])
+    Migrations::new(vec![
+        M::up(include_str!("migrations/0001-up-initial.sql"))
+            .down(include_str!("migrations/0001-down-initial.sql")),
+        M::up(include_str!("migrations/0002-up-add-created-column.sql"))
+            .down(include_str!("migrations/0002-down-add-created-column.sql")),
+    ])
 });
 
 impl Database {
@@ -45,11 +49,11 @@ impl Database {
 
         spawn_blocking(move || match entry.expires {
             None => conn.lock().unwrap().execute(
-                "INSERT INTO entries (id, text, burn_after_reading) VALUES (?1, ?2, ?3)",
+                "INSERT INTO entries (id, text, burn_after_reading, created_at) VALUES (?1, ?2, ?3, datetime('now'))",
                 params![id, entry.text, entry.burn_after_reading],
             ),
             Some(expires) => conn.lock().unwrap().execute(
-                "INSERT INTO entries (id, text, burn_after_reading, expires) VALUES (?1, ?2, ?3, datetime('now', ?4))",
+                "INSERT INTO entries (id, text, burn_after_reading, expires, created_at) VALUES (?1, ?2, ?3, datetime('now', ?4), datetime('now'))",
                 params![
                     id,
                     entry.text,
@@ -65,36 +69,44 @@ impl Database {
 
     pub async fn get(&self, id: Id) -> Result<Entry, Error> {
         let conn = self.conn.clone();
-        let id = id.as_u32();
+        let id_as_u32 = id.as_u32();
 
         let entry = spawn_blocking(move || {
             conn.lock().unwrap().query_row(
-                "SELECT text, burn_after_reading FROM entries WHERE id=?1",
-                params![id],
+                "SELECT text, burn_after_reading, CAST(((julianday('now') - julianday(created_at)) * 24 * 60 * 60) AS INT) FROM entries WHERE id=?1",
+                params![id_as_u32],
                 |row| {
                     Ok(Entry {
                         text: row.get(0)?,
                         extension: None,
                         expires: None,
                         burn_after_reading: row.get(1)?,
+                        seconds_since_creation: row.get(2)?,
                     })
                 },
             )
         })
         .await??;
 
-        let conn = self.conn.clone();
-
         if entry.burn_after_reading.unwrap_or(false) {
-            spawn_blocking(move || {
-                conn.lock()
-                    .unwrap()
-                    .execute("DELETE FROM entries WHERE id=?1", params![id])
-            })
-            .await??;
+            self.delete(id).await?;
         }
 
         Ok(entry)
+    }
+
+    pub async fn delete(&self, id: Id) -> Result<(), Error> {
+        let conn = self.conn.clone();
+        let id = id.as_u32();
+
+        spawn_blocking(move || {
+            conn.lock()
+                .unwrap()
+                .execute("DELETE FROM entries WHERE id=?1", params![id])
+        })
+        .await??;
+
+        Ok(())
     }
 
     /// Remove all expired entries and return their `Id`s.
@@ -131,9 +143,7 @@ mod tests {
 
         let entry = Entry {
             text: "hello world".to_string(),
-            extension: None,
-            expires: None,
-            burn_after_reading: None,
+            ..Default::default()
         };
 
         let id = Id::from(1234);
@@ -152,10 +162,8 @@ mod tests {
     async fn burn_after_reading() -> Result<(), Box<dyn std::error::Error>> {
         let db = Database::new(Open::Memory)?;
         let entry = Entry {
-            text: "hello world".to_string(),
-            extension: None,
-            expires: None,
             burn_after_reading: Some(true),
+            ..Default::default()
         };
         let id = Id::from(1234);
         db.insert(id, entry).await?;
@@ -170,10 +178,8 @@ mod tests {
         let db = Database::new(Open::Memory)?;
 
         let entry = Entry {
-            text: "hello world".to_string(),
-            extension: None,
             expires: Some(1),
-            burn_after_reading: None,
+            ..Default::default()
         };
 
         let id = Id::from(1234);
@@ -181,7 +187,23 @@ mod tests {
         assert!(db.get(id).await.is_ok());
 
         tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
+        assert!(db.get(id).await.unwrap().seconds_since_creation >= 1);
+
         db.purge().await?;
+        assert!(db.get(id).await.is_err());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn delete() -> Result<(), Box<dyn std::error::Error>> {
+        let db = Database::new(Open::Memory)?;
+
+        let id = Id::from(1234);
+        db.insert(id, Entry::default()).await?;
+
+        assert!(db.get(id).await.is_ok());
+        assert!(db.delete(id).await.is_ok());
         assert!(db.get(id).await.is_err());
 
         Ok(())

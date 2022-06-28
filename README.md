@@ -85,8 +85,10 @@ the newly created paste:
 {"path":"/Ibv9Fa.rs"}
 ```
 
-To retrieve the raw content, make a GET request on the `/api/entries/:id`
-route, with `:id` being the identifier _without_ the file extension.
+To retrieve the raw content, make a GET request on the `/api/entries/:id` route,
+with `:id` being the identifier _without_ the file extension. You also have
+_one_ minute to make a DELETE request on the same route to delete the entry.
+After that, an entry will only be deleted after a set expiration time.
 
 
 ### Paste from clipboard

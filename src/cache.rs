@@ -1,7 +1,7 @@
 use crate::db::Database;
 use crate::highlight::DATA;
 use crate::id::Id;
-use crate::{Entry, Error};
+use crate::Error;
 use axum::extract::Path;
 use lru::LruCache;
 use std::collections::{HashMap, HashSet};
@@ -93,6 +93,12 @@ pub struct Layer {
     cache: Cache,
 }
 
+/// Entry and syntax highlighted text.
+pub struct Entry {
+    pub formatted: String,
+    pub seconds_since_creation: u32,
+}
+
 impl Layer {
     pub fn new(db: Database, cache_size: usize) -> Self {
         let cache = Arc::new(Mutex::new(Inner::new(cache_size)));
@@ -100,18 +106,24 @@ impl Layer {
     }
 
     /// Insert `entry` into the database.
-    pub async fn insert(&self, id: Id, entry: Entry) -> Result<(), Error> {
+    pub async fn insert(&self, id: Id, entry: crate::Entry) -> Result<(), Error> {
         self.db.insert(id, entry).await
     }
 
     /// Look up or generate HTML formatted data. Return `None` if `key` is not found.
-    pub async fn get_formatted(&self, key: Key) -> Result<String, Error> {
+    pub async fn get_formatted(&self, key: Key) -> Result<Entry, Error> {
+        let entry = self.db.get(key.id).await?;
+        let seconds_since_creation = entry.seconds_since_creation;
+
         if let Some(cached) = self.cache.lock().unwrap().get(&key) {
             tracing::debug!(?key, "found cached item");
-            return Ok(cached.to_string());
+
+            return Ok(Entry {
+                formatted: cached.to_string(),
+                seconds_since_creation,
+            });
         }
 
-        let entry = self.db.get(key.id).await?;
         let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
         let ext = key.ext.clone();
         let formatted = tokio::task::spawn_blocking(move || DATA.highlight(&entry, &ext)).await??;
@@ -121,12 +133,21 @@ impl Layer {
             self.cache.lock().unwrap().put(key, formatted.clone());
         }
 
-        Ok(formatted)
+        Ok(Entry {
+            formatted,
+            seconds_since_creation,
+        })
     }
 
     /// Get raw content for `id` or `None` if not found.
-    pub async fn get_raw(&self, id: Id) -> Result<String, Error> {
-        self.db.get(id).await.map(|e| e.text)
+    pub async fn get(&self, id: Id) -> Result<crate::Entry, Error> {
+        self.db.get(id).await
+    }
+
+    /// Delete `id`.
+    pub async fn delete(&self, id: Id) -> Result<(), Error> {
+        self.cache.lock().unwrap().remove(id);
+        self.db.delete(id).await
     }
 
     /// Purge expired items from database and cache.
@@ -159,11 +180,10 @@ mod tests {
         let db = Database::new(db::Open::Memory)?;
         let layer = Layer::new(db, 128);
 
-        let entry = Entry {
+        let entry = crate::Entry {
             text: "hello world".to_string(),
-            extension: None,
             expires: Some(1),
-            burn_after_reading: None,
+            ..Default::default()
         };
 
         let id = Id::from(1234);

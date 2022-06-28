@@ -40,6 +40,7 @@ impl From<FormEntry> for Entry {
             extension: entry.extension,
             expires,
             burn_after_reading,
+            seconds_since_creation: 0,
         }
     }
 }
@@ -58,6 +59,7 @@ struct Paste<'a> {
     id: String,
     formatted: String,
     extension: String,
+    deletion_possible: bool,
 }
 
 #[derive(Template)]
@@ -128,19 +130,36 @@ async fn show(
     let key = Key::try_from(id_with_opt_ext)?;
     let id = key.id();
     let extension = key.extension();
-    let formatted = layer.get_formatted(key).await?;
+    let entry = layer.get_formatted(key).await?;
 
     Ok(Paste {
         title,
         id,
-        formatted,
         extension,
+        formatted: entry.formatted,
+        deletion_possible: entry.seconds_since_creation < 60,
     })
 }
 
 #[allow(clippy::unused_async)]
 async fn burn_link(Path(id): Path<String>) -> BurnPage<'static> {
     BurnPage { title: &TITLE, id }
+}
+
+async fn delete(
+    Path(id): Path<String>,
+    layer: Extension<Layer>,
+) -> Result<Redirect, ErrorHtml<'static>> {
+    let id = Id::try_from(id.as_str())?;
+    let entry = layer.get(id).await?;
+
+    if entry.seconds_since_creation > 60 {
+        Err(Error::DeletionTimeExpired)?
+    }
+
+    layer.delete(id).await?;
+
+    Ok(Redirect::to("/"))
 }
 
 async fn download(
@@ -152,7 +171,7 @@ async fn download(
         Err(Error::IllegalCharacters)?
     }
 
-    let raw_string = layer.get_raw(Id::try_from(id.as_str())?).await?;
+    let raw_string = layer.get(Id::try_from(id.as_str())?).await?.text;
     let content_type = "text; charset=utf-8";
     let content_disposition = format!(r#"attachment; filename="{id}.{extension}"#);
 
@@ -176,6 +195,7 @@ pub fn routes() -> Router {
         .route("/", get(index).post(insert))
         .route("/:id", get(show))
         .route("/burn/:id", get(burn_link))
+        .route("/delete/:id", get(delete))
         .route("/download/:id/:extension", get(download))
         .route("/favicon.png", get(favicon))
         .route("/style.css", get(|| async { highlight::main() }))

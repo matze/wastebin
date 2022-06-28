@@ -23,6 +23,8 @@ mod web;
 pub enum Error {
     #[error("axum http error: {0}")]
     Axum(#[from] axum::http::Error),
+    #[error("deletion time expired")]
+    DeletionTimeExpired,
     #[error("sqlite error: {0}")]
     Sqlite(#[from] rusqlite::Error),
     #[error("migrations error: {0}")]
@@ -43,7 +45,7 @@ pub enum Error {
     TimeFormatting(#[from] time::error::Format),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct Entry {
     /// Content
     pub text: String,
@@ -53,6 +55,8 @@ pub struct Entry {
     pub expires: Option<u32>,
     /// Delete if read
     pub burn_after_reading: Option<bool>,
+    /// Seconds since creation
+    pub seconds_since_creation: u32,
 }
 
 pub type Router = axum::Router<http_body::Limited<axum::body::Body>>;
@@ -64,7 +68,9 @@ impl From<Error> for StatusCode {
                 rusqlite::Error::QueryReturnedNoRows => StatusCode::NOT_FOUND,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             },
-            Error::IllegalCharacters | Error::WrongSize => StatusCode::BAD_REQUEST,
+            Error::IllegalCharacters | Error::WrongSize | Error::DeletionTimeExpired => {
+                StatusCode::BAD_REQUEST
+            }
             Error::Join(_)
             | Error::IntConversion(_)
             | Error::TimeFormatting(_)

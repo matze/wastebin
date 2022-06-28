@@ -27,6 +27,9 @@
       <pre class="code">{{ formatted|safe }}</pre>
     </div>
     <div class="paste-box">
+      {% if deletion_possible %}
+      <a class="punctuation definition tag" href="/delete/{{ id }}">del</a> •
+      {% endif %}
       <a class="punctuation definition tag" href="/download/{{ id }}/{{ extension }}">⤓</a>
       • <a class="punctuation definition tag" href="/api/entries/{{ id }}"/>raw</a>
       • <a class="punctuation definition tag" href="/">new</a>

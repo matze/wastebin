@@ -54,12 +54,24 @@ async fn insert(
 }
 
 async fn raw(Path(id): Path<String>, layer: Extension<Layer>) -> Result<String, ErrorResponse> {
-    Ok(layer.get_raw(Id::try_from(id.as_str())?).await?)
+    Ok(layer.get(Id::try_from(id.as_str())?).await?.text)
+}
+
+async fn delete(Path(id): Path<String>, layer: Extension<Layer>) -> Result<(), ErrorResponse> {
+    let id = Id::try_from(id.as_str())?;
+    let entry = layer.get(id).await?;
+
+    if entry.seconds_since_creation > 60 {
+        Err(Error::DeletionTimeExpired)?
+    }
+
+    layer.delete(id).await?;
+    Ok(())
 }
 
 pub fn routes() -> Router {
     Router::new()
         .route("/api/health", get(health))
         .route("/api/entries", post(insert))
-        .route("/api/entries/:id", get(raw))
+        .route("/api/entries/:id", get(raw).delete(delete))
 }

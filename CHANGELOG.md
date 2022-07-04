@@ -5,6 +5,7 @@
 ### Added
 
 - Link that is valid for one minute to delete a paste.
+- `generator` meta tag containing the version number.
 
 
 ## 1.4.0

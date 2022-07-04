@@ -1,5 +1,5 @@
 use crate::db::Database;
-use crate::highlight::DATA;
+use crate::highlight::highlight;
 use crate::id::Id;
 use crate::Error;
 use axum::extract::Path;
@@ -126,7 +126,7 @@ impl Layer {
 
         let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
         let ext = key.ext.clone();
-        let formatted = tokio::task::spawn_blocking(move || DATA.highlight(&entry, &ext)).await??;
+        let formatted = tokio::task::spawn_blocking(move || highlight(&entry, &ext)).await??;
 
         if !burn_after_reading {
             tracing::debug!(?key, "cache item");

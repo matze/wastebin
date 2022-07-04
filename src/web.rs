@@ -16,8 +16,10 @@ use rand::Rng;
 use serde::Deserialize;
 use std::env;
 
-pub static TITLE: Lazy<String> =
+static TITLE: Lazy<String> =
     Lazy::new(|| env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string()));
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Deserialize)]
 struct FormEntry {
@@ -50,6 +52,7 @@ impl From<FormEntry> for Entry {
 struct Index<'a> {
     title: &'a str,
     syntaxes: &'a [syntect::parsing::SyntaxReference],
+    version: &'a str,
 }
 
 #[derive(Template)]
@@ -60,6 +63,7 @@ struct Paste<'a> {
     formatted: String,
     extension: String,
     deletion_possible: bool,
+    version: &'a str,
 }
 
 #[derive(Template)]
@@ -67,6 +71,7 @@ struct Paste<'a> {
 struct BurnPage<'a> {
     title: &'a str,
     id: String,
+    version: &'a str,
 }
 
 #[derive(Template)]
@@ -74,6 +79,7 @@ struct BurnPage<'a> {
 struct ErrorPage<'a> {
     title: &'a str,
     error: String,
+    version: &'a str,
 }
 
 type ErrorHtml<'a> = (StatusCode, ErrorPage<'a>);
@@ -83,6 +89,7 @@ impl From<Error> for ErrorHtml<'_> {
         let html = ErrorPage {
             title: &TITLE,
             error: err.to_string(),
+            version: VERSION,
         };
 
         (err.into(), html)
@@ -94,6 +101,7 @@ async fn index<'a>() -> Index<'a> {
     Index {
         title: &TITLE,
         syntaxes: DATA.syntax_set.syntaxes(),
+        version: VERSION,
     }
 }
 
@@ -138,12 +146,17 @@ async fn show(
         extension,
         formatted: entry.formatted,
         deletion_possible: entry.seconds_since_creation < 60,
+        version: VERSION,
     })
 }
 
 #[allow(clippy::unused_async)]
 async fn burn_link(Path(id): Path<String>) -> BurnPage<'static> {
-    BurnPage { title: &TITLE, id }
+    BurnPage {
+        title: &TITLE,
+        id,
+        version: VERSION,
+    }
 }
 
 async fn delete(

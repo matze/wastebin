@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 1.5.0
+
+**2022-07-04**
+
 ### Added
 
 - Link that is valid for one minute to delete a paste.

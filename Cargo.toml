@@ -24,3 +24,10 @@ tokio = { version = "1", features = ["full"] }
 tower-http = { version = "0", features = ["compression-full", "limit", "timeout", "trace"] }
 tracing = "0"
 tracing-subscriber = "0"
+
+[dev-dependencies]
+http = "0"
+hyper = { version = "0", features = ["server", "tcp", "stream"] }
+reqwest = { version = "0", default-features = false }
+tower = { version = "0", default-features = false, features = ["util", "make"] }
+tower-service = "0"

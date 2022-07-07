@@ -13,7 +13,7 @@ use axum::{headers, Extension, TypedHeader};
 use bytes::Bytes;
 use once_cell::sync::Lazy;
 use rand::Rng;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::env;
 
 static TITLE: Lazy<String> =
@@ -21,7 +21,7 @@ static TITLE: Lazy<String> =
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct FormEntry {
     text: String,
     extension: Option<String>,
@@ -214,4 +214,68 @@ pub fn routes() -> Router {
         .route("/style.css", get(|| async { highlight::main() }))
         .route("/dark.css", get(|| async { highlight::dark() }))
         .route("/light.css", get(|| async { highlight::light() }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers::{make_app, Client};
+    use http::StatusCode;
+
+    #[tokio::test]
+    async fn unknown_paste() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(make_app()?);
+
+        let res = client.get("/000000").send().await?;
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn insert() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(make_app()?);
+
+        let data = FormEntry {
+            text: "FooBarBaz".to_string(),
+            extension: None,
+            expires: "0".to_string(),
+        };
+
+        let res = client.post("/").form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+
+        let location = res.headers().get("location").unwrap().to_str()?;
+
+        let res = client.get(location).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let content = res.text().await?;
+        assert!(content.contains("FooBarBaz"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn delete() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(make_app()?);
+
+        let data = FormEntry {
+            text: "FooBarBaz".to_string(),
+            extension: None,
+            expires: "0".to_string(),
+        };
+
+        let res = client.post("/").form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+
+        let location = res.headers().get("location").unwrap().to_str()?;
+        let res = client.get(&format!("/delete{location}")).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+
+        let res = client.get(location).send().await?;
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
+    }
 }

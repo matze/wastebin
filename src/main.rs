@@ -17,6 +17,8 @@ mod db;
 mod highlight;
 mod id;
 mod rest;
+#[cfg(test)]
+mod test_helpers;
 mod web;
 
 #[derive(thiserror::Error, Debug)]
@@ -82,6 +84,17 @@ impl From<Error> for StatusCode {
     }
 }
 
+pub(crate) fn make_app(cache_layer: cache::Layer, max_body_size: usize) -> axum::Router {
+    Router::new()
+        .merge(web::routes())
+        .merge(rest::routes())
+        .layer(Extension(cache_layer))
+        .layer(TimeoutLayer::new(Duration::from_secs(5)))
+        .layer(TraceLayer::new_for_http())
+        .layer(CompressionLayer::new())
+        .layer(RequestBodyLimitLayer::new(max_body_size))
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
@@ -110,15 +123,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
 
-    let service = Router::new()
-        .merge(web::routes())
-        .merge(rest::routes())
-        .layer(Extension(cache_layer.clone()))
-        .layer(TimeoutLayer::new(Duration::from_secs(5)))
-        .layer(TraceLayer::new_for_http())
-        .layer(CompressionLayer::new())
-        .layer(RequestBodyLimitLayer::new(max_body_size))
-        .into_make_service();
+    let service = make_app(cache_layer.clone(), max_body_size).into_make_service();
 
     let server = Server::bind(&addr_port.parse()?)
         .serve(service)

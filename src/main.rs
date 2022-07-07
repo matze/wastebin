@@ -111,7 +111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cache_size =
         env::var("WASTEBIN_CACHE_SIZE").map_or_else(|_| Ok(128), |s| s.parse::<usize>())?;
 
-    let cache_layer = cache::Layer::new(database.clone(), cache_size);
+    let cache_layer = cache::Layer::new(database, cache_size);
 
     let addr_port =
         env::var("WASTEBIN_ADDRESS_PORT").unwrap_or_else(|_| "0.0.0.0:8088".to_string());

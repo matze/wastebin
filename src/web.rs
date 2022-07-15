@@ -278,4 +278,30 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn download() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(make_app()?);
+
+        let data = FormEntry {
+            text: "FooBarBaz".to_string(),
+            extension: None,
+            expires: "0".to_string(),
+        };
+
+        let res = client.post("/").form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+
+        let location = res.headers().get("location").unwrap().to_str()?;
+        let res = client
+            .get(&format!("/download{location}/cpp"))
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let content = res.text().await?;
+        assert_eq!(content, "FooBarBaz");
+
+        Ok(())
+    }
 }

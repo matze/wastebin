@@ -47,6 +47,10 @@ impl Client {
     pub(crate) fn post(&self, url: &str) -> RequestBuilder {
         self.client.post(format!("http://{}{}", self.addr, url))
     }
+
+    pub(crate) fn delete(&self, url: &str) -> RequestBuilder {
+        self.client.delete(format!("http://{}{}", self.addr, url))
+    }
 }
 
 pub(crate) fn make_app() -> Result<axum::Router, Box<dyn std::error::Error>> {

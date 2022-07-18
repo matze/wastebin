@@ -6,14 +6,14 @@ use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Extension, Json};
 use rand::Rng;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
 struct ErrorPayload {
     message: String,
 }
 
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)]
 struct RedirectResponse {
     path: String,
 }
@@ -74,4 +74,51 @@ pub fn routes() -> Router {
         .route("/api/health", get(health))
         .route("/api/entries", post(insert))
         .route("/api/entries/:id", get(raw).delete(delete))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers::{make_app, Client};
+    use crate::Entry;
+    use http::StatusCode;
+
+    #[tokio::test]
+    async fn health() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(make_app()?);
+
+        let res = client.get("/api/health").send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn entries() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(make_app()?);
+
+        let entry = Entry {
+            text: "FooBarBaz".to_string(),
+            ..Default::default()
+        };
+
+        let res = client.post("/api/entries").json(&entry).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let payload = res.json::<RedirectResponse>().await?;
+        let path = format!("/api/entries{}", payload.path);
+        println!("{path}");
+
+        let res = client.get(&path).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(res.text().await?, "FooBarBaz");
+
+        let res = client.delete(&path).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let res = client.get(&path).send().await?;
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
+    }
 }

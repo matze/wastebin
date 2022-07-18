@@ -28,6 +28,6 @@ tracing-subscriber = "0"
 [dev-dependencies]
 http = "0"
 hyper = { version = "0", features = ["server", "tcp", "stream"] }
-reqwest = { version = "0", default-features = false }
+reqwest = { version = "0", default-features = false, features = ["json"] }
 tower = { version = "0", default-features = false, features = ["util", "make"] }
 tower-service = "0"

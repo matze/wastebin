@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 1.6.0
+
+**2022-07-19**
+
 ### Changed
 
 - Normal font color for the light theme to increase contrast.

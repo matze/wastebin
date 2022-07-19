@@ -5,6 +5,7 @@
 ### Changed
 
 - Normal font color for the light theme to increase contrast.
+- Strange content padding.
 
 
 ## 1.5.0

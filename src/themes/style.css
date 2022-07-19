@@ -24,7 +24,8 @@
 
 body {
   font-family: "JetBrains Mono", monospace;
-  margin: 2em;
+  margin: 2em 2em 0 2em;
+  padding: 0;
 }
 
 pre {
@@ -51,7 +52,7 @@ a, a:visited, a:hover {
   grid-template-columns: 4fr 1fr;
   grid-template-rows: 1fr 1fr 1fr 20fr;
   grid-gap: 2em;
-  height: 100vh;
+  height: 96vh;
   align-items: stretch;
   justify-items: stretch;
 }
@@ -64,7 +65,7 @@ a, a:visited, a:hover {
 
 .content > textarea {
   width: 100%;
-  height: 90%;
+  height: 100%;
   border: none;
   font-size: 13pt;
   line-height: 1.6rem;

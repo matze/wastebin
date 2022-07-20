@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block content %}
+{%- block content -%}
     <form action="/" method="post">
       <div class="container">
         <div class="content">
@@ -18,11 +18,11 @@
         </div>
         <div class="extensions-list">
           <select name="extension" size="21">
-          {% for syntax in syntaxes -%}
-            {% if syntax.file_extensions.len() > 0 %}
-              <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
-            {% endif %}
-          {% endfor %}
+          {%- for syntax in syntaxes -%}
+            {%- if syntax.file_extensions.len() > 0 %}
+            <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
+            {%- endif -%}
+          {%- endfor %}
           </select>
         </div>
         <div class="paste-button">
@@ -30,4 +30,4 @@
         </div>
       </div>
     </form>
-{% endblock %}
+{%- endblock -%}

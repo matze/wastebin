@@ -18,7 +18,9 @@ A minimal pastebin shamelessly copied from
 * line numbers
 
 
-## Build from source
+## Installation
+
+### Build from source
 
 Install a Rust 2021 toolchain with [rustup](https://rustup.rs) and run the
 server binary with
@@ -26,17 +28,22 @@ server binary with
     $ cargo run --release
 
 
-## Run pre-built binaries
+### Run pre-built binaries
 
 We provide pre-built, statically compiled [Linux
 binaries](https://github.com/matze/wastebin/releases). Just download and archive
 and run the contained `wastebin` binary.
+
+
+### Run a Docker image
 
 Alternative you can run a pre-built Docker image pushed to `quxfoo/wastebin`
 with
 
     $ docker run quxfoo/wastebin:latest
 
+
+## Usage
 
 ### Browser interface
 
@@ -45,7 +52,7 @@ and back to the index page. Furthermore, you can use <kbd>y</kbd> to copy the
 paste URL to the clipboard.
 
 
-## Configuration
+### Configuration
 
 The following environment variables can be set to configure the server:
 
@@ -65,7 +72,7 @@ set the `tower_http` key to some log level to get additional information request
 and response logs.
 
 
-## API endpoints
+### API endpoints
 
 Wastebin exposes endpoints to submit a paste and retrieve it again.
 

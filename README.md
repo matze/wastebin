@@ -3,16 +3,18 @@
 [![Rust](https://github.com/matze/wastebin/actions/workflows/rust.yml/badge.svg)](https://github.com/matze/wastebin/actions/workflows/rust.yml)
 
 A minimal pastebin shamelessly copied from
-[bin](https://github.com/WantGuns/bin). Things different from bin:
+[bin](https://github.com/WantGuns/bin).
+
+<p align="center"><img src="https://raw.githubusercontent.com/matze/wastebin/master/assets/screenshot.webp"></p>
+
+<p align="center"><strong><a href="https://bin.bloerg.net">DEMO</a></strong> (resets every day)</p>
+
+Things different from bin:
 
 * sqlite3 and axum backend
 * light/dark mode
 * paste expiration
 * line numbers
-
-<p align="center"><img src="https://raw.githubusercontent.com/matze/wastebin/master/assets/screenshot.webp"></p>
-
-<p align="center"><strong><a href="https://bin.bloerg.net">DEMO</a></strong> (reset every day)</p>
 
 
 ## Build from source

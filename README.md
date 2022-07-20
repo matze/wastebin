@@ -9,7 +9,8 @@ A minimal pastebin shamelessly copied from
 
 <p align="center"><strong><a href="https://bin.bloerg.net">DEMO</a></strong> (resets every day)</p>
 
-Things different from bin:
+
+## Features
 
 * sqlite3 and axum backend
 * light/dark mode

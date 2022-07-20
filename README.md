@@ -54,7 +54,8 @@ paste URL to the clipboard.
 
 ### Configuration
 
-The following environment variables can be set to configure the server:
+The following environment variables can be set to configure the server and
+run-time behavior:
 
 * `WASTEBIN_ADDRESS_PORT` string that determines which address and port to bind
   a. If not set, it binds by default to `0.0.0.0:8088`.
@@ -65,11 +66,9 @@ The following environment variables can be set to configure the server:
 * `WASTEBIN_MAX_BODY_SIZE` number of bytes to accept for POST requests. Defaults
   to 1 MB.
 * `WASTEBIN_TITLE` overrides the HTML page title. Defaults to `wastebin`.
-
-Additionally you can use the `RUST_LOG` environment variable to influence
-logging. Besides the typical `trace`, `debug`, `info` etc. keys, you can also
-set the `tower_http` key to some log level to get additional information request
-and response logs.
+* `RUST_LOG` influences logging. Besides the typical `trace`, `debug`, `info`
+  etc. keys, you can also set the `tower_http` key to some log level to get
+  additional information request and response logs.
 
 
 ### API endpoints

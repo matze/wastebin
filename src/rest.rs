@@ -9,7 +9,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
-struct ErrorPayload {
+pub struct ErrorPayload {
     message: String,
 }
 
@@ -18,7 +18,7 @@ struct RedirectResponse {
     path: String,
 }
 
-type ErrorResponse = (StatusCode, Json<ErrorPayload>);
+pub type ErrorResponse = (StatusCode, Json<ErrorPayload>);
 
 impl From<Error> for ErrorResponse {
     fn from(err: Error) -> Self {

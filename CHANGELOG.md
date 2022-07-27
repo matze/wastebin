@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+
+- Return appropriate content type for `/:id` based on `accept` header (i.e.
+  `text/html` returns the HTML page) and the `fmt` query parameter (i.e. set to
+  `raw` returns raw text).
+
 
 ## 1.6.0
 

@@ -1,12 +1,14 @@
 use crate::cache::{Key, Layer};
 use crate::highlight::{self, DATA};
 use crate::id::Id;
+use crate::rest::ErrorResponse;
 use crate::{Entry, Error, Router};
 use askama::Template;
 use askama_axum::IntoResponse;
-use axum::extract::{Form, Path};
+use axum::extract::{Form, Path, Query};
 use axum::headers::HeaderValue;
-use axum::http::{header, StatusCode};
+use axum::http::header::{self, HeaderMap};
+use axum::http::StatusCode;
 use axum::response::{Redirect, Response};
 use axum::routing::get;
 use axum::{headers, Extension, TypedHeader};
@@ -130,12 +132,9 @@ async fn insert(
     }
 }
 
-async fn show(
-    id_with_opt_ext: Path<String>,
-    layer: Extension<Layer>,
-) -> Result<Paste<'static>, ErrorHtml<'static>> {
+async fn get_html(id: Path<String>, layer: Layer) -> Result<Paste<'static>, ErrorHtml<'static>> {
     let title = &TITLE;
-    let key = Key::try_from(id_with_opt_ext)?;
+    let key = Key::try_from(id)?;
     let id = key.id();
     let extension = key.extension();
     let entry = layer.get_formatted(key).await?;
@@ -148,6 +147,39 @@ async fn show(
         deletion_possible: entry.seconds_since_creation < 60,
         version: VERSION,
     })
+}
+
+async fn get_raw(id: Path<String>, layer: Layer) -> Result<String, ErrorResponse> {
+    let key = Key::try_from(id)?;
+    Ok(layer.get(Id::try_from(key.id().as_str())?).await?.text)
+}
+
+#[derive(Deserialize, Debug)]
+struct GetQuery {
+    fmt: Option<String>,
+}
+
+async fn get_paste(
+    id: Path<String>,
+    headers: HeaderMap,
+    Query(query): Query<GetQuery>,
+    Extension(layer): Extension<Layer>,
+) -> Response {
+    if let Some(fmt) = query.fmt {
+        if fmt == "raw" {
+            return get_raw(id, layer).await.into_response();
+        }
+    }
+
+    if let Some(value) = headers.get(header::ACCEPT) {
+        if let Ok(value) = value.to_str() {
+            if value.contains("text/html") {
+                return get_html(id, layer).await.into_response();
+            }
+        }
+    }
+
+    get_raw(id, layer).await.into_response()
 }
 
 #[allow(clippy::unused_async)]
@@ -206,7 +238,7 @@ async fn favicon() -> impl IntoResponse {
 pub fn routes() -> Router {
     Router::new()
         .route("/", get(index).post(insert))
-        .route("/:id", get(show))
+        .route("/:id", get(get_paste))
         .route("/burn/:id", get(burn_link))
         .route("/delete/:id", get(delete))
         .route("/download/:id/:extension", get(download))

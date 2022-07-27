@@ -9,7 +9,7 @@
       window.location.href = '/';
     }
     else if (e.key == 'r') {
-      window.location.href = '/api/entries/{{ id }}';
+      window.location.href = '/{{ id }}?fmt=raw';
     }
     else if (e.key == 'y') {
       navigator.clipboard.writeText(window.location.href);
@@ -31,7 +31,7 @@
       <a class="punctuation definition tag" href="/delete/{{ id }}">del</a> •
       {% endif %}
       <a class="punctuation definition tag" href="/download/{{ id }}/{{ extension }}">⤓</a>
-      • <a class="punctuation definition tag" href="/api/entries/{{ id }}"/>raw</a>
+      • <a class="punctuation definition tag" href="/{{ id }}?fmt=raw"/>raw</a>
       • <a class="punctuation definition tag" href="/">new</a>
     </div>
   </div>

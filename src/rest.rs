@@ -3,7 +3,7 @@ use crate::id::Id;
 use crate::{Entry, Error, Router};
 use axum::extract::Path;
 use axum::http::StatusCode;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Extension, Json};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -53,11 +53,7 @@ async fn insert(
     Ok(Json::from(RedirectResponse { path }))
 }
 
-async fn raw(Path(id): Path<String>, layer: Extension<Layer>) -> Result<String, ErrorResponse> {
-    Ok(layer.get(Id::try_from(id.as_str())?).await?.text)
-}
-
-async fn delete(Path(id): Path<String>, layer: Extension<Layer>) -> Result<(), ErrorResponse> {
+async fn paste(Path(id): Path<String>, layer: Extension<Layer>) -> Result<(), ErrorResponse> {
     let id = Id::try_from(id.as_str())?;
     let entry = layer.get(id).await?;
 
@@ -73,7 +69,7 @@ pub fn routes() -> Router {
     Router::new()
         .route("/api/health", get(health))
         .route("/api/entries", post(insert))
-        .route("/api/entries/:id", get(raw).delete(delete))
+        .route("/api/entries/:id", delete(paste))
 }
 
 #[cfg(test)]
@@ -106,17 +102,18 @@ mod tests {
         assert_eq!(res.status(), StatusCode::OK);
 
         let payload = res.json::<RedirectResponse>().await?;
-        let path = format!("/api/entries{}", payload.path);
-        println!("{path}");
 
-        let res = client.get(&path).send().await?;
+        let res = client.get(&payload.path).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(res.text().await?, "FooBarBaz");
 
-        let res = client.delete(&path).send().await?;
+        let res = client
+            .delete(&format!("/api/entries{}", payload.path))
+            .send()
+            .await?;
         assert_eq!(res.status(), StatusCode::OK);
 
-        let res = client.get(&path).send().await?;
+        let res = client.get(&payload.path).send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
         Ok(())

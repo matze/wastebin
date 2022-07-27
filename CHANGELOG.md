@@ -7,6 +7,7 @@
 - Return appropriate content type for `/:id` based on `accept` header (i.e.
   `text/html` returns the HTML page) and the `fmt` query parameter (i.e. set to
   `raw` returns raw text).
+- Use `dl` query parameter to determine the extension to download a paste.
 
 
 ## 1.6.0

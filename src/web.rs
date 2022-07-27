@@ -154,9 +154,31 @@ async fn get_raw(id: Path<String>, layer: Layer) -> Result<String, ErrorResponse
     Ok(layer.get(Id::try_from(key.id().as_str())?).await?.text)
 }
 
+async fn get_download(
+    Path(id): Path<String>,
+    extension: String,
+    layer: Layer,
+) -> Result<Response<String>, ErrorHtml<'static>> {
+    // Validate extension.
+    if !extension.is_ascii() {
+        Err(Error::IllegalCharacters)?
+    }
+
+    let raw_string = layer.get(Id::try_from(id.as_str())?).await?.text;
+    let content_type = "text; charset=utf-8";
+    let content_disposition = format!(r#"attachment; filename="{id}.{extension}"#);
+
+    Ok(Response::builder()
+        .header(header::CONTENT_TYPE, HeaderValue::from_static(content_type))
+        .header(header::CONTENT_DISPOSITION, content_disposition)
+        .body(raw_string)
+        .map_err(Error::from)?)
+}
+
 #[derive(Deserialize, Debug)]
 struct GetQuery {
     fmt: Option<String>,
+    dl: Option<String>,
 }
 
 async fn get_paste(
@@ -169,6 +191,10 @@ async fn get_paste(
         if fmt == "raw" {
             return get_raw(id, layer).await.into_response();
         }
+    }
+
+    if let Some(extension) = query.dl {
+        return get_download(id, extension, layer).await.into_response();
     }
 
     if let Some(value) = headers.get(header::ACCEPT) {
@@ -207,26 +233,6 @@ async fn delete(
     Ok(Redirect::to("/"))
 }
 
-async fn download(
-    Path((id, extension)): Path<(String, String)>,
-    layer: Extension<Layer>,
-) -> Result<Response<String>, ErrorHtml<'static>> {
-    // Validate extension.
-    if !extension.is_ascii() {
-        Err(Error::IllegalCharacters)?
-    }
-
-    let raw_string = layer.get(Id::try_from(id.as_str())?).await?.text;
-    let content_type = "text; charset=utf-8";
-    let content_disposition = format!(r#"attachment; filename="{id}.{extension}"#);
-
-    Ok(Response::builder()
-        .header(header::CONTENT_TYPE, HeaderValue::from_static(content_type))
-        .header(header::CONTENT_DISPOSITION, content_disposition)
-        .body(raw_string)
-        .map_err(Error::from)?)
-}
-
 #[allow(clippy::unused_async)]
 async fn favicon() -> impl IntoResponse {
     (
@@ -241,7 +247,6 @@ pub fn routes() -> Router {
         .route("/:id", get(get_paste))
         .route("/burn/:id", get(burn_link))
         .route("/delete/:id", get(delete))
-        .route("/download/:id/:extension", get(download))
         .route("/favicon.png", get(favicon))
         .route("/style.css", get(|| async { highlight::main() }))
         .route("/dark.css", get(|| async { highlight::dark() }))
@@ -325,10 +330,7 @@ mod tests {
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
-        let res = client
-            .get(&format!("/download{location}/cpp"))
-            .send()
-            .await?;
+        let res = client.get(&format!("{location}?dl=cpp")).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
 
         let content = res.text().await?;

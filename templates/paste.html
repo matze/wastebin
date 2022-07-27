@@ -30,7 +30,7 @@
       {% if deletion_possible %}
       <a class="punctuation definition tag" href="/delete/{{ id }}">del</a> •
       {% endif %}
-      <a class="punctuation definition tag" href="/download/{{ id }}/{{ extension }}">⤓</a>
+      <a class="punctuation definition tag" href="/{{ id }}?dl={{ extension }}">⤓</a>
       • <a class="punctuation definition tag" href="/{{ id }}?fmt=raw"/>raw</a>
       • <a class="punctuation definition tag" href="/">new</a>
     </div>

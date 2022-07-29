@@ -1,9 +1,6 @@
 use crate::{Entry, Error};
-use axum::response::{IntoResponse, IntoResponseParts};
-use axum::{headers, TypedHeader};
 use once_cell::sync::Lazy;
 use std::io::Cursor;
-use std::time::Duration;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, line_tokens_to_classed_spans, ClassStyle};
 use syntect::parsing::{ParseState, ScopeStack, SyntaxSet};
@@ -29,25 +26,6 @@ pub struct Data<'a> {
     pub dark: String,
     pub light: String,
     pub syntax_set: SyntaxSet,
-}
-
-fn common_headers() -> impl IntoResponseParts {
-    (
-        TypedHeader(headers::ContentType::from(mime::TEXT_CSS)),
-        TypedHeader(headers::CacheControl::new().with_max_age(Duration::from_secs(3600))),
-    )
-}
-
-pub fn main() -> impl IntoResponse {
-    (common_headers(), DATA.main.to_string())
-}
-
-pub fn dark() -> impl IntoResponse {
-    (common_headers(), DATA.dark.clone())
-}
-
-pub fn light() -> impl IntoResponse {
-    (common_headers(), DATA.light.clone())
 }
 
 pub fn highlight(entry: &Entry, ext: &str) -> Result<String, Error> {

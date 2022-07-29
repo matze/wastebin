@@ -1,5 +1,5 @@
 use crate::cache::{Key, Layer};
-use crate::highlight::{self, DATA};
+use crate::highlight::DATA;
 use crate::id::Id;
 use crate::rest::ErrorResponse;
 use crate::{Entry, Error, Router};
@@ -9,7 +9,7 @@ use axum::extract::{Form, Path, Query};
 use axum::headers::HeaderValue;
 use axum::http::header::{self, HeaderMap};
 use axum::http::StatusCode;
-use axum::response::{Redirect, Response};
+use axum::response::{IntoResponseParts, Redirect, Response};
 use axum::routing::get;
 use axum::{headers, Extension, TypedHeader};
 use bytes::Bytes;
@@ -234,6 +234,13 @@ async fn delete(
     Ok(Redirect::to("/"))
 }
 
+fn css_headers() -> impl IntoResponseParts {
+    (
+        TypedHeader(headers::ContentType::from(mime::TEXT_CSS)),
+        TypedHeader(headers::CacheControl::new().with_max_age(Duration::from_secs(3600))),
+    )
+}
+
 fn favicon() -> impl IntoResponse {
     (
         TypedHeader(headers::ContentType::png()),
@@ -249,9 +256,18 @@ pub fn routes() -> Router {
         .route("/burn/:id", get(burn_link))
         .route("/delete/:id", get(delete))
         .route("/favicon.png", get(|| async { favicon() }))
-        .route("/style.css", get(|| async { highlight::main() }))
-        .route("/dark.css", get(|| async { highlight::dark() }))
-        .route("/light.css", get(|| async { highlight::light() }))
+        .route(
+            "/style.css",
+            get(|| async { (css_headers(), DATA.main.to_string()) }),
+        )
+        .route(
+            "/dark.css",
+            get(|| async { (css_headers(), DATA.dark.to_string()) }),
+        )
+        .route(
+            "/light.css",
+            get(|| async { (css_headers(), DATA.light.to_string()) }),
+        )
 }
 
 #[cfg(test)]

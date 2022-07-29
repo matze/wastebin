@@ -14,12 +14,12 @@ use tower_http::trace::TraceLayer;
 
 mod cache;
 mod db;
+mod handler;
 mod highlight;
 mod id;
 mod rest;
 #[cfg(test)]
 mod test_helpers;
-mod web;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -86,7 +86,7 @@ impl From<Error> for StatusCode {
 
 pub(crate) fn make_app(cache_layer: cache::Layer, max_body_size: usize) -> axum::Router {
     Router::new()
-        .merge(web::routes())
+        .merge(handler::routes())
         .merge(rest::routes())
         .layer(Extension(cache_layer))
         .layer(TimeoutLayer::new(Duration::from_secs(5)))

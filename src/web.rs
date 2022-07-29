@@ -17,6 +17,7 @@ use once_cell::sync::Lazy;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::env;
+use std::time::Duration;
 
 static TITLE: Lazy<String> =
     Lazy::new(|| env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string()));
@@ -233,10 +234,10 @@ async fn delete(
     Ok(Redirect::to("/"))
 }
 
-#[allow(clippy::unused_async)]
-async fn favicon() -> impl IntoResponse {
+fn favicon() -> impl IntoResponse {
     (
         TypedHeader(headers::ContentType::png()),
+        TypedHeader(headers::CacheControl::new().with_max_age(Duration::from_secs(86400))),
         Bytes::from_static(include_bytes!("../assets/favicon.png")),
     )
 }
@@ -247,7 +248,7 @@ pub fn routes() -> Router {
         .route("/:id", get(get_paste))
         .route("/burn/:id", get(burn_link))
         .route("/delete/:id", get(delete))
-        .route("/favicon.png", get(favicon))
+        .route("/favicon.png", get(|| async { favicon() }))
         .route("/style.css", get(|| async { highlight::main() }))
         .route("/dark.css", get(|| async { highlight::dark() }))
         .route("/light.css", get(|| async { highlight::light() }))

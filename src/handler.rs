@@ -99,8 +99,7 @@ impl From<Error> for ErrorHtml<'_> {
     }
 }
 
-#[allow(clippy::unused_async)]
-async fn index<'a>() -> Index<'a> {
+fn index<'a>() -> Index<'a> {
     Index {
         title: &TITLE,
         syntaxes: DATA.syntax_set.syntaxes(),
@@ -209,8 +208,7 @@ async fn get_paste(
     get_raw(id, layer).await.into_response()
 }
 
-#[allow(clippy::unused_async)]
-async fn burn_link(Path(id): Path<String>) -> BurnPage<'static> {
+fn burn_link(Path(id): Path<String>) -> BurnPage<'static> {
     BurnPage {
         title: &TITLE,
         id,
@@ -251,9 +249,9 @@ fn favicon() -> impl IntoResponse {
 
 pub fn routes() -> Router {
     Router::new()
-        .route("/", get(index).post(insert))
+        .route("/", get(|| async { index() }).post(insert))
         .route("/:id", get(get_paste))
-        .route("/burn/:id", get(burn_link))
+        .route("/burn/:id", get(|path| async { burn_link(path) }))
         .route("/delete/:id", get(delete))
         .route("/favicon.png", get(|| async { favicon() }))
         .route(

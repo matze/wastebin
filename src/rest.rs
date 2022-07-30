@@ -30,8 +30,7 @@ impl From<Error> for ErrorResponse {
     }
 }
 
-#[allow(clippy::unused_async)]
-async fn health() -> StatusCode {
+fn health() -> StatusCode {
     StatusCode::OK
 }
 
@@ -67,7 +66,7 @@ async fn paste(Path(id): Path<String>, layer: Extension<Layer>) -> Result<(), Er
 
 pub fn routes() -> Router {
     Router::new()
-        .route("/api/health", get(health))
+        .route("/api/health", get(|| async { health() }))
         .route("/api/entries", post(insert))
         .route("/api/entries/:id", delete(paste))
 }

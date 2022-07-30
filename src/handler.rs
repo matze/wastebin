@@ -50,33 +50,6 @@ impl From<FormEntry> for Entry {
 }
 
 #[derive(Template)]
-#[template(path = "index.html")]
-struct Index<'a> {
-    title: &'a str,
-    syntaxes: &'a [syntect::parsing::SyntaxReference],
-    version: &'a str,
-}
-
-#[derive(Template)]
-#[template(path = "paste.html")]
-struct Paste<'a> {
-    title: &'a str,
-    id: String,
-    formatted: String,
-    extension: String,
-    deletion_possible: bool,
-    version: &'a str,
-}
-
-#[derive(Template)]
-#[template(path = "burn.html")]
-struct BurnPage<'a> {
-    title: &'a str,
-    id: String,
-    version: &'a str,
-}
-
-#[derive(Template)]
 #[template(path = "error.html")]
 struct ErrorPage<'a> {
     title: &'a str,
@@ -113,6 +86,14 @@ impl From<Error> for ErrorResponse {
 
         (err.into(), payload)
     }
+}
+
+#[derive(Template)]
+#[template(path = "index.html")]
+struct Index<'a> {
+    title: &'a str,
+    syntaxes: &'a [syntect::parsing::SyntaxReference],
+    version: &'a str,
 }
 
 fn index<'a>() -> Index<'a> {
@@ -182,6 +163,17 @@ async fn insert(
         (None, None) => StatusCode::BAD_REQUEST.into_response(),
         (Some(_), Some(_)) => StatusCode::BAD_REQUEST.into_response(),
     }
+}
+
+#[derive(Template)]
+#[template(path = "paste.html")]
+struct Paste<'a> {
+    title: &'a str,
+    id: String,
+    formatted: String,
+    extension: String,
+    deletion_possible: bool,
+    version: &'a str,
 }
 
 async fn get_html(id: Path<String>, layer: Layer) -> Result<Paste<'static>, ErrorHtml<'static>> {
@@ -258,6 +250,14 @@ async fn get_paste(
     }
 
     get_raw(id, layer).await.into_response()
+}
+
+#[derive(Template)]
+#[template(path = "burn.html")]
+struct BurnPage<'a> {
+    title: &'a str,
+    id: String,
+    version: &'a str,
 }
 
 fn burn_link(Path(id): Path<String>) -> BurnPage<'static> {

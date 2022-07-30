@@ -9,6 +9,7 @@
   `text/html` returns the HTML page) and the `fmt` query parameter (i.e. set to
   `raw` returns raw text).
 - Use `dl` query parameter to determine the extension to download a paste.
+- Set cache control timeout for the favicon.
 
 
 ## 1.6.0

@@ -73,10 +73,7 @@ run-time behavior:
 
 ### API endpoints
 
-Wastebin exposes endpoints to submit a paste and retrieve it again.
-
-POST a new paste to the `/api/entries` endpoint with the following JSON
-payload:
+POST a new paste to the `/` endpoint with the following JSON payload:
 
 ```
 {
@@ -96,8 +93,8 @@ the newly created paste:
 
 To retrieve the raw content, make a GET request on the `/:id` route and an
 accept header value that does not include `text/html`. You also have _one_
-minute to make a DELETE request on the `/api/entries/:id` route to delete the
-entry. After that, an entry will only be deleted after a set expiration time.
+minute to make a DELETE request on the `/:id` route to delete the entry. After
+that, an entry will only be deleted after the optionally set expiration time.
 
 
 ### Paste from clipboard
@@ -110,7 +107,7 @@ line using `xclip`, `curl` and `jq`. Just define the following function in your
 function waste-paste() {
     local URL=$(\
         jq -n --arg t "$(xclip -selection clipboard -o)" '{text: $t}' | \
-        curl -s -H 'Content-Type: application/json' --data-binary @- http://0.0.0.0:8088/api/entries | \
+        curl -s -H 'Content-Type: application/json' --data-binary @- http://0.0.0.0:8088 | \
         jq -r '. | "http://0.0.0.0:8088\(.path)"')
 
     xdg-open $URL

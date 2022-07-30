@@ -17,7 +17,6 @@ mod db;
 mod handler;
 mod highlight;
 mod id;
-mod rest;
 #[cfg(test)]
 mod test_helpers;
 
@@ -87,7 +86,6 @@ impl From<Error> for StatusCode {
 pub(crate) fn make_app(cache_layer: cache::Layer, max_body_size: usize) -> axum::Router {
     Router::new()
         .merge(handler::routes())
-        .merge(rest::routes())
         .layer(Extension(cache_layer))
         .layer(TimeoutLayer::new(Duration::from_secs(5)))
         .layer(TraceLayer::new_for_http())

@@ -1,7 +1,6 @@
 use crate::cache::{Key, Layer};
 use crate::highlight::DATA;
 use crate::id::Id;
-use crate::rest::ErrorResponse;
 use crate::{Entry, Error, Router};
 use askama::Template;
 use askama_axum::IntoResponse;
@@ -11,7 +10,7 @@ use axum::http::header::{self, HeaderMap};
 use axum::http::StatusCode;
 use axum::response::{IntoResponseParts, Redirect, Response};
 use axum::routing::get;
-use axum::{headers, Extension, TypedHeader};
+use axum::{headers, Extension, Json, TypedHeader};
 use bytes::Bytes;
 use once_cell::sync::Lazy;
 use rand::Rng;
@@ -99,6 +98,23 @@ impl From<Error> for ErrorHtml<'_> {
     }
 }
 
+#[derive(Serialize)]
+struct ErrorPayload {
+    message: String,
+}
+
+type ErrorResponse = (StatusCode, Json<ErrorPayload>);
+
+impl From<Error> for ErrorResponse {
+    fn from(err: Error) -> Self {
+        let payload = Json::from(ErrorPayload {
+            message: err.to_string(),
+        });
+
+        (err.into(), payload)
+    }
+}
+
 fn index<'a>() -> Index<'a> {
     Index {
         title: &TITLE,
@@ -107,7 +123,7 @@ fn index<'a>() -> Index<'a> {
     }
 }
 
-async fn insert(
+async fn insert_from_form(
     Form(entry): Form<FormEntry>,
     layer: Extension<Layer>,
 ) -> Result<Redirect, ErrorHtml<'static>> {
@@ -129,6 +145,42 @@ async fn insert(
         Ok(Redirect::to(&format!("/burn{url}")))
     } else {
         Ok(Redirect::to(&url))
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct RedirectResponse {
+    path: String,
+}
+
+async fn insert_from_json(
+    Json(entry): Json<Entry>,
+    layer: Extension<Layer>,
+) -> Result<Json<RedirectResponse>, ErrorResponse> {
+    let id: Id = tokio::task::spawn_blocking(|| {
+        let mut rng = rand::thread_rng();
+        rng.gen::<u32>()
+    })
+    .await
+    .map_err(Error::from)?
+    .into();
+
+    let path = id.to_url_path(&entry);
+
+    layer.insert(id, entry).await?;
+    Ok(Json::from(RedirectResponse { path }))
+}
+
+async fn insert(
+    json_data: Option<Json<Entry>>,
+    form_data: Option<Form<FormEntry>>,
+    layer: Extension<Layer>,
+) -> impl IntoResponse {
+    match (json_data, form_data) {
+        (Some(data), None) => insert_from_json(data, layer).await.into_response(),
+        (None, Some(data)) => insert_from_form(data, layer).await.into_response(),
+        (None, None) => StatusCode::BAD_REQUEST.into_response(),
+        (Some(_), Some(_)) => StatusCode::BAD_REQUEST.into_response(),
     }
 }
 
@@ -216,7 +268,7 @@ fn burn_link(Path(id): Path<String>) -> BurnPage<'static> {
     }
 }
 
-async fn delete(
+async fn delete_via_link(
     Path(id): Path<String>,
     layer: Extension<Layer>,
 ) -> Result<Redirect, ErrorHtml<'static>> {
@@ -230,6 +282,21 @@ async fn delete(
     layer.delete(id).await?;
 
     Ok(Redirect::to("/"))
+}
+
+async fn delete_via_api(
+    Path(id): Path<String>,
+    layer: Extension<Layer>,
+) -> Result<(), ErrorResponse> {
+    let id = Id::try_from(id.as_str())?;
+    let entry = layer.get(id).await?;
+
+    if entry.seconds_since_creation > 60 {
+        Err(Error::DeletionTimeExpired)?
+    }
+
+    layer.delete(id).await?;
+    Ok(())
 }
 
 fn css_headers() -> impl IntoResponseParts {
@@ -250,9 +317,9 @@ fn favicon() -> impl IntoResponse {
 pub fn routes() -> Router {
     Router::new()
         .route("/", get(|| async { index() }).post(insert))
-        .route("/:id", get(get_paste))
+        .route("/:id", get(get_paste).delete(delete_via_api))
         .route("/burn/:id", get(|path| async { burn_link(path) }))
-        .route("/delete/:id", get(delete))
+        .route("/delete/:id", get(delete_via_link))
         .route("/favicon.png", get(|| async { favicon() }))
         .route(
             "/style.css",
@@ -285,7 +352,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn insert() -> Result<(), Box<dyn std::error::Error>> {
+    async fn insert_via_form() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new(make_app()?);
 
         let data = FormEntry {
@@ -309,7 +376,37 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete() -> Result<(), Box<dyn std::error::Error>> {
+    async fn insert_via_json() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(make_app()?);
+
+        let entry = Entry {
+            text: "FooBarBaz".to_string(),
+            ..Default::default()
+        };
+
+        let res = client.post("/").json(&entry).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let payload = res.json::<RedirectResponse>().await?;
+
+        let res = client.get(&payload.path).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(res.text().await?, "FooBarBaz");
+
+        let res = client
+            .delete(&format!("/api/entries{}", payload.path))
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let res = client.get(&payload.path).send().await?;
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn delete_via_link() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new(make_app()?);
 
         let data = FormEntry {
@@ -326,6 +423,32 @@ mod tests {
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let res = client.get(location).send().await?;
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn delete_via_api() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(make_app()?);
+
+        let entry = Entry {
+            text: "FooBarBaz".to_string(),
+            ..Default::default()
+        };
+
+        let res = client.post("/").json(&entry).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let payload = res.json::<RedirectResponse>().await?;
+
+        let res = client.get(&payload.path).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let res = client.delete(&payload.path).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let res = client.get(&payload.path).send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
         Ok(())

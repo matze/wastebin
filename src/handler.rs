@@ -393,10 +393,7 @@ mod tests {
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(res.text().await?, "FooBarBaz");
 
-        let res = client
-            .delete(&format!("/api/entries{}", payload.path))
-            .send()
-            .await?;
+        let res = client.delete(&payload.path).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
 
         let res = client.get(&payload.path).send().await?;

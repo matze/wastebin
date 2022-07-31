@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 2.0.0
+
+**2022-07-31**
+
 ### Changed
 
 - **Breaking**: remove possibility to GET `/api/entries/:id`, just use `/:id`.
@@ -12,6 +17,7 @@
   `text/html` returns the HTML page) and the `fmt` query parameter (i.e. set to
   `raw` returns raw text).
 - Use `dl` query parameter to determine the extension to download a paste.
+- Use `fmt=raw` query parameter to fetch plain text paste.
 - Set cache control timeout for the favicon.
 
 

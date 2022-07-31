@@ -268,7 +268,7 @@ fn burn_link(Path(id): Path<String>) -> BurnPage<'static> {
     }
 }
 
-async fn delete_via_link(
+async fn delete(
     Path(id): Path<String>,
     layer: Extension<Layer>,
 ) -> Result<Redirect, ErrorHtml<'static>> {
@@ -282,21 +282,6 @@ async fn delete_via_link(
     layer.delete(id).await?;
 
     Ok(Redirect::to("/"))
-}
-
-async fn delete_via_api(
-    Path(id): Path<String>,
-    layer: Extension<Layer>,
-) -> Result<(), ErrorResponse> {
-    let id = Id::try_from(id.as_str())?;
-    let entry = layer.get(id).await?;
-
-    if entry.seconds_since_creation > 60 {
-        Err(Error::DeletionTimeExpired)?
-    }
-
-    layer.delete(id).await?;
-    Ok(())
 }
 
 fn css_headers() -> impl IntoResponseParts {
@@ -317,9 +302,9 @@ fn favicon() -> impl IntoResponse {
 pub fn routes() -> Router {
     Router::new()
         .route("/", get(|| async { index() }).post(insert))
-        .route("/:id", get(get_paste).delete(delete_via_api))
+        .route("/:id", get(get_paste).delete(delete))
         .route("/burn/:id", get(|path| async { burn_link(path) }))
-        .route("/delete/:id", get(delete_via_link))
+        .route("/delete/:id", get(delete))
         .route("/favicon.png", get(|| async { favicon() }))
         .route(
             "/style.css",
@@ -394,7 +379,7 @@ mod tests {
         assert_eq!(res.text().await?, "FooBarBaz");
 
         let res = client.delete(&payload.path).send().await?;
-        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let res = client.get(&payload.path).send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
@@ -443,7 +428,7 @@ mod tests {
         assert_eq!(res.status(), StatusCode::OK);
 
         let res = client.delete(&payload.path).send().await?;
-        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let res = client.get(&payload.path).send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);

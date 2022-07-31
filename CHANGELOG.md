@@ -4,9 +4,10 @@
 
 ### Changed
 
-- *Breaking*: remove possibility to GET `/api/entries/:id`, just use `/:id`.
-- *Breaking*: remove possibility to POST to `/api/entries` and DELETE
-  `/api/entries/:id`, this can be done on `/` and `/:id` respectively.
+- **Breaking**: remove possibility to GET `/api/entries/:id`, just use `/:id`.
+- **Breaking**: remove possibility to POST to `/api/entries` and DELETE
+  `/api/entries/:id`, this can be done on `/` and `/:id` respectively. Note that
+  DELETEing `/:id` will now return a 303 status code instead of 200.
 - Return appropriate content type for `/:id` based on `accept` header (i.e.
   `text/html` returns the HTML page) and the `fmt` query parameter (i.e. set to
   `raw` returns raw text).

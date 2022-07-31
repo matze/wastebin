@@ -325,6 +325,7 @@ mod tests {
     use super::*;
     use crate::test_helpers::{make_app, Client};
     use http::StatusCode;
+    use reqwest::header;
 
     #[tokio::test]
     async fn unknown_paste() -> Result<(), Box<dyn std::error::Error>> {
@@ -351,7 +352,12 @@ mod tests {
 
         let location = res.headers().get("location").unwrap().to_str()?;
 
-        let res = client.get(location).send().await?;
+        let res = client
+            .get(location)
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+
         assert_eq!(res.status(), StatusCode::OK);
 
         let content = res.text().await?;

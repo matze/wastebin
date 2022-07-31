@@ -343,7 +343,7 @@ mod tests {
 
         let data = FormEntry {
             text: "FooBarBaz".to_string(),
-            extension: None,
+            extension: Some("rs".to_string()),
             expires: "0".to_string(),
         };
 
@@ -360,8 +360,26 @@ mod tests {
 
         assert_eq!(res.status(), StatusCode::OK);
 
+        let header = res.headers().get(header::CONTENT_TYPE).unwrap();
+        assert!(header.to_str().unwrap().contains("text/html"));
+
         let content = res.text().await?;
         assert!(content.contains("FooBarBaz"));
+
+        let res = client
+            .get(location)
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .query(&[("fmt", "raw")])
+            .send()
+            .await?;
+
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let header = res.headers().get(header::CONTENT_TYPE).unwrap();
+        assert!(header.to_str().unwrap().contains("text/plain"));
+
+        let content = res.text().await?;
+        assert_eq!(content, "FooBarBaz");
 
         Ok(())
     }

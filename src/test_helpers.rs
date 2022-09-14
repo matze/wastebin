@@ -6,6 +6,7 @@ use http::Request;
 use hyper::{Body, Server};
 use reqwest::RequestBuilder;
 use std::net::{SocketAddr, TcpListener};
+use std::num::NonZeroUsize;
 use tower::make::Shared;
 use tower_service::Service;
 
@@ -55,6 +56,6 @@ impl Client {
 
 pub(crate) fn make_app() -> Result<axum::Router, Box<dyn std::error::Error>> {
     let database = Database::new(db::Open::Memory)?;
-    let cache_layer = cache::Layer::new(database.clone(), 128);
+    let cache_layer = cache::Layer::new(database.clone(), NonZeroUsize::new(128).unwrap());
     Ok(crate::make_app(cache_layer, 4096))
 }

@@ -6,6 +6,7 @@ use axum::extract::Path;
 use lru::LruCache;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
+use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -49,7 +50,7 @@ impl TryFrom<Path<String>> for Key {
 }
 
 impl Inner {
-    pub fn new(size: usize) -> Self {
+    pub fn new(size: NonZeroUsize) -> Self {
         let cache = lru::LruCache::new(size);
 
         Self {
@@ -100,7 +101,7 @@ pub struct Entry {
 }
 
 impl Layer {
-    pub fn new(db: Database, cache_size: usize) -> Self {
+    pub fn new(db: Database, cache_size: NonZeroUsize) -> Self {
         let cache = Arc::new(Mutex::new(Inner::new(cache_size)));
         Self { db, cache }
     }
@@ -178,7 +179,7 @@ mod tests {
     #[tokio::test]
     async fn expired_is_purged() -> Result<(), Box<dyn std::error::Error>> {
         let db = Database::new(db::Open::Memory)?;
-        let layer = Layer::new(db, 128);
+        let layer = Layer::new(db, NonZeroUsize::new(128).unwrap());
 
         let entry = crate::Entry {
             text: "hello world".to_string(),

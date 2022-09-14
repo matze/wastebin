@@ -4,7 +4,7 @@ use axum::{Extension, Server};
 use serde::{Deserialize, Serialize};
 use std::env::{self, VarError};
 use std::io;
-use std::num::TryFromIntError;
+use std::num::{NonZeroUsize, TryFromIntError};
 use std::path::PathBuf;
 use std::time::Duration;
 use tower_http::compression::CompressionLayer;
@@ -106,8 +106,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(VarError::NotPresent) => Ok(Database::new(db::Open::Memory)?),
     }?;
 
-    let cache_size =
-        env::var("WASTEBIN_CACHE_SIZE").map_or_else(|_| Ok(128), |s| s.parse::<usize>())?;
+    let cache_size = env::var("WASTEBIN_CACHE_SIZE").map_or_else(
+        |_| Ok(NonZeroUsize::new(128).unwrap()),
+        |s| s.parse::<NonZeroUsize>(),
+    )?;
 
     let cache_layer = cache::Layer::new(database, cache_size);
 

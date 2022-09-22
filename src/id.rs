@@ -28,10 +28,10 @@ impl Id {
     }
 
     pub fn to_url_path(self, entry: &Entry) -> String {
-        match entry.extension {
-            Some(ref ext) => format!("/{}.{}", self, ext),
-            None => format!("/{}", self),
-        }
+        entry
+            .extension
+            .as_ref()
+            .map_or_else(|| format!("/{}", self), |ext| format!("/{}.{}", self, ext))
     }
 }
 

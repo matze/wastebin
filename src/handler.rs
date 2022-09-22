@@ -160,8 +160,7 @@ async fn insert(
     match (json_data, form_data) {
         (Some(data), None) => insert_from_json(data, layer).await.into_response(),
         (None, Some(data)) => insert_from_form(data, layer).await.into_response(),
-        (None, None) => StatusCode::BAD_REQUEST.into_response(),
-        (Some(_), Some(_)) => StatusCode::BAD_REQUEST.into_response(),
+        (None, None) | (Some(_), Some(_)) => StatusCode::BAD_REQUEST.into_response(),
     }
 }
 
@@ -205,7 +204,7 @@ async fn get_download(
 ) -> Result<Response<String>, ErrorHtml<'static>> {
     // Validate extension.
     if !extension.is_ascii() {
-        Err(Error::IllegalCharacters)?
+        Err(Error::IllegalCharacters)?;
     }
 
     let raw_string = layer.get(Id::try_from(id.as_str())?).await?.text;
@@ -276,7 +275,7 @@ async fn delete(
     let entry = layer.get(id).await?;
 
     if entry.seconds_since_creation > 60 {
-        Err(Error::DeletionTimeExpired)?
+        Err(Error::DeletionTimeExpired)?;
     }
 
     layer.delete(id).await?;

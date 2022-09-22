@@ -135,10 +135,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tokio::select! {
         res = server => {
-            res?
+            res?;
         },
         res = cache::purge_periodically(cache_layer) => {
-            res?
+            res?;
         }
     }
 

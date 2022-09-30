@@ -1,9 +1,11 @@
 use crate::db::Database;
+use anyhow::{Context, Result};
 use axum::http::StatusCode;
 use axum::{Extension, Server};
 use serde::{Deserialize, Serialize};
 use std::env::{self, VarError};
 use std::io;
+use std::net::SocketAddr;
 use std::num::{NonZeroUsize, TryFromIntError};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -94,7 +96,7 @@ pub(crate) fn make_app(cache_layer: cache::Layer, max_body_size: usize) -> axum:
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     let database = match env::var("WASTEBIN_DATABASE_PATH") {
@@ -106,26 +108,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(VarError::NotPresent) => Ok(Database::new(db::Open::Memory)?),
     }?;
 
-    let cache_size = env::var("WASTEBIN_CACHE_SIZE").map_or_else(
-        |_| Ok(NonZeroUsize::new(128).unwrap()),
-        |s| s.parse::<NonZeroUsize>(),
-    )?;
+    let cache_size = env::var("WASTEBIN_CACHE_SIZE")
+        .map_or_else(
+            |_| Ok(NonZeroUsize::new(128).unwrap()),
+            |s| s.parse::<NonZeroUsize>(),
+        )
+        .with_context(|| "failed to parse WASTEBIN_CACHE_SIZE, expect number of elements")?;
 
     let cache_layer = cache::Layer::new(database, cache_size);
 
-    let addr_port =
-        env::var("WASTEBIN_ADDRESS_PORT").unwrap_or_else(|_| "0.0.0.0:8088".to_string());
+    let addr: SocketAddr = env::var("WASTEBIN_ADDRESS_PORT")
+        .unwrap_or_else(|_| "0.0.0.0:8088".to_string())
+        .parse()
+        .with_context(|| "failed to parse WASTEBIN_ADDRESS_PORT, expect `host:port`")?;
 
     let max_body_size = env::var("WASTEBIN_MAX_BODY_SIZE")
-        .map_or_else(|_| Ok(1024 * 1024), |s| s.parse::<usize>())?;
+        .map_or_else(|_| Ok(1024 * 1024), |s| s.parse::<usize>())
+        .with_context(|| "failed to parse WASTEBIN_MAX_BODY_SIZE, expect number of bytes")?;
 
-    tracing::debug!("serving on {addr_port}");
+    tracing::debug!("serving on {addr}");
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
 
     let service = make_app(cache_layer.clone(), max_body_size).into_make_service();
 
-    let server = Server::bind(&addr_port.parse()?)
+    let server = Server::bind(&addr)
         .serve(service)
         .with_graceful_shutdown(async {
             tokio::signal::ctrl_c()

@@ -53,6 +53,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.65"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98161a4e3e2184da77bb14f02184cdd111e83bbbcc9979dfee3c44b9a85f5602"
+
+[[package]]
 name = "askama"
 version = "0.11.2"
 source = "git+https://github.com/djc/askama#1f74828931af0e509e2a676c6d61cff32f23b409"
@@ -1546,6 +1552,7 @@ checksum = "1c38c045535d93ec4f0b4defec448e4291638ee608530863b1e2ba115d4fff7f"
 name = "wastebin"
 version = "2.0.0"
 dependencies = [
+ "anyhow",
  "askama",
  "askama_axum",
  "axum",

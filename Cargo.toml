@@ -4,6 +4,7 @@ version = "2.0.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1"
 askama = { git = "https://github.com/djc/askama", features = ["with-axum"] }
 askama_axum = { git = "https://github.com/djc/askama" }
 axum = { version = "0.5", features = ["headers", "json", "query"] }

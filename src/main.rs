@@ -99,32 +99,37 @@ pub(crate) fn make_app(cache_layer: cache::Layer, max_body_size: usize) -> axum:
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
-    let database = match env::var("WASTEBIN_DATABASE_PATH") {
+    const VAR_DATABASE_PATH: &str = "WASTEBIN_DATABASE_PATH";
+    const VAR_CACHE_SIZE: &str = "WASTEBIN_CACHE_SIZE";
+    const VAR_ADDRESS_PORT: &str = "WASTEBIN_ADDRESS_PORT";
+    const VAR_MAX_BODY_SIZE: &str = "WASTEBIN_MAX_BODY_SIZE";
+
+    let database = match env::var(VAR_DATABASE_PATH) {
         Ok(path) => Ok(Database::new(db::Open::Path(PathBuf::from(path)))?),
         Err(VarError::NotUnicode(_)) => Err(io::Error::new(
             io::ErrorKind::InvalidData,
-            "WASTEBIN_DATABASE_PATH contains non-unicode data",
+            format!("{VAR_DATABASE_PATH} contains non-unicode data"),
         )),
         Err(VarError::NotPresent) => Ok(Database::new(db::Open::Memory)?),
     }?;
 
-    let cache_size = env::var("WASTEBIN_CACHE_SIZE")
+    let cache_size = env::var(VAR_CACHE_SIZE)
         .map_or_else(
             |_| Ok(NonZeroUsize::new(128).unwrap()),
             |s| s.parse::<NonZeroUsize>(),
         )
-        .with_context(|| "failed to parse WASTEBIN_CACHE_SIZE, expect number of elements")?;
+        .with_context(|| format!("failed to parse {VAR_CACHE_SIZE}, expect number of elements"))?;
 
     let cache_layer = cache::Layer::new(database, cache_size);
 
-    let addr: SocketAddr = env::var("WASTEBIN_ADDRESS_PORT")
+    let addr: SocketAddr = env::var(VAR_ADDRESS_PORT)
         .unwrap_or_else(|_| "0.0.0.0:8088".to_string())
         .parse()
-        .with_context(|| "failed to parse WASTEBIN_ADDRESS_PORT, expect `host:port`")?;
+        .with_context(|| format!("failed to parse {VAR_ADDRESS_PORT}, expect `host:port`"))?;
 
-    let max_body_size = env::var("WASTEBIN_MAX_BODY_SIZE")
+    let max_body_size = env::var(VAR_MAX_BODY_SIZE)
         .map_or_else(|_| Ok(1024 * 1024), |s| s.parse::<usize>())
-        .with_context(|| "failed to parse WASTEBIN_MAX_BODY_SIZE, expect number of bytes")?;
+        .with_context(|| format!("failed to parse {VAR_MAX_BODY_SIZE}, expect number of bytes"))?;
 
     tracing::debug!("serving on {addr}");
     tracing::debug!("caching {cache_size} paste highlights");

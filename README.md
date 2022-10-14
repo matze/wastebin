@@ -30,14 +30,14 @@ server binary with
 
 ### Run pre-built binaries
 
-We provide pre-built, statically compiled [Linux
-binaries](https://github.com/matze/wastebin/releases). Just download and archive
-and run the contained `wastebin` binary.
+You can also download pre-built, statically compiled [Linux
+binaries](https://github.com/matze/wastebin/releases). After extraction run the
+contained `wastebin` binary.
 
 
 ### Run a Docker image
 
-Alternative you can run a pre-built Docker image pushed to `quxfoo/wastebin`
+Alternatively, you can run a pre-built Docker image pushed to `quxfoo/wastebin`
 with
 
     $ docker run quxfoo/wastebin:latest

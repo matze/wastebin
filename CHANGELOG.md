@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 2.0.1
+
+**2022-10-14**
+
 ### Fixed
 
 - Broken insertion via JSON API.

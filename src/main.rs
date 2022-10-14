@@ -97,12 +97,12 @@ pub(crate) fn make_app(cache_layer: cache::Layer, max_body_size: usize) -> axum:
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
-
     const VAR_DATABASE_PATH: &str = "WASTEBIN_DATABASE_PATH";
     const VAR_CACHE_SIZE: &str = "WASTEBIN_CACHE_SIZE";
     const VAR_ADDRESS_PORT: &str = "WASTEBIN_ADDRESS_PORT";
     const VAR_MAX_BODY_SIZE: &str = "WASTEBIN_MAX_BODY_SIZE";
+
+    tracing_subscriber::fmt::init();
 
     let database = match env::var(VAR_DATABASE_PATH) {
         Ok(path) => Ok(Database::new(db::Open::Path(PathBuf::from(path)))?),

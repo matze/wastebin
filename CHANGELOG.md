@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Broken insertion via JSON API.
+
 
 ## 2.0.0
 

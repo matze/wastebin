@@ -4,14 +4,16 @@ use crate::id::Id;
 use crate::{Entry, Error, Router};
 use askama::Template;
 use askama_axum::IntoResponse;
-use axum::extract::{Form, Path, Query};
-use axum::headers::HeaderValue;
+use axum::body::Body;
+use axum::extract::{Form, Path, Query, RequestParts};
+use axum::headers::{HeaderMapExt, HeaderValue};
 use axum::http::header::{self, HeaderMap};
-use axum::http::StatusCode;
+use axum::http::{Request, StatusCode};
 use axum::response::{IntoResponseParts, Redirect, Response};
 use axum::routing::get;
 use axum::{headers, Extension, Json, TypedHeader};
 use bytes::Bytes;
+use http_body::Limited;
 use once_cell::sync::Lazy;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -44,6 +46,26 @@ impl From<FormEntry> for Entry {
             extension: entry.extension,
             expires,
             burn_after_reading,
+            seconds_since_creation: 0,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct JsonEntry {
+    text: String,
+    extension: Option<String>,
+    expires: Option<u32>,
+    burn_after_reading: Option<bool>,
+}
+
+impl From<JsonEntry> for Entry {
+    fn from(entry: JsonEntry) -> Self {
+        Self {
+            text: entry.text,
+            extension: entry.extension,
+            expires: entry.expires,
+            burn_after_reading: entry.burn_after_reading,
             seconds_since_creation: 0,
         }
     }
@@ -135,7 +157,7 @@ struct RedirectResponse {
 }
 
 async fn insert_from_json(
-    Json(entry): Json<Entry>,
+    Json(entry): Json<JsonEntry>,
     layer: Extension<Layer>,
 ) -> Result<Json<RedirectResponse>, ErrorResponse> {
     let id: Id = tokio::task::spawn_blocking(|| {
@@ -146,6 +168,7 @@ async fn insert_from_json(
     .map_err(Error::from)?
     .into();
 
+    let entry: Entry = entry.into();
     let path = id.to_url_path(&entry);
 
     layer.insert(id, entry).await?;
@@ -153,14 +176,32 @@ async fn insert_from_json(
 }
 
 async fn insert(
-    json_data: Option<Json<Entry>>,
-    form_data: Option<Form<FormEntry>>,
     layer: Extension<Layer>,
+    headers: HeaderMap,
+    request: Request<Limited<Body>>,
 ) -> impl IntoResponse {
-    match (json_data, form_data) {
-        (Some(data), None) => insert_from_json(data, layer).await.into_response(),
-        (None, Some(data)) => insert_from_form(data, layer).await.into_response(),
-        (None, None) | (Some(_), Some(_)) => StatusCode::BAD_REQUEST.into_response(),
+    let content_type = headers
+        .typed_get::<headers::ContentType>()
+        .ok_or_else(|| StatusCode::UNSUPPORTED_MEDIA_TYPE.into_response())?;
+
+    let mut parts = RequestParts::new(request);
+
+    if content_type == headers::ContentType::form_url_encoded() {
+        let entry = parts
+            .extract::<Form<FormEntry>>()
+            .await
+            .map_err(IntoResponse::into_response)?;
+
+        Ok(insert_from_form(entry, layer).await.into_response())
+    } else if content_type == headers::ContentType::json() {
+        let entry = parts
+            .extract::<Json<JsonEntry>>()
+            .await
+            .map_err(IntoResponse::into_response)?;
+
+        Ok(insert_from_json(entry, layer).await.into_response())
+    } else {
+        Err(StatusCode::UNSUPPORTED_MEDIA_TYPE.into_response())
     }
 }
 

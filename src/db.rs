@@ -1,8 +1,9 @@
 use crate::id::Id;
-use crate::{Entry, Error};
+use crate::Error;
 use once_cell::sync::Lazy;
 use rusqlite::{params, Connection};
 use rusqlite_migration::{Migrations, M};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tokio::task::spawn_blocking;
@@ -10,6 +11,21 @@ use tokio::task::spawn_blocking;
 #[derive(Clone)]
 pub struct Database {
     conn: Arc<Mutex<Connection>>,
+}
+
+/// A database entry corresponding to a paste.
+#[derive(Default, Debug, Serialize, Deserialize)]
+pub struct Entry {
+    /// Content
+    pub text: String,
+    /// File extension
+    pub extension: Option<String>,
+    /// Expiration in seconds from now
+    pub expires: Option<u32>,
+    /// Delete if read
+    pub burn_after_reading: Option<bool>,
+    /// Seconds since creation
+    pub seconds_since_creation: u32,
 }
 
 #[derive(Debug)]

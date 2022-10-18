@@ -1,4 +1,4 @@
-use crate::db::Database;
+use crate::db::{self, Database};
 use crate::highlight::highlight;
 use crate::id::Id;
 use crate::Error;
@@ -107,7 +107,7 @@ impl Layer {
     }
 
     /// Insert `entry` into the database.
-    pub async fn insert(&self, id: Id, entry: crate::Entry) -> Result<(), Error> {
+    pub async fn insert(&self, id: Id, entry: db::Entry) -> Result<(), Error> {
         self.db.insert(id, entry).await
     }
 
@@ -141,7 +141,7 @@ impl Layer {
     }
 
     /// Get raw content for `id` or `None` if not found.
-    pub async fn get(&self, id: Id) -> Result<crate::Entry, Error> {
+    pub async fn get(&self, id: Id) -> Result<db::Entry, Error> {
         self.db.get(id).await
     }
 
@@ -181,7 +181,7 @@ mod tests {
         let db = Database::new(db::Open::Memory)?;
         let layer = Layer::new(db, NonZeroUsize::new(128).unwrap());
 
-        let entry = crate::Entry {
+        let entry = db::Entry {
             text: "hello world".to_string(),
             expires: Some(1),
             ..Default::default()

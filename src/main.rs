@@ -2,7 +2,6 @@ use crate::db::Database;
 use anyhow::{Context, Result};
 use axum::http::StatusCode;
 use axum::{Extension, Server};
-use serde::{Deserialize, Serialize};
 use std::env::{self, VarError};
 use std::io;
 use std::net::SocketAddr;
@@ -46,20 +45,6 @@ pub enum Error {
     SyntaxParsing(#[from] syntect::parsing::ParsingError),
     #[error("time formatting error: {0}")]
     TimeFormatting(#[from] time::error::Format),
-}
-
-#[derive(Default, Debug, Serialize, Deserialize)]
-pub struct Entry {
-    /// Content
-    pub text: String,
-    /// File extension
-    pub extension: Option<String>,
-    /// Expiration in seconds from now
-    pub expires: Option<u32>,
-    /// Delete if read
-    pub burn_after_reading: Option<bool>,
-    /// Seconds since creation
-    pub seconds_since_creation: u32,
 }
 
 pub type Router = axum::Router<http_body::Limited<axum::body::Body>>;

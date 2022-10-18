@@ -1,7 +1,8 @@
 use crate::cache::{Key, Layer};
+use crate::db::Entry;
 use crate::highlight::DATA;
 use crate::id::Id;
-use crate::{Entry, Error, Router};
+use crate::{Error, Router};
 use askama::Template;
 use askama_axum::IntoResponse;
 use axum::body::Body;

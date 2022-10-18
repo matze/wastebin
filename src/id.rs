@@ -1,4 +1,5 @@
-use crate::{Entry, Error};
+use crate::db::Entry;
+use crate::Error;
 use std::convert::{From, TryFrom};
 use std::fmt;
 

@@ -1,4 +1,5 @@
-use crate::{Entry, Error};
+use crate::db::Entry;
+use crate::Error;
 use once_cell::sync::Lazy;
 use std::io::Cursor;
 use syntect::highlighting::ThemeSet;

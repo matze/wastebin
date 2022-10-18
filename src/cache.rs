@@ -112,11 +112,11 @@ impl Layer {
     }
 
     /// Look up or generate HTML formatted data. Return `None` if `key` is not found.
-    pub async fn get_formatted(&self, key: Key) -> Result<Entry, Error> {
+    pub async fn get_formatted(&self, key: &Key) -> Result<Entry, Error> {
         let entry = self.db.get(key.id).await?;
         let seconds_since_creation = entry.seconds_since_creation;
 
-        if let Some(cached) = self.cache.lock().unwrap().get(&key) {
+        if let Some(cached) = self.cache.lock().unwrap().get(key) {
             tracing::debug!(?key, "found cached item");
 
             return Ok(Entry {
@@ -131,7 +131,10 @@ impl Layer {
 
         if !burn_after_reading {
             tracing::debug!(?key, "cache item");
-            self.cache.lock().unwrap().put(key, formatted.clone());
+            self.cache
+                .lock()
+                .unwrap()
+                .put(key.clone(), formatted.clone());
         }
 
         Ok(Entry {
@@ -190,12 +193,12 @@ mod tests {
         let id = Id::from(1234);
         let key = Key::new(id, "rs".to_string());
         layer.insert(id, entry).await?;
-        assert!(layer.get_formatted(key.clone()).await.is_ok());
+        assert!(layer.get_formatted(&key).await.is_ok());
 
         tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
         layer.purge().await?;
         assert!(layer.db.get(id).await.is_err());
-        assert!(layer.get_formatted(key).await.is_err());
+        assert!(layer.get_formatted(&key).await.is_err());
 
         Ok(())
     }

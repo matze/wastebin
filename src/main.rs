@@ -2,6 +2,7 @@ use crate::db::Database;
 use anyhow::{Context, Result};
 use axum::http::StatusCode;
 use axum::{Extension, Server};
+use once_cell::sync::Lazy;
 use std::env::{self, VarError};
 use std::io;
 use std::net::SocketAddr;
@@ -18,8 +19,14 @@ mod db;
 mod handler;
 mod highlight;
 mod id;
+mod pages;
 #[cfg(test)]
 mod test_helpers;
+
+pub static TITLE: Lazy<String> =
+    Lazy::new(|| env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string()));
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

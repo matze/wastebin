@@ -1,9 +1,7 @@
 use crate::cache::{Key, Layer};
 use crate::db::Entry;
-use crate::highlight::DATA;
 use crate::id::Id;
-use crate::{Error, Router};
-use askama::Template;
+use crate::{highlight, pages, Error, Router};
 use askama_axum::IntoResponse;
 use axum::body::Body;
 use axum::extract::{Form, Path, Query, RequestParts};
@@ -15,16 +13,9 @@ use axum::routing::get;
 use axum::{headers, Extension, Json, TypedHeader};
 use bytes::Bytes;
 use http_body::Limited;
-use once_cell::sync::Lazy;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use std::env;
 use std::time::Duration;
-
-static TITLE: Lazy<String> =
-    Lazy::new(|| env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string()));
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Serialize, Deserialize)]
 struct FormEntry {
@@ -72,28 +63,6 @@ impl From<JsonEntry> for Entry {
     }
 }
 
-#[derive(Template)]
-#[template(path = "error.html")]
-struct ErrorPage<'a> {
-    title: &'a str,
-    error: String,
-    version: &'a str,
-}
-
-type ErrorHtml<'a> = (StatusCode, ErrorPage<'a>);
-
-impl From<Error> for ErrorHtml<'_> {
-    fn from(err: Error) -> Self {
-        let html = ErrorPage {
-            title: &TITLE,
-            error: err.to_string(),
-            version: VERSION,
-        };
-
-        (err.into(), html)
-    }
-}
-
 #[derive(Serialize)]
 struct ErrorPayload {
     message: String,
@@ -111,26 +80,14 @@ impl From<Error> for ErrorResponse {
     }
 }
 
-#[derive(Template)]
-#[template(path = "index.html")]
-struct Index<'a> {
-    title: &'a str,
-    syntaxes: &'a [syntect::parsing::SyntaxReference],
-    version: &'a str,
-}
-
-fn index<'a>() -> Index<'a> {
-    Index {
-        title: &TITLE,
-        syntaxes: DATA.syntax_set.syntaxes(),
-        version: VERSION,
-    }
+fn index<'a>() -> pages::Index<'a> {
+    pages::Index::default()
 }
 
 async fn insert_from_form(
     Form(entry): Form<FormEntry>,
     layer: Extension<Layer>,
-) -> Result<Redirect, ErrorHtml<'static>> {
+) -> Result<Redirect, pages::ErrorResponse<'static>> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
         rng.gen::<u32>()
@@ -173,6 +130,7 @@ async fn insert_from_json(
     let path = id.to_url_path(&entry);
 
     layer.insert(id, entry).await?;
+
     Ok(Json::from(RedirectResponse { path }))
 }
 
@@ -206,36 +164,19 @@ async fn insert(
     }
 }
 
-#[derive(Template)]
-#[template(path = "paste.html")]
-struct Paste<'a> {
-    title: &'a str,
-    id: String,
-    formatted: String,
-    extension: String,
-    deletion_possible: bool,
-    version: &'a str,
-}
-
-async fn get_html(id: Path<String>, layer: Layer) -> Result<Paste<'static>, ErrorHtml<'static>> {
-    let title = &TITLE;
+async fn get_html(
+    id: Path<String>,
+    layer: Layer,
+) -> Result<pages::Paste<'static>, pages::ErrorResponse<'static>> {
     let key = Key::try_from(id)?;
-    let id = key.id();
-    let extension = key.extension();
-    let entry = layer.get_formatted(key).await?;
+    let entry = layer.get_formatted(&key).await?;
 
-    Ok(Paste {
-        title,
-        id,
-        extension,
-        formatted: entry.formatted,
-        deletion_possible: entry.seconds_since_creation < 60,
-        version: VERSION,
-    })
+    Ok(pages::Paste::new(entry, &key))
 }
 
 async fn get_raw(id: Path<String>, layer: Layer) -> Result<String, ErrorResponse> {
     let key = Key::try_from(id)?;
+
     Ok(layer.get(Id::try_from(key.id().as_str())?).await?.text)
 }
 
@@ -243,7 +184,7 @@ async fn get_download(
     Path(id): Path<String>,
     extension: String,
     layer: Layer,
-) -> Result<Response<String>, ErrorHtml<'static>> {
+) -> Result<Response<String>, pages::ErrorResponse<'static>> {
     // Validate extension.
     if !extension.is_ascii() {
         Err(Error::IllegalCharacters)?;
@@ -293,26 +234,14 @@ async fn get_paste(
     get_raw(id, layer).await.into_response()
 }
 
-#[derive(Template)]
-#[template(path = "burn.html")]
-struct BurnPage<'a> {
-    title: &'a str,
-    id: String,
-    version: &'a str,
-}
-
-fn burn_link(Path(id): Path<String>) -> BurnPage<'static> {
-    BurnPage {
-        title: &TITLE,
-        id,
-        version: VERSION,
-    }
+fn burn_link(Path(id): Path<String>) -> pages::Burn<'static> {
+    pages::Burn::new(id)
 }
 
 async fn delete(
     Path(id): Path<String>,
     layer: Extension<Layer>,
-) -> Result<Redirect, ErrorHtml<'static>> {
+) -> Result<Redirect, pages::ErrorResponse<'static>> {
     let id = Id::try_from(id.as_str())?;
     let entry = layer.get(id).await?;
 
@@ -349,15 +278,15 @@ pub fn routes() -> Router {
         .route("/favicon.png", get(|| async { favicon() }))
         .route(
             "/style.css",
-            get(|| async { (css_headers(), DATA.main.to_string()) }),
+            get(|| async { (css_headers(), highlight::DATA.main.to_string()) }),
         )
         .route(
             "/dark.css",
-            get(|| async { (css_headers(), DATA.dark.to_string()) }),
+            get(|| async { (css_headers(), highlight::DATA.dark.to_string()) }),
         )
         .route(
             "/light.css",
-            get(|| async { (css_headers(), DATA.light.to_string()) }),
+            get(|| async { (css_headers(), highlight::DATA.light.to_string()) }),
         )
 }
 

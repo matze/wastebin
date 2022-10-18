@@ -234,10 +234,6 @@ async fn get_paste(
     get_raw(id, layer).await.into_response()
 }
 
-fn burn_link(Path(id): Path<String>) -> pages::Burn<'static> {
-    pages::Burn::new(id)
-}
-
 async fn delete(
     Path(id): Path<String>,
     layer: Extension<Layer>,
@@ -273,7 +269,7 @@ pub fn routes() -> Router {
     Router::new()
         .route("/", get(|| async { index() }).post(insert))
         .route("/:id", get(get_paste).delete(delete))
-        .route("/burn/:id", get(|path| async { burn_link(path) }))
+        .route("/burn/:id", get(|Path(id)| async { pages::Burn::new(id) }))
         .route("/delete/:id", get(delete))
         .route("/favicon.png", get(|| async { favicon() }))
         .route(

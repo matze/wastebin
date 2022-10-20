@@ -1,5 +1,6 @@
 use crate::db::Database;
 use anyhow::{Context, Result};
+use axum::extract::DefaultBodyLimit;
 use axum::http::StatusCode;
 use axum::{Extension, Server};
 use once_cell::sync::Lazy;
@@ -84,6 +85,7 @@ pub(crate) fn make_app(cache_layer: cache::Layer, max_body_size: usize) -> axum:
         .layer(TimeoutLayer::new(Duration::from_secs(5)))
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new())
+        .layer(DefaultBodyLimit::disable())
         .layer(RequestBodyLimitLayer::new(max_body_size))
 }
 

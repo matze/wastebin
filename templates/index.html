@@ -1,9 +1,35 @@
 {% extends "base.html" %}
+
+{% block head %}
+<script>
+  function dropHandler(ev) {
+    ev.preventDefault();
+
+    let textarea = document.getElementById('text');
+
+    if (ev.dataTransfer.items) {
+      const item = ev.dataTransfer.items[0];
+
+      if (item.kind === 'file') {
+        item.getAsFile().text().then((value) => textarea.value = value);
+      }
+    } else {
+      const item = ev.dataTransfer.files[0];
+      item.text().then((value) => textarea.value = value);
+    }
+  }
+
+  function dragOverHandler(ev) {
+    ev.preventDefault();
+  }
+</script>
+{% endblock %}
+
 {%- block content -%}
     <form action="/" method="post">
       <div class="container">
         <div class="content">
-          <textarea name="text" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text here>"></textarea>
+          <textarea id="text" name="text" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text or drop file here>" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);"></textarea>
         </div>
         <div class="expiration-list">
           <select name="expires" size="5">

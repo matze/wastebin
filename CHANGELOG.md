@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 2.1.0
+
+**2022-11-07**
+
 ### Added
 
 - Paste text content by dragging and dropping files onto the text area.

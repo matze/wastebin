@@ -1,18 +1,18 @@
 use crate::cache::{Key, Layer};
 use crate::db::Entry;
 use crate::id::Id;
-use crate::{highlight, pages, Error, Router};
+use crate::Router;
+use crate::{highlight, pages, Error};
 use askama_axum::IntoResponse;
 use axum::body::Body;
-use axum::extract::{Form, Path, Query, RequestParts};
+use axum::extract::{Form, Path, Query, State};
 use axum::headers::{HeaderMapExt, HeaderValue};
 use axum::http::header::{self, HeaderMap};
 use axum::http::{Request, StatusCode};
 use axum::response::{IntoResponseParts, Redirect, Response};
 use axum::routing::get;
-use axum::{headers, Extension, Json, TypedHeader};
+use axum::{headers, Json, RequestExt, TypedHeader};
 use bytes::Bytes;
-use http_body::Limited;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -86,7 +86,7 @@ fn index<'a>() -> pages::Index<'a> {
 
 async fn insert_from_form(
     Form(entry): Form<FormEntry>,
-    layer: Extension<Layer>,
+    layer: State<Layer>,
 ) -> Result<Redirect, pages::ErrorResponse<'static>> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
@@ -116,7 +116,7 @@ struct RedirectResponse {
 
 async fn insert_from_json(
     Json(entry): Json<JsonEntry>,
-    layer: Extension<Layer>,
+    layer: State<Layer>,
 ) -> Result<Json<RedirectResponse>, ErrorResponse> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
@@ -135,26 +135,24 @@ async fn insert_from_json(
 }
 
 async fn insert(
-    layer: Extension<Layer>,
+    layer: State<Layer>,
     headers: HeaderMap,
-    request: Request<Limited<Body>>,
-) -> impl IntoResponse {
+    request: Request<Body>,
+) -> Result<Response, Response> {
     let content_type = headers
         .typed_get::<headers::ContentType>()
         .ok_or_else(|| StatusCode::UNSUPPORTED_MEDIA_TYPE.into_response())?;
 
-    let mut parts = RequestParts::new(request);
-
     if content_type == headers::ContentType::form_url_encoded() {
-        let entry = parts
-            .extract::<Form<FormEntry>>()
+        let entry: Form<FormEntry> = request
+            .extract()
             .await
             .map_err(IntoResponse::into_response)?;
 
         Ok(insert_from_form(entry, layer).await.into_response())
     } else if content_type == headers::ContentType::json() {
-        let entry = parts
-            .extract::<Json<JsonEntry>>()
+        let entry: Json<JsonEntry> = request
+            .extract()
             .await
             .map_err(IntoResponse::into_response)?;
 
@@ -211,7 +209,7 @@ async fn get_paste(
     id: Path<String>,
     headers: HeaderMap,
     Query(query): Query<GetQuery>,
-    Extension(layer): Extension<Layer>,
+    State(layer): State<Layer>,
 ) -> Response {
     if let Some(fmt) = query.fmt {
         if fmt == "raw" {
@@ -236,7 +234,7 @@ async fn get_paste(
 
 async fn delete(
     Path(id): Path<String>,
-    layer: Extension<Layer>,
+    layer: State<Layer>,
 ) -> Result<Redirect, pages::ErrorResponse<'static>> {
     let id = Id::try_from(id.as_str())?;
     let entry = layer.get(id).await?;
@@ -265,7 +263,7 @@ fn favicon() -> impl IntoResponse {
     )
 }
 
-pub fn routes() -> Router {
+pub fn routes() -> Router<Layer> {
     Router::new()
         .route("/", get(|| async { index() }).post(insert))
         .route("/:id", get(get_paste).delete(delete))
@@ -284,6 +282,7 @@ pub fn routes() -> Router {
             "/light.css",
             get(|| async { (css_headers(), highlight::DATA.light.to_string()) }),
         )
+    // .with_state(cache_layer)
 }
 
 #[cfg(test)]

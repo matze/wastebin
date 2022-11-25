@@ -1,7 +1,7 @@
 use crate::cache;
 use crate::db::{self, Database};
 use axum::body::HttpBody;
-use axum::BoxError;
+use axum::{BoxError, Router};
 use http::Request;
 use hyper::{Body, Server};
 use reqwest::RequestBuilder;
@@ -54,8 +54,8 @@ impl Client {
     }
 }
 
-pub(crate) fn make_app() -> Result<axum::Router, Box<dyn std::error::Error>> {
+pub(crate) fn make_app() -> Result<Router, Box<dyn std::error::Error>> {
     let database = Database::new(db::Open::Memory)?;
-    let cache_layer = cache::Layer::new(database.clone(), NonZeroUsize::new(128).unwrap());
-    Ok(crate::make_app(cache_layer, 4096))
+    let layer = cache::Layer::new(database.clone(), NonZeroUsize::new(128).unwrap());
+    Ok(crate::make_app(4096).with_state(layer))
 }

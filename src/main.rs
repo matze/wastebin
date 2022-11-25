@@ -2,7 +2,7 @@ use crate::db::Database;
 use anyhow::{Context, Result};
 use axum::extract::DefaultBodyLimit;
 use axum::http::StatusCode;
-use axum::{Extension, Server};
+use axum::{Router, Server};
 use once_cell::sync::Lazy;
 use std::env::{self, VarError};
 use std::io;
@@ -11,7 +11,6 @@ use std::num::{NonZeroUsize, TryFromIntError};
 use std::path::PathBuf;
 use std::time::Duration;
 use tower_http::compression::CompressionLayer;
-use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
@@ -55,8 +54,6 @@ pub enum Error {
     TimeFormatting(#[from] time::error::Format),
 }
 
-pub type Router = axum::Router<http_body::Limited<axum::body::Body>>;
-
 impl From<Error> for StatusCode {
     fn from(err: Error) -> Self {
         match err {
@@ -78,15 +75,14 @@ impl From<Error> for StatusCode {
     }
 }
 
-pub(crate) fn make_app(cache_layer: cache::Layer, max_body_size: usize) -> axum::Router {
+pub(crate) fn make_app(max_body_size: usize) -> Router<cache::Layer> {
     Router::new()
         .merge(handler::routes())
-        .layer(Extension(cache_layer))
         .layer(TimeoutLayer::new(Duration::from_secs(5)))
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new())
         .layer(DefaultBodyLimit::disable())
-        .layer(RequestBodyLimitLayer::new(max_body_size))
+        .layer(DefaultBodyLimit::max(max_body_size))
 }
 
 #[tokio::main]
@@ -129,10 +125,10 @@ async fn main() -> Result<()> {
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
 
-    let service = make_app(cache_layer.clone(), max_body_size).into_make_service();
+    let service: Router<()> = make_app(max_body_size).with_state(cache_layer.clone());
 
     let server = Server::bind(&addr)
-        .serve(service)
+        .serve(service.into_make_service())
         .with_graceful_shutdown(async {
             tokio::signal::ctrl_c()
                 .await

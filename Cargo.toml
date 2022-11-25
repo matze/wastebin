@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1"
 askama = { git = "https://github.com/djc/askama", features = ["with-axum"] }
 askama_axum = { git = "https://github.com/djc/askama" }
-axum = { version = "0.5", features = ["headers", "json", "query"] }
+axum = { version = "0.6", features = ["headers", "json", "query"] }
 bytes = "1"
 http-body = "0"
 lru = "0"

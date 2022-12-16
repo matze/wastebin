@@ -49,7 +49,7 @@ impl Database {
 
         let mut conn = match method {
             Open::Memory => Connection::open_in_memory()?,
-            Open::Path(path) => Connection::open(&path)?,
+            Open::Path(path) => Connection::open(path)?,
         };
 
         MIGRATIONS.to_latest(&mut conn)?;

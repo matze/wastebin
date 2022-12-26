@@ -282,7 +282,6 @@ pub fn routes() -> Router<Layer> {
             "/light.css",
             get(|| async { (css_headers(), highlight::DATA.light.to_string()) }),
         )
-    // .with_state(cache_layer)
 }
 
 #[cfg(test)]

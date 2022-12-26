@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Changed
+
+- Move to axum 0.6.
+
+### Fixed
+
+- <kbd>d</kbd> downloads again.
+
 
 ## 2.1.0
 

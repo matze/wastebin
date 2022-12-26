@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 2.2.0
+
+**2022-12-26**
+
 ### Changed
 
 - Move to axum 0.6.

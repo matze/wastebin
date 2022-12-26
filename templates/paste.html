@@ -15,7 +15,7 @@
       navigator.clipboard.writeText(window.location.href);
     }
     else if (e.key == 'd') {
-      window.location.href = '/download/{{ id }}/{{ extension }}';
+      window.location.href = '/{{ id }}?dl={{ extension }}';
     }
   }
 </script>

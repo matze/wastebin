@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 2.2.1
+
+**2022-01-10**
+
 ### Changed
 
 - Upgraded to tokio 1.24.1 to mitigate RUSTSEC-2023-0001.

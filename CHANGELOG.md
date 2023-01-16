@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+**Breaking**: stop supporting down migrations.
+
 
 ## 2.2.1
 

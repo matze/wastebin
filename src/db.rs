@@ -36,10 +36,8 @@ pub enum Open {
 
 static MIGRATIONS: Lazy<Migrations> = Lazy::new(|| {
     Migrations::new(vec![
-        M::up(include_str!("migrations/0001-up-initial.sql"))
-            .down(include_str!("migrations/0001-down-initial.sql")),
-        M::up(include_str!("migrations/0002-up-add-created-column.sql"))
-            .down(include_str!("migrations/0002-down-add-created-column.sql")),
+        M::up(include_str!("migrations/0001-initial.sql")),
+        M::up(include_str!("migrations/0002-add-created-column.sql")),
     ])
 });
 

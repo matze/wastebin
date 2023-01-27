@@ -2,7 +2,8 @@ use crate::db::{self, Database};
 use crate::highlight::highlight;
 use crate::id::Id;
 use crate::Error;
-use axum::extract::Path;
+use axum::extract::{FromRef, Path};
+use axum_extra::extract::cookie::Key as SigningKey;
 use lru::LruCache;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -92,36 +93,38 @@ impl Inner {
 pub struct Layer {
     db: Database,
     cache: Cache,
+    key: SigningKey,
 }
 
 /// Entry and syntax highlighted text.
 pub struct Entry {
     pub formatted: String,
-    pub seconds_since_creation: u32,
+    pub uid: Option<i64>,
 }
 
 impl Layer {
-    pub fn new(db: Database, cache_size: NonZeroUsize) -> Self {
+    pub fn new(db: Database, cache_size: NonZeroUsize, key: SigningKey) -> Self {
         let cache = Arc::new(Mutex::new(Inner::new(cache_size)));
-        Self { db, cache }
+
+        Self { db, cache, key }
     }
 
     /// Insert `entry` into the database.
-    pub async fn insert(&self, id: Id, entry: db::Entry) -> Result<(), Error> {
-        self.db.insert(id, entry).await
+    pub async fn insert(&self, id: Id, uid: Option<i64>, entry: db::Entry) -> Result<(), Error> {
+        self.db.insert(id, uid, entry).await
     }
 
     /// Look up or generate HTML formatted data. Return `None` if `key` is not found.
     pub async fn get_formatted(&self, key: &Key) -> Result<Entry, Error> {
         let entry = self.db.get(key.id).await?;
-        let seconds_since_creation = entry.seconds_since_creation;
+        let uid = entry.uid;
 
         if let Some(cached) = self.cache.lock().unwrap().get(key) {
             tracing::debug!(?key, "found cached item");
 
             return Ok(Entry {
                 formatted: cached.to_string(),
-                seconds_since_creation,
+                uid,
             });
         }
 
@@ -137,10 +140,7 @@ impl Layer {
                 .put(key.clone(), formatted.clone());
         }
 
-        Ok(Entry {
-            formatted,
-            seconds_since_creation,
-        })
+        Ok(Entry { formatted, uid })
     }
 
     /// Get raw content for `id` or `None` if not found.
@@ -154,6 +154,11 @@ impl Layer {
         self.db.delete(id).await
     }
 
+    /// Retrieve next monotonically increasing uid.
+    pub async fn next_uid(&self) -> Result<i64, Error> {
+        self.db.next_uid().await
+    }
+
     /// Purge expired items from database and cache.
     pub async fn purge(&self) -> Result<(), Error> {
         for id in self.db.purge().await? {
@@ -161,6 +166,12 @@ impl Layer {
             self.cache.lock().unwrap().remove(id);
         }
         Ok(())
+    }
+}
+
+impl FromRef<Layer> for SigningKey {
+    fn from_ref(layer: &Layer) -> Self {
+        layer.key.clone()
     }
 }
 
@@ -182,7 +193,8 @@ mod tests {
     #[tokio::test]
     async fn expired_is_purged() -> Result<(), Box<dyn std::error::Error>> {
         let db = Database::new(db::Open::Memory)?;
-        let layer = Layer::new(db, NonZeroUsize::new(128).unwrap());
+        let key = SigningKey::generate();
+        let layer = Layer::new(db, NonZeroUsize::new(128).unwrap(), key);
 
         let entry = db::Entry {
             text: "hello world".to_string(),
@@ -192,7 +204,7 @@ mod tests {
 
         let id = Id::from(1234);
         let key = Key::new(id, "rs".to_string());
-        layer.insert(id, entry).await?;
+        layer.insert(id, None, entry).await?;
         assert!(layer.get_formatted(&key).await.is_ok());
 
         tokio::time::sleep(std::time::Duration::from_millis(2000)).await;

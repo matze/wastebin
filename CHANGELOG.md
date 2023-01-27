@@ -4,7 +4,14 @@
 
 ### Changed
 
-**Breaking**: stop supporting down migrations.
+- **Breaking**: replace deletion timer with a cookie based solution that
+  identifies creator of a paste on subsequent visits. That cookie is a
+  monotonically increasing number and only used to implement the delete
+  functionality. Because that implies it is a strictly necessary cookie
+  according to GDPR, we **will not show a cookie banner**. If you are
+  uncomfortable with that either strip the `Set-Cookie` header from responses
+  via a proxy server or stop using this software.
+- **Breaking**: stop supporting down migrations.
 
 
 ## 2.2.1

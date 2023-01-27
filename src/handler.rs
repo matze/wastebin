@@ -12,6 +12,7 @@ use axum::http::{Request, StatusCode};
 use axum::response::{IntoResponseParts, Redirect, Response};
 use axum::routing::get;
 use axum::{headers, Json, RequestExt, TypedHeader};
+use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 use bytes::Bytes;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -38,7 +39,7 @@ impl From<FormEntry> for Entry {
             extension: entry.extension,
             expires,
             burn_after_reading,
-            seconds_since_creation: 0,
+            uid: None,
         }
     }
 }
@@ -58,7 +59,7 @@ impl From<JsonEntry> for Entry {
             extension: entry.extension,
             expires: entry.expires,
             burn_after_reading: entry.burn_after_reading,
-            seconds_since_creation: 0,
+            uid: None,
         }
     }
 }
@@ -87,7 +88,8 @@ fn index<'a>() -> pages::Index<'a> {
 async fn insert_from_form(
     Form(entry): Form<FormEntry>,
     layer: State<Layer>,
-) -> Result<Redirect, pages::ErrorResponse<'static>> {
+    jar: SignedCookieJar,
+) -> Result<(SignedCookieJar, Redirect), pages::ErrorResponse<'static>> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
         rng.gen::<u32>()
@@ -96,16 +98,28 @@ async fn insert_from_form(
     .map_err(Error::from)?
     .into();
 
+    // Retrieve uid from cookie or generate a new one.
+    let uid = if let Some(cookie) = jar.get("uid") {
+        cookie
+            .value()
+            .parse::<i64>()
+            .map_err(|err| Error::CookieParsing(err.to_string()))?
+    } else {
+        layer.next_uid().await?
+    };
+
     let entry: Entry = entry.into();
     let url = id.to_url_path(&entry);
     let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
 
-    layer.insert(id, entry).await?;
+    layer.insert(id, Some(uid), entry).await?;
+
+    let jar = jar.add(Cookie::new("uid", uid.to_string()));
 
     if burn_after_reading {
-        Ok(Redirect::to(&format!("/burn{url}")))
+        Ok((jar, Redirect::to(&format!("/burn{url}"))))
     } else {
-        Ok(Redirect::to(&url))
+        Ok((jar, Redirect::to(&url)))
     }
 }
 
@@ -129,13 +143,14 @@ async fn insert_from_json(
     let entry: Entry = entry.into();
     let path = id.to_url_path(&entry);
 
-    layer.insert(id, entry).await?;
+    layer.insert(id, None, entry).await?;
 
     Ok(Json::from(RedirectResponse { path }))
 }
 
 async fn insert(
     layer: State<Layer>,
+    jar: SignedCookieJar,
     headers: HeaderMap,
     request: Request<Body>,
 ) -> Result<Response, Response> {
@@ -149,7 +164,7 @@ async fn insert(
             .await
             .map_err(IntoResponse::into_response)?;
 
-        Ok(insert_from_form(entry, layer).await.into_response())
+        Ok(insert_from_form(entry, layer, jar).await.into_response())
     } else if content_type == headers::ContentType::json() {
         let entry: Json<JsonEntry> = request
             .extract()
@@ -165,11 +180,19 @@ async fn insert(
 async fn get_html(
     id: Path<String>,
     layer: Layer,
+    jar: SignedCookieJar,
 ) -> Result<pages::Paste<'static>, pages::ErrorResponse<'static>> {
     let key = Key::try_from(id)?;
     let entry = layer.get_formatted(&key).await?;
+    let can_delete = jar
+        .get("uid")
+        .map(|cookie| cookie.value().parse::<i64>())
+        .transpose()
+        .map_err(|err| Error::CookieParsing(err.to_string()))?
+        .zip(entry.uid)
+        .map_or(false, |(user_uid, db_uid)| user_uid == db_uid);
 
-    Ok(pages::Paste::new(entry, &key))
+    Ok(pages::Paste::new(entry, &key, can_delete))
 }
 
 async fn get_raw(id: Path<String>, layer: Layer) -> Result<String, ErrorResponse> {
@@ -208,6 +231,7 @@ struct GetQuery {
 async fn get_paste(
     id: Path<String>,
     headers: HeaderMap,
+    jar: SignedCookieJar,
     Query(query): Query<GetQuery>,
     State(layer): State<Layer>,
 ) -> Response {
@@ -224,7 +248,7 @@ async fn get_paste(
     if let Some(value) = headers.get(header::ACCEPT) {
         if let Ok(value) = value.to_str() {
             if value.contains("text/html") {
-                return get_html(id, layer).await.into_response();
+                return get_html(id, layer, jar).await.into_response();
             }
         }
     }
@@ -235,12 +259,20 @@ async fn get_paste(
 async fn delete(
     Path(id): Path<String>,
     layer: State<Layer>,
+    jar: SignedCookieJar,
 ) -> Result<Redirect, pages::ErrorResponse<'static>> {
     let id = Id::try_from(id.as_str())?;
     let entry = layer.get(id).await?;
+    let can_delete = jar
+        .get("uid")
+        .map(|cookie| cookie.value().parse::<i64>())
+        .transpose()
+        .map_err(|err| Error::CookieParsing(err.to_string()))?
+        .zip(entry.uid)
+        .map_or(false, |(user_uid, db_uid)| user_uid == db_uid);
 
-    if entry.seconds_since_creation > 60 {
-        Err(Error::DeletionTimeExpired)?;
+    if !can_delete {
+        Err(Error::Delete)?;
     }
 
     layer.delete(id).await?;
@@ -366,12 +398,6 @@ mod tests {
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(res.text().await?, "FooBarBaz");
 
-        let res = client.delete(&payload.path).send().await?;
-        assert_eq!(res.status(), StatusCode::SEE_OTHER);
-
-        let res = client.get(&payload.path).send().await?;
-        assert_eq!(res.status(), StatusCode::NOT_FOUND);
-
         Ok(())
     }
 
@@ -386,6 +412,8 @@ mod tests {
         };
 
         let res = client.post("/").form(&data).send().await?;
+        let uid_cookie = res.cookies().find(|cookie| cookie.name() == "uid");
+        assert!(uid_cookie.is_some());
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
@@ -393,32 +421,6 @@ mod tests {
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let res = client.get(location).send().await?;
-        assert_eq!(res.status(), StatusCode::NOT_FOUND);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn delete_via_api() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?);
-
-        let entry = Entry {
-            text: "FooBarBaz".to_string(),
-            ..Default::default()
-        };
-
-        let res = client.post("/").json(&entry).send().await?;
-        assert_eq!(res.status(), StatusCode::OK);
-
-        let payload = res.json::<RedirectResponse>().await?;
-
-        let res = client.get(&payload.path).send().await?;
-        assert_eq!(res.status(), StatusCode::OK);
-
-        let res = client.delete(&payload.path).send().await?;
-        assert_eq!(res.status(), StatusCode::SEE_OTHER);
-
-        let res = client.get(&payload.path).send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
         Ok(())

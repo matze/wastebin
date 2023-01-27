@@ -1,0 +1,9 @@
+ALTER TABLE entries DROP COLUMN created_at;
+ALTER TABLE entries ADD COLUMN uid INTEGER;
+
+CREATE TABLE IF NOT EXISTS uids (
+    id INTEGER PRIMARY KEY CHECK (id = 0),
+    n INTEGER
+);
+
+INSERT OR IGNORE INTO uids (id, n) VALUES (0, 0);

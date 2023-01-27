@@ -24,8 +24,8 @@ pub struct Entry {
     pub expires: Option<u32>,
     /// Delete if read
     pub burn_after_reading: Option<bool>,
-    /// Seconds since creation
-    pub seconds_since_creation: u32,
+    /// User identifier that inserted the paste
+    pub uid: Option<i64>,
 }
 
 #[derive(Debug)]
@@ -38,6 +38,9 @@ static MIGRATIONS: Lazy<Migrations> = Lazy::new(|| {
     Migrations::new(vec![
         M::up(include_str!("migrations/0001-initial.sql")),
         M::up(include_str!("migrations/0002-add-created-column.sql")),
+        M::up(include_str!(
+            "migrations/0003-drop-created-add-uid-column.sql"
+        )),
     ])
 });
 
@@ -57,19 +60,20 @@ impl Database {
         })
     }
 
-    pub async fn insert(&self, id: Id, entry: Entry) -> Result<(), Error> {
+    pub async fn insert(&self, id: Id, uid: Option<i64>, entry: Entry) -> Result<(), Error> {
         let conn = self.conn.clone();
         let id = id.as_u32();
 
         spawn_blocking(move || match entry.expires {
             None => conn.lock().unwrap().execute(
-                "INSERT INTO entries (id, text, burn_after_reading, created_at) VALUES (?1, ?2, ?3, datetime('now'))",
-                params![id, entry.text, entry.burn_after_reading],
+                "INSERT INTO entries (id, uid, text, burn_after_reading) VALUES (?1, ?2, ?3, ?4)",
+                params![id, uid, entry.text, entry.burn_after_reading],
             ),
             Some(expires) => conn.lock().unwrap().execute(
-                "INSERT INTO entries (id, text, burn_after_reading, expires, created_at) VALUES (?1, ?2, ?3, datetime('now', ?4), datetime('now'))",
+                "INSERT INTO entries (id, uid, text, burn_after_reading, expires) VALUES (?1, ?2, ?3, ?4, ?5)",
                 params![
                     id,
+                    uid,
                     entry.text,
                     entry.burn_after_reading,
                     format!("{expires} seconds")
@@ -87,7 +91,7 @@ impl Database {
 
         let entry = spawn_blocking(move || {
             conn.lock().unwrap().query_row(
-                "SELECT text, burn_after_reading, CAST(((julianday('now') - julianday(created_at)) * 24 * 60 * 60) AS INT) FROM entries WHERE id=?1",
+                "SELECT text, burn_after_reading, uid FROM entries WHERE id=?1",
                 params![id_as_u32],
                 |row| {
                     Ok(Entry {
@@ -95,7 +99,7 @@ impl Database {
                         extension: None,
                         expires: None,
                         burn_after_reading: row.get(1)?,
-                        seconds_since_creation: row.get(2)?,
+                        uid: row.get(2)?,
                     })
                 },
             )
@@ -121,6 +125,23 @@ impl Database {
         .await??;
 
         Ok(())
+    }
+
+    pub async fn next_uid(&self) -> Result<i64, Error> {
+        let conn = self.conn.clone();
+
+        let uid = spawn_blocking(move || {
+            let conn = conn.lock().unwrap();
+
+            conn.query_row(
+                "UPDATE uids SET n = n + 1 WHERE id = 0 RETURNING n",
+                [],
+                |row| row.get(0),
+            )
+        })
+        .await??;
+
+        Ok(uid)
     }
 
     /// Remove all expired entries and return their `Id`s.
@@ -161,10 +182,12 @@ mod tests {
         };
 
         let id = Id::from(1234);
-        db.insert(id, entry).await?;
+        db.insert(id, Some(10), entry).await?;
 
         let entry = db.get(id).await?;
         assert_eq!(entry.text, "hello world");
+        assert!(entry.uid.is_some());
+        assert_eq!(entry.uid.unwrap(), 10);
 
         let result = db.get(Id::from(5678)).await;
         assert!(result.is_err());
@@ -180,7 +203,7 @@ mod tests {
             ..Default::default()
         };
         let id = Id::from(1234);
-        db.insert(id, entry).await?;
+        db.insert(id, None, entry).await?;
         assert!(db.get(id).await.is_ok());
         assert!(db.get(id).await.is_err());
 
@@ -197,11 +220,10 @@ mod tests {
         };
 
         let id = Id::from(1234);
-        db.insert(id, entry).await?;
+        db.insert(id, None, entry).await?;
         assert!(db.get(id).await.is_ok());
 
         tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
-        assert!(db.get(id).await.unwrap().seconds_since_creation >= 1);
 
         db.purge().await?;
         assert!(db.get(id).await.is_err());
@@ -214,7 +236,7 @@ mod tests {
         let db = Database::new(Open::Memory)?;
 
         let id = Id::from(1234);
-        db.insert(id, Entry::default()).await?;
+        db.insert(id, None, Entry::default()).await?;
 
         assert!(db.get(id).await.is_ok());
         assert!(db.delete(id).await.is_ok());

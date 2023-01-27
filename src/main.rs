@@ -2,6 +2,7 @@ use crate::db::Database;
 use axum::extract::DefaultBodyLimit;
 use axum::http::StatusCode;
 use axum::{Router, Server};
+use axum_extra::extract::cookie::Key;
 use once_cell::sync::Lazy;
 use std::env::{self, VarError};
 use std::net::SocketAddr;
@@ -31,13 +32,14 @@ const VAR_ADDRESS_PORT: &str = "WASTEBIN_ADDRESS_PORT";
 const VAR_CACHE_SIZE: &str = "WASTEBIN_CACHE_SIZE";
 const VAR_DATABASE_PATH: &str = "WASTEBIN_DATABASE_PATH";
 const VAR_MAX_BODY_SIZE: &str = "WASTEBIN_MAX_BODY_SIZE";
+const VAR_SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("axum http error: {0}")]
     Axum(#[from] axum::http::Error),
-    #[error("deletion time expired")]
-    DeletionTimeExpired,
+    #[error("not allowed to delete")]
+    Delete,
     #[error("sqlite error: {0}")]
     Sqlite(#[from] rusqlite::Error),
     #[error("migrations error: {0}")]
@@ -56,6 +58,8 @@ pub enum Error {
     SyntaxParsing(#[from] syntect::parsing::ParsingError),
     #[error("time formatting error: {0}")]
     TimeFormatting(#[from] time::error::Format),
+    #[error("could not parse cookie: {0}")]
+    CookieParsing(String),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -68,6 +72,8 @@ enum EnvError {
     MaxBodySize(ParseIntError),
     #[error("failed to parse {VAR_ADDRESS_PORT}, expected `host:port`")]
     AddressPort,
+    #[error("failed to generate key from {VAR_SIGNING_KEY}: {0}")]
+    SigningKey(String),
 }
 
 impl From<Error> for StatusCode {
@@ -77,7 +83,7 @@ impl From<Error> for StatusCode {
                 rusqlite::Error::QueryReturnedNoRows => StatusCode::NOT_FOUND,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             },
-            Error::IllegalCharacters | Error::WrongSize | Error::DeletionTimeExpired => {
+            Error::IllegalCharacters | Error::WrongSize | Error::CookieParsing(_) => {
                 StatusCode::BAD_REQUEST
             }
             Error::Join(_)
@@ -87,6 +93,7 @@ impl From<Error> for StatusCode {
             | Error::SyntaxHighlighting(_)
             | Error::SyntaxParsing(_)
             | Error::Axum(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::Delete => StatusCode::FORBIDDEN,
         }
     }
 }
@@ -110,6 +117,11 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
         Err(VarError::NotPresent) => Ok(Database::new(db::Open::Memory)?),
     }?;
 
+    let key = env::var(VAR_SIGNING_KEY).map_or_else(
+        |_| Ok(Key::generate()),
+        |s| Key::try_from(s.as_bytes()).map_err(|err| EnvError::SigningKey(err.to_string())),
+    )?;
+
     let cache_size = env::var(VAR_CACHE_SIZE)
         .map_or_else(
             |_| Ok(NonZeroUsize::new(128).unwrap()),
@@ -117,7 +129,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
         )
         .map_err(EnvError::CacheSize)?;
 
-    let cache_layer = cache::Layer::new(database, cache_size);
+    let cache_layer = cache::Layer::new(database, cache_size, key);
 
     let addr: SocketAddr = env::var(VAR_ADDRESS_PORT)
         .unwrap_or_else(|_| "0.0.0.0:8088".to_string())

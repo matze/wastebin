@@ -65,6 +65,9 @@ run-time behavior:
   in-memory database is used.
 * `WASTEBIN_MAX_BODY_SIZE` number of bytes to accept for POST requests. Defaults
   to 1 MB.
+* `WASTEBIN_SIGNING_KEY` sets the key to sign cookies. If not set, a random key
+  will be generated which means cookies will become invalid after restarts,
+  hence paste creators cannot delete their pastes anymore.
 * `WASTEBIN_TITLE` overrides the HTML page title. Defaults to `wastebin`.
 * `RUST_LOG` influences logging. Besides the typical `trace`, `debug`, `info`
   etc. keys, you can also set the `tower_http` key to some log level to get

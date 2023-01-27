@@ -54,19 +54,19 @@ pub struct Paste<'a> {
     id: String,
     formatted: String,
     extension: String,
-    deletion_possible: bool,
+    can_delete: bool,
     version: &'a str,
 }
 
 impl<'a> Paste<'a> {
     /// Construct new paste view from cache `entry` and cache `key`.
-    pub fn new(entry: cache::Entry, key: &cache::Key) -> Self {
+    pub fn new(entry: cache::Entry, key: &cache::Key, can_delete: bool) -> Self {
         Self {
             title: &crate::TITLE,
             id: key.id(),
             extension: key.extension(),
             formatted: entry.formatted,
-            deletion_possible: entry.seconds_since_creation < 60,
+            can_delete,
             version: crate::VERSION,
         }
     }

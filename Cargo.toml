@@ -7,6 +7,7 @@ edition = "2021"
 askama = { git = "https://github.com/djc/askama", features = ["with-axum"] }
 askama_axum = { git = "https://github.com/djc/askama" }
 axum = { version = "0.6", features = ["headers", "json", "query"] }
+axum-extra = { version = "0", features = ["cookie-signed"] }
 bytes = "1"
 http-body = "0"
 lru = "0"
@@ -28,7 +29,7 @@ tracing-subscriber = "0"
 [dev-dependencies]
 http = "0"
 hyper = { version = "0", features = ["server", "tcp", "stream"] }
-reqwest = { version = "0", default-features = false, features = ["json"] }
+reqwest = { version = "0", default-features = false, features = ["cookies", "json"] }
 tower = { version = "0", default-features = false, features = ["util", "make"] }
 tower-service = "0"
 

@@ -2,6 +2,7 @@ use crate::cache;
 use crate::db::{self, Database};
 use axum::body::HttpBody;
 use axum::{BoxError, Router};
+use axum_extra::extract::cookie::Key;
 use http::Request;
 use hyper::{Body, Server};
 use reqwest::RequestBuilder;
@@ -35,6 +36,7 @@ impl Client {
 
         let client = reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
+            .cookie_store(true)
             .build()
             .unwrap();
 
@@ -48,14 +50,11 @@ impl Client {
     pub(crate) fn post(&self, url: &str) -> RequestBuilder {
         self.client.post(format!("http://{}{}", self.addr, url))
     }
-
-    pub(crate) fn delete(&self, url: &str) -> RequestBuilder {
-        self.client.delete(format!("http://{}{}", self.addr, url))
-    }
 }
 
 pub(crate) fn make_app() -> Result<Router, Box<dyn std::error::Error>> {
     let database = Database::new(db::Open::Memory)?;
-    let layer = cache::Layer::new(database.clone(), NonZeroUsize::new(128).unwrap());
+    let key = Key::generate();
+    let layer = cache::Layer::new(database, NonZeroUsize::new(128).unwrap(), key);
     Ok(crate::make_app(4096).with_state(layer))
 }

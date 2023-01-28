@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::errors::Error;
 use once_cell::sync::Lazy;
 use std::io::Cursor;
 use syntect::highlighting::ThemeSet;

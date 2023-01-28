@@ -1,6 +1,6 @@
+use crate::errors::Error;
 use crate::highlight::highlight;
 use crate::id::Id;
-use crate::Error;
 use axum::extract::Path;
 use lru::LruCache;
 use once_cell::sync::Lazy;

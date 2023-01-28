@@ -1,12 +1,12 @@
 use crate::db::Database;
+use crate::errors::Error;
 use axum::extract::{DefaultBodyLimit, FromRef};
-use axum::http::StatusCode;
 use axum::{Router, Server};
 use axum_extra::extract::cookie::Key;
 use once_cell::sync::Lazy;
 use std::env::{self, VarError};
 use std::net::SocketAddr;
-use std::num::{NonZeroUsize, ParseIntError, TryFromIntError};
+use std::num::{NonZeroUsize, ParseIntError};
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Duration;
@@ -15,6 +15,7 @@ use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
 mod db;
+mod errors;
 mod handler;
 mod highlight;
 mod id;
@@ -34,36 +35,6 @@ const VAR_MAX_BODY_SIZE: &str = "WASTEBIN_MAX_BODY_SIZE";
 const VAR_SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
 
 #[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("axum http error: {0}")]
-    Axum(#[from] axum::http::Error),
-    #[error("not allowed to delete")]
-    Delete,
-    #[error("not found")]
-    NotFound,
-    #[error("sqlite error: {0}")]
-    Sqlite(#[from] rusqlite::Error),
-    #[error("migrations error: {0}")]
-    Migration(#[from] rusqlite_migration::Error),
-    #[error("wrong size")]
-    WrongSize,
-    #[error("illegal characters")]
-    IllegalCharacters,
-    #[error("integer conversion error: {0}")]
-    IntConversion(#[from] TryFromIntError),
-    #[error("join error: {0}")]
-    Join(#[from] tokio::task::JoinError),
-    #[error("syntax highlighting error: {0}")]
-    SyntaxHighlighting(#[from] syntect::Error),
-    #[error("syntax parsing error: {0}")]
-    SyntaxParsing(#[from] syntect::parsing::ParsingError),
-    #[error("time formatting error: {0}")]
-    TimeFormatting(#[from] time::error::Format),
-    #[error("could not parse cookie: {0}")]
-    CookieParsing(String),
-}
-
-#[derive(thiserror::Error, Debug)]
 enum EnvError {
     #[error("failed to parse {VAR_CACHE_SIZE}, expected number of elements: {0}")]
     CacheSize(ParseIntError),
@@ -81,29 +52,6 @@ enum EnvError {
 pub struct AppState {
     pub db: Database,
     pub key: Key,
-}
-
-impl From<Error> for StatusCode {
-    fn from(err: Error) -> Self {
-        match err {
-            Error::Sqlite(err) => match err {
-                rusqlite::Error::QueryReturnedNoRows => StatusCode::NOT_FOUND,
-                _ => StatusCode::INTERNAL_SERVER_ERROR,
-            },
-            Error::NotFound => StatusCode::NOT_FOUND,
-            Error::IllegalCharacters | Error::WrongSize | Error::CookieParsing(_) => {
-                StatusCode::BAD_REQUEST
-            }
-            Error::Join(_)
-            | Error::IntConversion(_)
-            | Error::TimeFormatting(_)
-            | Error::Migration(_)
-            | Error::SyntaxHighlighting(_)
-            | Error::SyntaxParsing(_)
-            | Error::Axum(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Error::Delete => StatusCode::FORBIDDEN,
-        }
-    }
 }
 
 impl FromRef<AppState> for Key {
@@ -153,7 +101,6 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
         .map_err(EnvError::CacheSize)?;
 
     let state = AppState { db, key };
-    // let cache_layer = cache::Layer::new(database, cache_size, key);
 
     let addr: SocketAddr = env::var(VAR_ADDRESS_PORT)
         .unwrap_or_else(|_| "0.0.0.0:8088".to_string())

@@ -1,5 +1,5 @@
 use crate::db::InsertEntry;
-use crate::Error;
+use crate::errors::Error;
 use std::convert::{From, TryFrom};
 use std::fmt;
 

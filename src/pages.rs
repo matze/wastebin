@@ -61,11 +61,11 @@ pub struct Paste<'a> {
 
 impl<'a> Paste<'a> {
     /// Construct new paste view from cache `entry` and cache `key`.
-    pub fn new(html: String, key: &CacheKey, can_delete: bool) -> Self {
+    pub fn new(html: String, key: CacheKey, can_delete: bool) -> Self {
         Self {
             title: &crate::TITLE,
             id: key.id(),
-            extension: key.extension(),
+            extension: key.ext,
             html,
             can_delete,
             version: crate::VERSION,

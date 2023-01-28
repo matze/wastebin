@@ -242,11 +242,6 @@ impl CacheKey {
     pub fn id(&self) -> String {
         self.id.to_string()
     }
-
-    /// Make a copy of the owned extension.
-    pub fn extension(&self) -> String {
-        self.ext.clone()
-    }
 }
 
 impl TryFrom<Path<String>> for CacheKey {

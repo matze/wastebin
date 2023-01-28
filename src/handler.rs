@@ -199,7 +199,7 @@ async fn get_html(
         .zip(owner_uid)
         .map_or(false, |(user_uid, owner_uid)| user_uid == owner_uid);
 
-    Ok(pages::Paste::new(html, &key, can_delete))
+    Ok(pages::Paste::new(html, key, can_delete))
 }
 
 async fn get_raw(id: Path<String>, state: AppState) -> Result<String, ErrorResponse> {

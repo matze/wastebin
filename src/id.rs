@@ -10,16 +10,19 @@ static CHAR_TABLE: &[char; 64] = &[
     '5', '6', '7', '8', '9', '-', '+',
 ];
 
+/// Represents a 32-bit integer either numerically or mapped to a 6 character string.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Id {
     n: u32,
 }
 
 impl Id {
+    /// Return the value itself.
     pub fn as_u32(self) -> u32 {
         self.n
     }
 
+    /// Generate a URL path from the string representation and `entry`'s extension.
     pub fn to_url_path(self, entry: &InsertEntry) -> String {
         entry
             .extension

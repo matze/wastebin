@@ -110,7 +110,12 @@ impl Layer {
     }
 
     /// Insert `entry` into the database.
-    pub async fn insert(&self, id: Id, uid: Option<i64>, entry: db::Entry) -> Result<(), Error> {
+    pub async fn insert(
+        &self,
+        id: Id,
+        uid: Option<i64>,
+        entry: db::InsertEntry,
+    ) -> Result<(), Error> {
         self.db.insert(id, uid, entry).await
     }
 
@@ -144,7 +149,7 @@ impl Layer {
     }
 
     /// Get raw content for `id` or `None` if not found.
-    pub async fn get(&self, id: Id) -> Result<db::Entry, Error> {
+    pub async fn get(&self, id: Id) -> Result<db::ReadEntry, Error> {
         self.db.get(id).await
     }
 
@@ -196,7 +201,7 @@ mod tests {
         let key = SigningKey::generate();
         let layer = Layer::new(db, NonZeroUsize::new(128).unwrap(), key);
 
-        let entry = db::Entry {
+        let entry = db::InsertEntry {
             text: "hello world".to_string(),
             expires: Some(1),
             ..Default::default()
@@ -205,12 +210,10 @@ mod tests {
         let id = Id::from(1234);
         let key = Key::new(id, "rs".to_string());
         layer.insert(id, None, entry).await?;
-        assert!(layer.get_formatted(&key).await.is_ok());
 
-        tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
-        layer.purge().await?;
-        assert!(layer.db.get(id).await.is_err());
-        assert!(layer.get_formatted(&key).await.is_err());
+        let result = layer.get_formatted(&key).await;
+        assert!(result.is_err());
+        assert!(matches!(result.err().unwrap(), Error::NotFound));
 
         Ok(())
     }

@@ -1,4 +1,4 @@
-use crate::db::Entry;
+use crate::db;
 use crate::Error;
 use once_cell::sync::Lazy;
 use std::io::Cursor;
@@ -29,7 +29,7 @@ pub struct Data<'a> {
     pub syntax_set: SyntaxSet,
 }
 
-pub fn highlight(entry: &Entry, ext: &str) -> Result<String, Error> {
+pub fn highlight(entry: &db::ReadEntry, ext: &str) -> Result<String, Error> {
     let syntax_ref = DATA
         .syntax_set
         .find_syntax_by_extension(ext)

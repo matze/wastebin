@@ -40,6 +40,8 @@ pub enum Error {
     Axum(#[from] axum::http::Error),
     #[error("not allowed to delete")]
     Delete,
+    #[error("not found")]
+    NotFound,
     #[error("sqlite error: {0}")]
     Sqlite(#[from] rusqlite::Error),
     #[error("migrations error: {0}")]
@@ -83,6 +85,7 @@ impl From<Error> for StatusCode {
                 rusqlite::Error::QueryReturnedNoRows => StatusCode::NOT_FOUND,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             },
+            Error::NotFound => StatusCode::NOT_FOUND,
             Error::IllegalCharacters | Error::WrongSize | Error::CookieParsing(_) => {
                 StatusCode::BAD_REQUEST
             }

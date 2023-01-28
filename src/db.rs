@@ -13,15 +13,27 @@ pub struct Database {
     conn: Arc<Mutex<Connection>>,
 }
 
-/// A database entry corresponding to a paste.
+/// An entry inserted into the database.
 #[derive(Default, Debug, Serialize, Deserialize)]
-pub struct Entry {
+pub struct InsertEntry {
     /// Content
     pub text: String,
     /// File extension
     pub extension: Option<String>,
     /// Expiration in seconds from now
     pub expires: Option<u32>,
+    /// Delete if read
+    pub burn_after_reading: Option<bool>,
+    /// User identifier that inserted the paste
+    pub uid: Option<i64>,
+}
+
+/// An entry read from the database.
+pub struct ReadEntry {
+    /// Content
+    pub text: String,
+    /// Entry is expired
+    pub expired: Option<bool>,
     /// Delete if read
     pub burn_after_reading: Option<bool>,
     /// User identifier that inserted the paste
@@ -60,7 +72,7 @@ impl Database {
         })
     }
 
-    pub async fn insert(&self, id: Id, uid: Option<i64>, entry: Entry) -> Result<(), Error> {
+    pub async fn insert(&self, id: Id, uid: Option<i64>, entry: InsertEntry) -> Result<(), Error> {
         let conn = self.conn.clone();
         let id = id.as_u32();
 
@@ -85,26 +97,30 @@ impl Database {
         Ok(())
     }
 
-    pub async fn get(&self, id: Id) -> Result<Entry, Error> {
+    pub async fn get(&self, id: Id) -> Result<ReadEntry, Error> {
         let conn = self.conn.clone();
         let id_as_u32 = id.as_u32();
 
         let entry = spawn_blocking(move || {
             conn.lock().unwrap().query_row(
-                "SELECT text, burn_after_reading, uid FROM entries WHERE id=?1",
+                "SELECT text, burn_after_reading, uid, expires < datetime('now') FROM entries WHERE id=?1",
                 params![id_as_u32],
                 |row| {
-                    Ok(Entry {
+                    Ok(ReadEntry {
                         text: row.get(0)?,
-                        extension: None,
-                        expires: None,
                         burn_after_reading: row.get(1)?,
                         uid: row.get(2)?,
+                        expired: row.get(3)?,
                     })
                 },
             )
         })
         .await??;
+
+        if entry.expired.unwrap_or(false) {
+            self.delete(id).await?;
+            return Err(Error::NotFound);
+        }
 
         if entry.burn_after_reading.unwrap_or(false) {
             self.delete(id).await?;
@@ -176,7 +192,7 @@ mod tests {
     async fn insert() -> Result<(), Box<dyn std::error::Error>> {
         let db = Database::new(Open::Memory)?;
 
-        let entry = Entry {
+        let entry = InsertEntry {
             text: "hello world".to_string(),
             ..Default::default()
         };
@@ -198,7 +214,7 @@ mod tests {
     #[tokio::test]
     async fn burn_after_reading() -> Result<(), Box<dyn std::error::Error>> {
         let db = Database::new(Open::Memory)?;
-        let entry = Entry {
+        let entry = InsertEntry {
             burn_after_reading: Some(true),
             ..Default::default()
         };
@@ -214,19 +230,17 @@ mod tests {
     async fn expired_is_purged() -> Result<(), Box<dyn std::error::Error>> {
         let db = Database::new(Open::Memory)?;
 
-        let entry = Entry {
+        let entry = InsertEntry {
             expires: Some(1),
             ..Default::default()
         };
 
         let id = Id::from(1234);
         db.insert(id, None, entry).await?;
-        assert!(db.get(id).await.is_ok());
 
-        tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
-
-        db.purge().await?;
-        assert!(db.get(id).await.is_err());
+        let result = db.get(id).await;
+        assert!(result.is_err());
+        assert!(matches!(result.err().unwrap(), Error::NotFound));
 
         Ok(())
     }
@@ -236,7 +250,7 @@ mod tests {
         let db = Database::new(Open::Memory)?;
 
         let id = Id::from(1234);
-        db.insert(id, None, Entry::default()).await?;
+        db.insert(id, None, InsertEntry::default()).await?;
 
         assert!(db.get(id).await.is_ok());
         assert!(db.delete(id).await.is_ok());

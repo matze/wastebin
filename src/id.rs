@@ -1,4 +1,4 @@
-use crate::db::Entry;
+use crate::db::InsertEntry;
 use crate::Error;
 use std::convert::{From, TryFrom};
 use std::fmt;
@@ -28,7 +28,7 @@ impl Id {
         self.n
     }
 
-    pub fn to_url_path(self, entry: &Entry) -> String {
+    pub fn to_url_path(self, entry: &InsertEntry) -> String {
         entry
             .extension
             .as_ref()

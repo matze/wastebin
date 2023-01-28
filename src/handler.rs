@@ -1,5 +1,5 @@
 use crate::cache::{Key, Layer};
-use crate::db::Entry;
+use crate::db::InsertEntry;
 use crate::id::Id;
 use crate::Router;
 use crate::{highlight, pages, Error};
@@ -25,7 +25,7 @@ struct FormEntry {
     expires: String,
 }
 
-impl From<FormEntry> for Entry {
+impl From<FormEntry> for InsertEntry {
     fn from(entry: FormEntry) -> Self {
         let burn_after_reading = Some(entry.expires == "burn");
 
@@ -52,7 +52,7 @@ struct JsonEntry {
     burn_after_reading: Option<bool>,
 }
 
-impl From<JsonEntry> for Entry {
+impl From<JsonEntry> for InsertEntry {
     fn from(entry: JsonEntry) -> Self {
         Self {
             text: entry.text,
@@ -108,7 +108,7 @@ async fn insert_from_form(
         layer.next_uid().await?
     };
 
-    let entry: Entry = entry.into();
+    let entry: InsertEntry = entry.into();
     let url = id.to_url_path(&entry);
     let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
 
@@ -140,7 +140,7 @@ async fn insert_from_json(
     .map_err(Error::from)?
     .into();
 
-    let entry: Entry = entry.into();
+    let entry: InsertEntry = entry.into();
     let path = id.to_url_path(&entry);
 
     layer.insert(id, None, entry).await?;
@@ -384,7 +384,7 @@ mod tests {
     async fn insert_via_json() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new(make_app()?);
 
-        let entry = Entry {
+        let entry = InsertEntry {
             text: "FooBarBaz".to_string(),
             ..Default::default()
         };

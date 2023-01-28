@@ -101,7 +101,7 @@ impl Database {
                 params![id, uid, entry.text, entry.burn_after_reading],
             ),
             Some(expires) => conn.lock().unwrap().execute(
-                "INSERT INTO entries (id, uid, text, burn_after_reading, expires) VALUES (?1, ?2, ?3, ?4, ?5)",
+                "INSERT INTO entries (id, uid, text, burn_after_reading, expires) VALUES (?1, ?2, ?3, ?4, datetime('now', ?5))",
                 params![
                     id,
                     uid,

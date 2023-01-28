@@ -5,7 +5,6 @@ use crate::Error;
 use axum::extract::{FromRef, Path};
 use axum_extra::extract::cookie::Key as SigningKey;
 use lru::LruCache;
-use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
@@ -18,7 +17,6 @@ pub struct Key {
 
 pub struct Inner {
     cache: LruCache<Key, String>,
-    cached: HashMap<Id, HashSet<String>>,
 }
 
 type Cache = Arc<Mutex<Inner>>;
@@ -54,10 +52,7 @@ impl Inner {
     pub fn new(size: NonZeroUsize) -> Self {
         let cache = lru::LruCache::new(size);
 
-        Self {
-            cache,
-            cached: HashMap::new(),
-        }
+        Self { cache }
     }
 
     pub fn get<'a>(&'a mut self, k: &Key) -> Option<&'a String> {
@@ -65,26 +60,7 @@ impl Inner {
     }
 
     pub fn put(&mut self, k: Key, v: String) -> Option<String> {
-        if let Some(cached) = self.cached.get_mut(&k.id) {
-            if !cached.contains(&k.ext) {
-                cached.insert(k.ext.clone());
-            }
-        } else {
-            let mut set = HashSet::new();
-            set.insert(k.ext.clone());
-            self.cached.insert(k.id, set);
-        }
-
         self.cache.put(k, v)
-    }
-
-    pub fn remove(&mut self, id: Id) {
-        if let Some(exts) = self.cached.remove(&id) {
-            for ext in exts {
-                tracing::debug!("evicting {id:?}.{ext}");
-                self.cache.pop(&Key::new(id, ext));
-            }
-        }
     }
 }
 
@@ -155,7 +131,6 @@ impl Layer {
 
     /// Delete `id`.
     pub async fn delete(&self, id: Id) -> Result<(), Error> {
-        self.cache.lock().unwrap().remove(id);
         self.db.delete(id).await
     }
 

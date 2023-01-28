@@ -77,6 +77,12 @@ enum EnvError {
     SigningKey(String),
 }
 
+#[derive(Clone)]
+pub struct AppState {
+    pub db: Database,
+    pub key: Key,
+}
+
 impl From<Error> for StatusCode {
     fn from(err: Error) -> Self {
         match err {
@@ -98,12 +104,6 @@ impl From<Error> for StatusCode {
             Error::Delete => StatusCode::FORBIDDEN,
         }
     }
-}
-
-#[derive(Clone)]
-pub struct AppState {
-    pub db: Database,
-    pub key: Key,
 }
 
 impl FromRef<AppState> for Key {

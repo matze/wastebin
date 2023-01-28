@@ -11,45 +11,40 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tokio::task::spawn_blocking;
 
-pub type Cache = LruCache<CacheKey, String>;
+static MIGRATIONS: Lazy<Migrations> = Lazy::new(|| {
+    Migrations::new(vec![
+        M::up(include_str!("migrations/0001-initial.sql")),
+        M::up(include_str!("migrations/0002-add-created-column.sql")),
+        M::up(include_str!(
+            "migrations/0003-drop-created-add-uid-column.sql"
+        )),
+    ])
+});
 
+/// Our main database and integrated cache.
 #[derive(Clone)]
 pub struct Database {
     conn: Arc<Mutex<Connection>>,
     cache: Arc<Mutex<Cache>>,
 }
 
+/// Database opening modes
+#[derive(Debug)]
+pub enum Open {
+    /// Open in-memory database that is wiped after reload
+    Memory,
+    /// Open database from given path
+    Path(PathBuf),
+}
+
+/// Type that stores formatted HTML.
+pub type Cache = LruCache<CacheKey, String>;
+
+/// Cache based on identifier and format.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct CacheKey {
     pub id: Id,
     pub ext: String,
-}
-
-impl CacheKey {
-    pub fn new(id: Id, ext: String) -> Self {
-        Self { id, ext }
-    }
-
-    pub fn id(&self) -> String {
-        self.id.to_string()
-    }
-
-    pub fn extension(&self) -> String {
-        self.ext.clone()
-    }
-}
-
-impl TryFrom<Path<String>> for CacheKey {
-    type Error = Error;
-
-    fn try_from(value: Path<String>) -> Result<Self, Self::Error> {
-        let (id, ext) = match value.split_once('.') {
-            None => (Id::try_from(value.as_str())?, "txt".to_string()),
-            Some((id, ext)) => (Id::try_from(id)?, ext.to_string()),
-        };
-
-        Ok(Self { id, ext })
-    }
 }
 
 /// An entry inserted into the database.
@@ -78,22 +73,6 @@ pub struct ReadEntry {
     /// User identifier that inserted the paste
     pub uid: Option<i64>,
 }
-
-#[derive(Debug)]
-pub enum Open {
-    Memory,
-    Path(PathBuf),
-}
-
-static MIGRATIONS: Lazy<Migrations> = Lazy::new(|| {
-    Migrations::new(vec![
-        M::up(include_str!("migrations/0001-initial.sql")),
-        M::up(include_str!("migrations/0002-add-created-column.sql")),
-        M::up(include_str!(
-            "migrations/0003-drop-created-add-uid-column.sql"
-        )),
-    ])
-});
 
 impl Database {
     pub fn new(method: Open, cache: Cache) -> Result<Self, Error> {
@@ -246,6 +225,33 @@ impl Database {
         .await??;
 
         Ok(uid)
+    }
+}
+
+impl CacheKey {
+    pub fn new(id: Id, ext: String) -> Self {
+        Self { id, ext }
+    }
+
+    pub fn id(&self) -> String {
+        self.id.to_string()
+    }
+
+    pub fn extension(&self) -> String {
+        self.ext.clone()
+    }
+}
+
+impl TryFrom<Path<String>> for CacheKey {
+    type Error = Error;
+
+    fn try_from(value: Path<String>) -> Result<Self, Self::Error> {
+        let (id, ext) = match value.split_once('.') {
+            None => (Id::try_from(value.as_str())?, "txt".to_string()),
+            Some((id, ext)) => (Id::try_from(id)?, ext.to_string()),
+        };
+
+        Ok(Self { id, ext })
     }
 }
 

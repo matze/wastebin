@@ -3,9 +3,29 @@ use crate::Error;
 use std::convert::{From, TryFrom};
 use std::fmt;
 
+static CHAR_TABLE: &[char; 64] = &[
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+    't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
+    'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4',
+    '5', '6', '7', '8', '9', '-', '+',
+];
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Id {
     n: u32,
+}
+
+impl Id {
+    pub fn as_u32(self) -> u32 {
+        self.n
+    }
+
+    pub fn to_url_path(self, entry: &InsertEntry) -> String {
+        entry
+            .extension
+            .as_ref()
+            .map_or_else(|| format!("/{self}"), |ext| format!("/{self}.{ext}"))
+    }
 }
 
 impl fmt::Display for Id {
@@ -22,26 +42,6 @@ impl fmt::Display for Id {
         write!(f, "{s}")
     }
 }
-
-impl Id {
-    pub fn as_u32(self) -> u32 {
-        self.n
-    }
-
-    pub fn to_url_path(self, entry: &InsertEntry) -> String {
-        entry
-            .extension
-            .as_ref()
-            .map_or_else(|| format!("/{self}"), |ext| format!("/{self}.{ext}"))
-    }
-}
-
-static CHAR_TABLE: &[char; 64] = &[
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
-    't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-    'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4',
-    '5', '6', '7', '8', '9', '-', '+',
-];
 
 impl TryFrom<&str> for Id {
     type Error = Error;

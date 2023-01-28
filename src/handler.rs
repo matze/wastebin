@@ -25,6 +25,32 @@ struct FormEntry {
     expires: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct JsonEntry {
+    text: String,
+    extension: Option<String>,
+    expires: Option<u32>,
+    burn_after_reading: Option<bool>,
+}
+
+#[derive(Serialize)]
+struct ErrorPayload {
+    message: String,
+}
+
+#[derive(Deserialize, Serialize)]
+struct RedirectResponse {
+    path: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct GetQuery {
+    fmt: Option<String>,
+    dl: Option<String>,
+}
+
+type ErrorResponse = (StatusCode, Json<ErrorPayload>);
+
 impl From<FormEntry> for InsertEntry {
     fn from(entry: FormEntry) -> Self {
         let burn_after_reading = Some(entry.expires == "burn");
@@ -44,14 +70,6 @@ impl From<FormEntry> for InsertEntry {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct JsonEntry {
-    text: String,
-    extension: Option<String>,
-    expires: Option<u32>,
-    burn_after_reading: Option<bool>,
-}
-
 impl From<JsonEntry> for InsertEntry {
     fn from(entry: JsonEntry) -> Self {
         Self {
@@ -63,13 +81,6 @@ impl From<JsonEntry> for InsertEntry {
         }
     }
 }
-
-#[derive(Serialize)]
-struct ErrorPayload {
-    message: String,
-}
-
-type ErrorResponse = (StatusCode, Json<ErrorPayload>);
 
 impl From<Error> for ErrorResponse {
     fn from(err: Error) -> Self {
@@ -121,11 +132,6 @@ async fn insert_from_form(
     } else {
         Ok((jar, Redirect::to(&url)))
     }
-}
-
-#[derive(Deserialize, Serialize)]
-struct RedirectResponse {
-    path: String,
 }
 
 async fn insert_from_json(
@@ -220,12 +226,6 @@ async fn get_download(
         .header(header::CONTENT_DISPOSITION, content_disposition)
         .body(raw_string)
         .map_err(Error::from)?)
-}
-
-#[derive(Deserialize, Debug)]
-struct GetQuery {
-    fmt: Option<String>,
-    dl: Option<String>,
 }
 
 async fn get_paste(

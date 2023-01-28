@@ -1,4 +1,4 @@
-use crate::db::{CacheKey, FormattedEntry};
+use crate::db::CacheKey;
 use crate::highlight;
 use askama::Template;
 use axum::http::StatusCode;
@@ -53,7 +53,7 @@ impl<'a> Default for Index<'a> {
 pub struct Paste<'a> {
     title: &'a str,
     id: String,
-    formatted: String,
+    html: String,
     extension: String,
     can_delete: bool,
     version: &'a str,
@@ -61,12 +61,12 @@ pub struct Paste<'a> {
 
 impl<'a> Paste<'a> {
     /// Construct new paste view from cache `entry` and cache `key`.
-    pub fn new(entry: FormattedEntry, key: &CacheKey, can_delete: bool) -> Self {
+    pub fn new(html: String, key: &CacheKey, can_delete: bool) -> Self {
         Self {
             title: &crate::TITLE,
             id: key.id(),
             extension: key.extension(),
-            formatted: entry.html,
+            html,
             can_delete,
             version: crate::VERSION,
         }

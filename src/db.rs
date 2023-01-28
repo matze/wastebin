@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tokio::task::spawn_blocking;
 
-pub type Cache = LruCache<CacheKey, FormattedEntry>;
+pub type Cache = LruCache<CacheKey, String>;
 
 #[derive(Clone)]
 pub struct Database {
@@ -79,15 +79,6 @@ pub struct ReadEntry {
     pub uid: Option<i64>,
 }
 
-/// An entry with formatted content.
-#[derive(Clone)]
-pub struct FormattedEntry {
-    /// Formatted HTML content
-    pub html: String,
-    /// User identifier that inserted the paste
-    pub uid: Option<i64>,
-}
-
 #[derive(Debug)]
 pub enum Open {
     Memory,
@@ -146,6 +137,7 @@ impl Database {
         Ok(())
     }
 
+    /// Get entire entry for `id`.
     pub async fn get(&self, id: Id) -> Result<ReadEntry, Error> {
         let conn = self.conn.clone();
         let id_as_u32 = id.as_u32();
@@ -178,27 +170,51 @@ impl Database {
         Ok(entry)
     }
 
-    /// Look up or generate HTML formatted data. Return `None` if `key` is not found.
-    pub async fn get_formatted(&self, key: &CacheKey) -> Result<FormattedEntry, Error> {
-        let entry = self.get(key.id).await?;
-        let uid = entry.uid;
+    /// Get optional `uid` for `id` if it exists but error with `Error::NotFound` if `id` is
+    /// expired or does not exist.
+    pub async fn get_uid(&self, id: Id) -> Result<Option<i64>, Error> {
+        let conn = self.conn.clone();
+        let id_as_u32 = id.as_u32();
 
-        if let Some(entry) = self.cache.lock().unwrap().get(key) {
-            tracing::debug!(?key, "found cached item");
-            return Ok(entry.clone());
+        let (uid, expired) = spawn_blocking(move || {
+            conn.lock().unwrap().query_row(
+                "SELECT uid, expires < datetime('now') FROM entries WHERE id=?1",
+                params![id_as_u32],
+                |row| {
+                    let uid: Option<i64> = row.get(0)?;
+                    let expired: Option<bool> = row.get(1)?;
+                    Ok((uid, expired))
+                },
+            )
+        })
+        .await??;
+
+        if expired.unwrap_or(false) {
+            self.delete(id).await?;
+            return Err(Error::NotFound);
         }
 
+        Ok(uid)
+    }
+
+    /// Look up or generate HTML formatted data. Return `None` if `key` is not found.
+    pub async fn get_html(&self, key: &CacheKey) -> Result<String, Error> {
+        if let Some(html) = self.cache.lock().unwrap().get(key) {
+            tracing::trace!(?key, "found cached item");
+            return Ok(html.to_string());
+        }
+
+        let entry = self.get(key.id).await?;
         let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
         let ext = key.ext.clone();
-        let html = tokio::task::spawn_blocking(move || highlight(&entry, &ext)).await??;
-        let entry = FormattedEntry { html, uid };
+        let html = tokio::task::spawn_blocking(move || highlight(&entry.text, &ext)).await??;
 
         if !burn_after_reading {
-            tracing::debug!(?key, "cache item");
-            self.cache.lock().unwrap().put(key.clone(), entry.clone());
+            tracing::trace!(?key, "cache item");
+            self.cache.lock().unwrap().put(key.clone(), html.clone());
         }
 
-        Ok(entry)
+        Ok(html)
     }
 
     pub async fn delete(&self, id: Id) -> Result<(), Error> {

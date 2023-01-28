@@ -183,16 +183,17 @@ async fn get_html(
     jar: SignedCookieJar,
 ) -> Result<pages::Paste<'static>, pages::ErrorResponse<'static>> {
     let key = CacheKey::try_from(id)?;
-    let entry = state.db.get_formatted(&key).await?;
+    let owner_uid = state.db.get_uid(key.id).await?;
+    let html = state.db.get_html(&key).await?;
     let can_delete = jar
         .get("uid")
         .map(|cookie| cookie.value().parse::<i64>())
         .transpose()
         .map_err(|err| Error::CookieParsing(err.to_string()))?
-        .zip(entry.uid)
-        .map_or(false, |(user_uid, db_uid)| user_uid == db_uid);
+        .zip(owner_uid)
+        .map_or(false, |(user_uid, owner_uid)| user_uid == owner_uid);
 
-    Ok(pages::Paste::new(entry, &key, can_delete))
+    Ok(pages::Paste::new(html, &key, can_delete))
 }
 
 async fn get_raw(id: Path<String>, state: AppState) -> Result<String, ErrorResponse> {

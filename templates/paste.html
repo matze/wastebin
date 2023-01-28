@@ -24,7 +24,7 @@
 {% block content %}
   <div>
     <div>
-      <pre class="code">{{ formatted|safe }}</pre>
+      <pre class="code">{{ html|safe }}</pre>
     </div>
     <div class="paste-box">
       {% if can_delete %}

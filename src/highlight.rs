@@ -1,4 +1,3 @@
-use crate::db;
 use crate::Error;
 use once_cell::sync::Lazy;
 use std::io::Cursor;
@@ -29,7 +28,7 @@ pub struct Data<'a> {
     pub syntax_set: SyntaxSet,
 }
 
-pub fn highlight(entry: &db::ReadEntry, ext: &str) -> Result<String, Error> {
+pub fn highlight(source: &str, ext: &str) -> Result<String, Error> {
     let syntax_ref = DATA
         .syntax_set
         .find_syntax_by_extension(ext)
@@ -39,7 +38,7 @@ pub fn highlight(entry: &db::ReadEntry, ext: &str) -> Result<String, Error> {
     let mut html = String::from("<table><tbody>");
     let mut scope_stack = ScopeStack::new();
 
-    for (mut line_number, line) in LinesWithEndings::from(&entry.text).enumerate() {
+    for (mut line_number, line) in LinesWithEndings::from(source).enumerate() {
         let parsed = parse_state.parse_line(line, &DATA.syntax_set)?;
         let (formatted, delta) = line_tokens_to_classed_spans(
             line,

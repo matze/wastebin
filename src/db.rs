@@ -75,6 +75,7 @@ pub struct ReadEntry {
 }
 
 impl Database {
+    /// Create new database with the given `method` and `cache`.
     pub fn new(method: Open, cache: Cache) -> Result<Self, Error> {
         tracing::debug!("opening {method:?}");
 
@@ -91,6 +92,7 @@ impl Database {
         Ok(Self { conn, cache })
     }
 
+    /// Insert `entry` under `id` into the database and optionally set owner to `uid`.
     pub async fn insert(&self, id: Id, uid: Option<i64>, entry: InsertEntry) -> Result<(), Error> {
         let conn = self.conn.clone();
         let id = id.as_u32();
@@ -196,6 +198,7 @@ impl Database {
         Ok(html)
     }
 
+    /// Delete `id`.
     pub async fn delete(&self, id: Id) -> Result<(), Error> {
         let conn = self.conn.clone();
         let id = id.as_u32();
@@ -210,6 +213,7 @@ impl Database {
         Ok(())
     }
 
+    /// Retrieve next monotonically increasing uid.
     pub async fn next_uid(&self) -> Result<i64, Error> {
         let conn = self.conn.clone();
 
@@ -229,14 +233,17 @@ impl Database {
 }
 
 impl CacheKey {
+    /// Construct cache key from `id` and file `ext`.
     pub fn new(id: Id, ext: String) -> Self {
         Self { id, ext }
     }
 
+    /// Make a copy of the owned id.
     pub fn id(&self) -> String {
         self.id.to_string()
     }
 
+    /// Make a copy of the owned extension.
     pub fn extension(&self) -> String {
         self.ext.clone()
     }

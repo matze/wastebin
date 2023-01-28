@@ -315,6 +315,8 @@ mod tests {
         let id = Id::from(1234);
         db.insert(id, None, entry).await?;
 
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
         let result = db.get(id).await;
         assert!(result.is_err());
         assert!(matches!(result.err().unwrap(), Error::NotFound));

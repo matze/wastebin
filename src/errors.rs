@@ -7,6 +7,8 @@ pub enum Error {
     Axum(#[from] axum::http::Error),
     #[error("not allowed to delete")]
     Delete,
+    #[error("compression error: {0}")]
+    Compression(String),
     #[error("not found")]
     NotFound,
     #[error("sqlite error: {0}")]
@@ -43,6 +45,7 @@ impl From<Error> for StatusCode {
                 StatusCode::BAD_REQUEST
             }
             Error::Join(_)
+            | Error::Compression(_)
             | Error::IntConversion(_)
             | Error::TimeFormatting(_)
             | Error::Migration(_)

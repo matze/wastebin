@@ -1,13 +1,16 @@
 use crate::errors::Error;
 use crate::highlight::highlight;
 use crate::id::Id;
+use async_compression::tokio::bufread::{ZstdDecoder, ZstdEncoder};
 use lru::LruCache;
 use once_cell::sync::Lazy;
-use rusqlite::{params, Connection};
-use rusqlite_migration::{Migrations, M};
+use rusqlite::{params, Connection, Transaction};
+use rusqlite_migration::{HookError, Migrations, M};
 use serde::{Deserialize, Serialize};
+use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use tokio::io::{AsyncReadExt, BufReader};
 use tokio::task::spawn_blocking;
 
 static MIGRATIONS: Lazy<Migrations> = Lazy::new(|| {
@@ -17,6 +20,32 @@ static MIGRATIONS: Lazy<Migrations> = Lazy::new(|| {
         M::up(include_str!(
             "migrations/0003-drop-created-add-uid-column.sql"
         )),
+        M::up_with_hook(
+            include_str!("migrations/0004-add-compressed-column.sql"),
+            |tx: &Transaction| {
+                let mut stmt = tx.prepare("SELECT id, text FROM entries")?;
+
+                let rows = stmt
+                    .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+                    .collect::<Result<Vec<(u32, String)>, _>>()?;
+
+                tracing::debug!("compressing {} rows", rows.len());
+
+                for (id, text) in rows {
+                    let cursor = Cursor::new(text);
+                    let data = zstd::stream::encode_all(cursor, zstd::DEFAULT_COMPRESSION_LEVEL)
+                        .map_err(|e| HookError::Hook(e.to_string()))?;
+
+                    tx.execute(
+                        "UPDATE entries SET data = ?1 WHERE id = ?2",
+                        params![data, id],
+                    )?;
+                }
+
+                Ok(())
+            },
+        ),
+        M::up(include_str!("migrations/0005-drop-text-column.sql")),
     ])
 });
 
@@ -96,17 +125,27 @@ impl Database {
         let conn = self.conn.clone();
         let id = id.as_u32();
 
+        let cursor = Cursor::new(entry.text);
+        let reader = BufReader::new(cursor);
+        let mut encoder = ZstdEncoder::new(reader);
+        let mut data = Vec::new();
+
+        encoder
+            .read_to_end(&mut data)
+            .await
+            .map_err(|e| Error::Compression(e.to_string()))?;
+
         spawn_blocking(move || match entry.expires {
             None => conn.lock().unwrap().execute(
-                "INSERT INTO entries (id, uid, text, burn_after_reading) VALUES (?1, ?2, ?3, ?4)",
-                params![id, uid, entry.text, entry.burn_after_reading],
+                "INSERT INTO entries (id, uid, data, burn_after_reading) VALUES (?1, ?2, ?3, ?4)",
+                params![id, uid, data, entry.burn_after_reading],
             ),
             Some(expires) => conn.lock().unwrap().execute(
-                "INSERT INTO entries (id, uid, text, burn_after_reading, expires) VALUES (?1, ?2, ?3, ?4, datetime('now', ?5))",
+                "INSERT INTO entries (id, uid, data, burn_after_reading, expires) VALUES (?1, ?2, ?3, ?4, datetime('now', ?5))",
                 params![
                     id,
                     uid,
-                    entry.text,
+                    data,
                     entry.burn_after_reading,
                     format!("{expires} seconds")
                 ],
@@ -122,32 +161,42 @@ impl Database {
         let conn = self.conn.clone();
         let id_as_u32 = id.as_u32();
 
-        let entry = spawn_blocking(move || {
+        let (data, burn_after_reading, uid, expired): (Vec<u8>, Option<bool>, _, Option<bool>) = spawn_blocking(move || {
             conn.lock().unwrap().query_row(
-                "SELECT text, burn_after_reading, uid, expires < datetime('now') FROM entries WHERE id=?1",
+                "SELECT data, burn_after_reading, uid, expires < datetime('now') FROM entries WHERE id=?1",
                 params![id_as_u32],
                 |row| {
-                    Ok(ReadEntry {
-                        text: row.get(0)?,
-                        burn_after_reading: row.get(1)?,
-                        uid: row.get(2)?,
-                        expired: row.get(3)?,
-                    })
+                    Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
                 },
             )
         })
         .await??;
 
-        if entry.expired.unwrap_or(false) {
+        if expired.unwrap_or(false) {
             self.delete(id).await?;
             return Err(Error::NotFound);
         }
 
-        if entry.burn_after_reading.unwrap_or(false) {
+        if burn_after_reading.unwrap_or(false) {
             self.delete(id).await?;
         }
 
-        Ok(entry)
+        let cursor = Cursor::new(data);
+        let reader = BufReader::new(cursor);
+        let mut decoder = ZstdDecoder::new(reader);
+        let mut text = String::new();
+
+        decoder
+            .read_to_string(&mut text)
+            .await
+            .map_err(|e| Error::Compression(e.to_string()))?;
+
+        Ok(ReadEntry {
+            text,
+            expired,
+            burn_after_reading,
+            uid,
+        })
     }
 
     /// Get optional `uid` for `id` if it exists but error with `Error::NotFound` if `id` is

@@ -12,6 +12,10 @@
   uncomfortable with that either strip the `Set-Cookie` header from responses
   via a proxy server or stop using this software.
 - **Breaking**: stop supporting down migrations.
+- Compress data with zstd for a reduction of about 75%. On migration all rows
+  will be compressed. However file size will not change but unused pages be used
+  for new rows. If you want to reduce the file size, you have to use the
+  `VACUUM` statement.
 - The database is not purged periodically anymore, instead expired entries are
   removed on access.
 

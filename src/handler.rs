@@ -1,6 +1,6 @@
-use crate::cache::{Key, Layer};
-use crate::db::InsertEntry;
+use crate::db::{CacheKey, InsertEntry};
 use crate::id::Id;
+use crate::AppState;
 use crate::Router;
 use crate::{highlight, pages, Error};
 use askama_axum::IntoResponse;
@@ -87,7 +87,7 @@ fn index<'a>() -> pages::Index<'a> {
 
 async fn insert_from_form(
     Form(entry): Form<FormEntry>,
-    layer: State<Layer>,
+    state: State<AppState>,
     jar: SignedCookieJar,
 ) -> Result<(SignedCookieJar, Redirect), pages::ErrorResponse<'static>> {
     let id: Id = tokio::task::spawn_blocking(|| {
@@ -105,14 +105,14 @@ async fn insert_from_form(
             .parse::<i64>()
             .map_err(|err| Error::CookieParsing(err.to_string()))?
     } else {
-        layer.next_uid().await?
+        state.db.next_uid().await?
     };
 
     let entry: InsertEntry = entry.into();
     let url = id.to_url_path(&entry);
     let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
 
-    layer.insert(id, Some(uid), entry).await?;
+    state.db.insert(id, Some(uid), entry).await?;
 
     let jar = jar.add(Cookie::new("uid", uid.to_string()));
 
@@ -130,7 +130,7 @@ struct RedirectResponse {
 
 async fn insert_from_json(
     Json(entry): Json<JsonEntry>,
-    layer: State<Layer>,
+    state: State<AppState>,
 ) -> Result<Json<RedirectResponse>, ErrorResponse> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
@@ -143,13 +143,13 @@ async fn insert_from_json(
     let entry: InsertEntry = entry.into();
     let path = id.to_url_path(&entry);
 
-    layer.insert(id, None, entry).await?;
+    state.db.insert(id, None, entry).await?;
 
     Ok(Json::from(RedirectResponse { path }))
 }
 
 async fn insert(
-    layer: State<Layer>,
+    state: State<AppState>,
     jar: SignedCookieJar,
     headers: HeaderMap,
     request: Request<Body>,
@@ -164,14 +164,14 @@ async fn insert(
             .await
             .map_err(IntoResponse::into_response)?;
 
-        Ok(insert_from_form(entry, layer, jar).await.into_response())
+        Ok(insert_from_form(entry, state, jar).await.into_response())
     } else if content_type == headers::ContentType::json() {
         let entry: Json<JsonEntry> = request
             .extract()
             .await
             .map_err(IntoResponse::into_response)?;
 
-        Ok(insert_from_json(entry, layer).await.into_response())
+        Ok(insert_from_json(entry, state).await.into_response())
     } else {
         Err(StatusCode::UNSUPPORTED_MEDIA_TYPE.into_response())
     }
@@ -179,11 +179,11 @@ async fn insert(
 
 async fn get_html(
     id: Path<String>,
-    layer: Layer,
+    state: AppState,
     jar: SignedCookieJar,
 ) -> Result<pages::Paste<'static>, pages::ErrorResponse<'static>> {
-    let key = Key::try_from(id)?;
-    let entry = layer.get_formatted(&key).await?;
+    let key = CacheKey::try_from(id)?;
+    let entry = state.db.get_formatted(&key).await?;
     let can_delete = jar
         .get("uid")
         .map(|cookie| cookie.value().parse::<i64>())
@@ -195,23 +195,22 @@ async fn get_html(
     Ok(pages::Paste::new(entry, &key, can_delete))
 }
 
-async fn get_raw(id: Path<String>, layer: Layer) -> Result<String, ErrorResponse> {
-    let key = Key::try_from(id)?;
-
-    Ok(layer.get(Id::try_from(key.id().as_str())?).await?.text)
+async fn get_raw(id: Path<String>, state: AppState) -> Result<String, ErrorResponse> {
+    let key = CacheKey::try_from(id)?;
+    Ok(state.db.get(Id::try_from(key.id().as_str())?).await?.text)
 }
 
 async fn get_download(
     Path(id): Path<String>,
     extension: String,
-    layer: Layer,
+    state: AppState,
 ) -> Result<Response<String>, pages::ErrorResponse<'static>> {
     // Validate extension.
     if !extension.is_ascii() {
         Err(Error::IllegalCharacters)?;
     }
 
-    let raw_string = layer.get(Id::try_from(id.as_str())?).await?.text;
+    let raw_string = state.db.get(Id::try_from(id.as_str())?).await?.text;
     let content_type = "text; charset=utf-8";
     let content_disposition = format!(r#"attachment; filename="{id}.{extension}"#);
 
@@ -233,36 +232,36 @@ async fn get_paste(
     headers: HeaderMap,
     jar: SignedCookieJar,
     Query(query): Query<GetQuery>,
-    State(layer): State<Layer>,
+    State(state): State<AppState>,
 ) -> Response {
     if let Some(fmt) = query.fmt {
         if fmt == "raw" {
-            return get_raw(id, layer).await.into_response();
+            return get_raw(id, state).await.into_response();
         }
     }
 
     if let Some(extension) = query.dl {
-        return get_download(id, extension, layer).await.into_response();
+        return get_download(id, extension, state).await.into_response();
     }
 
     if let Some(value) = headers.get(header::ACCEPT) {
         if let Ok(value) = value.to_str() {
             if value.contains("text/html") {
-                return get_html(id, layer, jar).await.into_response();
+                return get_html(id, state, jar).await.into_response();
             }
         }
     }
 
-    get_raw(id, layer).await.into_response()
+    get_raw(id, state).await.into_response()
 }
 
 async fn delete(
     Path(id): Path<String>,
-    layer: State<Layer>,
+    state: State<AppState>,
     jar: SignedCookieJar,
 ) -> Result<Redirect, pages::ErrorResponse<'static>> {
     let id = Id::try_from(id.as_str())?;
-    let entry = layer.get(id).await?;
+    let entry = state.db.get(id).await?;
     let can_delete = jar
         .get("uid")
         .map(|cookie| cookie.value().parse::<i64>())
@@ -275,7 +274,7 @@ async fn delete(
         Err(Error::Delete)?;
     }
 
-    layer.delete(id).await?;
+    state.db.delete(id).await?;
 
     Ok(Redirect::to("/"))
 }
@@ -295,7 +294,7 @@ fn favicon() -> impl IntoResponse {
     )
 }
 
-pub fn routes() -> Router<Layer> {
+pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(|| async { index() }).post(insert))
         .route("/:id", get(get_paste).delete(delete))

@@ -1,5 +1,8 @@
+use crate::highlight::highlight;
 use crate::id::Id;
 use crate::Error;
+use axum::extract::Path;
+use lru::LruCache;
 use once_cell::sync::Lazy;
 use rusqlite::{params, Connection};
 use rusqlite_migration::{Migrations, M};
@@ -8,9 +11,45 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tokio::task::spawn_blocking;
 
+pub type Cache = LruCache<CacheKey, FormattedEntry>;
+
 #[derive(Clone)]
 pub struct Database {
     conn: Arc<Mutex<Connection>>,
+    cache: Arc<Mutex<Cache>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct CacheKey {
+    pub id: Id,
+    pub ext: String,
+}
+
+impl CacheKey {
+    pub fn new(id: Id, ext: String) -> Self {
+        Self { id, ext }
+    }
+
+    pub fn id(&self) -> String {
+        self.id.to_string()
+    }
+
+    pub fn extension(&self) -> String {
+        self.ext.clone()
+    }
+}
+
+impl TryFrom<Path<String>> for CacheKey {
+    type Error = Error;
+
+    fn try_from(value: Path<String>) -> Result<Self, Self::Error> {
+        let (id, ext) = match value.split_once('.') {
+            None => (Id::try_from(value.as_str())?, "txt".to_string()),
+            Some((id, ext)) => (Id::try_from(id)?, ext.to_string()),
+        };
+
+        Ok(Self { id, ext })
+    }
 }
 
 /// An entry inserted into the database.
@@ -40,6 +79,15 @@ pub struct ReadEntry {
     pub uid: Option<i64>,
 }
 
+/// An entry with formatted content.
+#[derive(Clone)]
+pub struct FormattedEntry {
+    /// Formatted HTML content
+    pub html: String,
+    /// User identifier that inserted the paste
+    pub uid: Option<i64>,
+}
+
 #[derive(Debug)]
 pub enum Open {
     Memory,
@@ -57,7 +105,7 @@ static MIGRATIONS: Lazy<Migrations> = Lazy::new(|| {
 });
 
 impl Database {
-    pub fn new(method: Open) -> Result<Self, Error> {
+    pub fn new(method: Open, cache: Cache) -> Result<Self, Error> {
         tracing::debug!("opening {method:?}");
 
         let mut conn = match method {
@@ -67,9 +115,10 @@ impl Database {
 
         MIGRATIONS.to_latest(&mut conn)?;
 
-        Ok(Self {
-            conn: Arc::new(Mutex::new(conn)),
-        })
+        let conn = Arc::new(Mutex::new(conn));
+        let cache = Arc::new(Mutex::new(cache));
+
+        Ok(Self { conn, cache })
     }
 
     pub async fn insert(&self, id: Id, uid: Option<i64>, entry: InsertEntry) -> Result<(), Error> {
@@ -129,6 +178,29 @@ impl Database {
         Ok(entry)
     }
 
+    /// Look up or generate HTML formatted data. Return `None` if `key` is not found.
+    pub async fn get_formatted(&self, key: &CacheKey) -> Result<FormattedEntry, Error> {
+        let entry = self.get(key.id).await?;
+        let uid = entry.uid;
+
+        if let Some(entry) = self.cache.lock().unwrap().get(key) {
+            tracing::debug!(?key, "found cached item");
+            return Ok(entry.clone());
+        }
+
+        let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
+        let ext = key.ext.clone();
+        let html = tokio::task::spawn_blocking(move || highlight(&entry, &ext)).await??;
+        let entry = FormattedEntry { html, uid };
+
+        if !burn_after_reading {
+            tracing::debug!(?key, "cache item");
+            self.cache.lock().unwrap().put(key.clone(), entry.clone());
+        }
+
+        Ok(entry)
+    }
+
     pub async fn delete(&self, id: Id) -> Result<(), Error> {
         let conn = self.conn.clone();
         let id = id.as_u32();
@@ -164,10 +236,16 @@ impl Database {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::num::NonZeroUsize;
+
+    fn new_db() -> Result<Database, Box<dyn std::error::Error>> {
+        let cache = Cache::new(NonZeroUsize::new(128).unwrap());
+        Ok(Database::new(Open::Memory, cache)?)
+    }
 
     #[tokio::test]
     async fn insert() -> Result<(), Box<dyn std::error::Error>> {
-        let db = Database::new(Open::Memory)?;
+        let db = new_db()?;
 
         let entry = InsertEntry {
             text: "hello world".to_string(),
@@ -190,7 +268,7 @@ mod tests {
 
     #[tokio::test]
     async fn burn_after_reading() -> Result<(), Box<dyn std::error::Error>> {
-        let db = Database::new(Open::Memory)?;
+        let db = new_db()?;
         let entry = InsertEntry {
             burn_after_reading: Some(true),
             ..Default::default()
@@ -205,7 +283,7 @@ mod tests {
 
     #[tokio::test]
     async fn expired_does_not_exist() -> Result<(), Box<dyn std::error::Error>> {
-        let db = Database::new(Open::Memory)?;
+        let db = new_db()?;
 
         let entry = InsertEntry {
             expires: Some(1),
@@ -224,7 +302,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete() -> Result<(), Box<dyn std::error::Error>> {
-        let db = Database::new(Open::Memory)?;
+        let db = new_db()?;
 
         let id = Id::from(1234);
         db.insert(id, None, InsertEntry::default()).await?;

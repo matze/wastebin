@@ -1,5 +1,5 @@
 use crate::db::Database;
-use axum::extract::DefaultBodyLimit;
+use axum::extract::{DefaultBodyLimit, FromRef};
 use axum::http::StatusCode;
 use axum::{Router, Server};
 use axum_extra::extract::cookie::Key;
@@ -14,7 +14,6 @@ use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
-mod cache;
 mod db;
 mod handler;
 mod highlight;
@@ -101,7 +100,19 @@ impl From<Error> for StatusCode {
     }
 }
 
-pub(crate) fn make_app(max_body_size: usize) -> Router<cache::Layer> {
+#[derive(Clone)]
+pub struct AppState {
+    pub db: Database,
+    pub key: Key,
+}
+
+impl FromRef<AppState> for Key {
+    fn from_ref(state: &AppState) -> Self {
+        state.key.clone()
+    }
+}
+
+pub(crate) fn make_app(max_body_size: usize) -> Router<AppState> {
     Router::new()
         .merge(handler::routes())
         .layer(TimeoutLayer::new(Duration::from_secs(5)))
@@ -114,10 +125,19 @@ pub(crate) fn make_app(max_body_size: usize) -> Router<cache::Layer> {
 async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let database = match env::var(VAR_DATABASE_PATH) {
-        Ok(path) => Ok(Database::new(db::Open::Path(PathBuf::from(path)))?),
+    let cache_size = env::var(VAR_CACHE_SIZE)
+        .map_or_else(
+            |_| Ok(NonZeroUsize::new(128).unwrap()),
+            |s| s.parse::<NonZeroUsize>(),
+        )
+        .map_err(EnvError::CacheSize)?;
+
+    let cache = db::Cache::new(cache_size);
+
+    let db = match env::var(VAR_DATABASE_PATH) {
+        Ok(path) => Ok(Database::new(db::Open::Path(PathBuf::from(path)), cache)?),
         Err(VarError::NotUnicode(_)) => Err(EnvError::DatabasePath),
-        Err(VarError::NotPresent) => Ok(Database::new(db::Open::Memory)?),
+        Err(VarError::NotPresent) => Ok(Database::new(db::Open::Memory, cache)?),
     }?;
 
     let key = env::var(VAR_SIGNING_KEY).map_or_else(
@@ -132,7 +152,8 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
         )
         .map_err(EnvError::CacheSize)?;
 
-    let cache_layer = cache::Layer::new(database, cache_size, key);
+    let state = AppState { db, key };
+    // let cache_layer = cache::Layer::new(database, cache_size, key);
 
     let addr: SocketAddr = env::var(VAR_ADDRESS_PORT)
         .unwrap_or_else(|_| "0.0.0.0:8088".to_string())
@@ -147,7 +168,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
 
-    let service: Router<()> = make_app(max_body_size).with_state(cache_layer.clone());
+    let service: Router<()> = make_app(max_body_size).with_state(state);
 
     Server::bind(&addr)
         .serve(service.into_make_service())

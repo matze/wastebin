@@ -12,6 +12,8 @@
   uncomfortable with that either strip the `Set-Cookie` header from responses
   via a proxy server or stop using this software.
 - **Breaking**: stop supporting down migrations.
+- The database is not purged periodically anymore, instead expired entries are
+  removed on access.
 
 
 ## 2.2.1

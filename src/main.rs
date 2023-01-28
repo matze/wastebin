@@ -149,22 +149,14 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
 
     let service: Router<()> = make_app(max_body_size).with_state(cache_layer.clone());
 
-    let server = Server::bind(&addr)
+    Server::bind(&addr)
         .serve(service.into_make_service())
         .with_graceful_shutdown(async {
             tokio::signal::ctrl_c()
                 .await
                 .expect("failed to listen to ctrl-c");
-        });
-
-    tokio::select! {
-        res = server => {
-            res?;
-        },
-        res = cache::purge_periodically(cache_layer) => {
-            res?;
-        }
-    }
+        })
+        .await?;
 
     Ok(())
 }

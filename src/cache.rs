@@ -163,30 +163,11 @@ impl Layer {
     pub async fn next_uid(&self) -> Result<i64, Error> {
         self.db.next_uid().await
     }
-
-    /// Purge expired items from database and cache.
-    pub async fn purge(&self) -> Result<(), Error> {
-        for id in self.db.purge().await? {
-            tracing::debug!(?id, "remove from cache");
-            self.cache.lock().unwrap().remove(id);
-        }
-        Ok(())
-    }
 }
 
 impl FromRef<Layer> for SigningKey {
     fn from_ref(layer: &Layer) -> Self {
         layer.key.clone()
-    }
-}
-
-/// Purge `layer` every minute.
-pub async fn purge_periodically(layer: Layer) -> Result<(), Error> {
-    let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
-
-    loop {
-        interval.tick().await;
-        layer.purge().await?;
     }
 }
 
@@ -196,7 +177,7 @@ mod tests {
     use crate::db;
 
     #[tokio::test]
-    async fn expired_is_purged() -> Result<(), Box<dyn std::error::Error>> {
+    async fn expired_does_not_exist() -> Result<(), Box<dyn std::error::Error>> {
         let db = Database::new(db::Open::Memory)?;
         let key = SigningKey::generate();
         let layer = Layer::new(db, NonZeroUsize::new(128).unwrap(), key);

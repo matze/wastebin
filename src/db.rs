@@ -159,29 +159,6 @@ impl Database {
 
         Ok(uid)
     }
-
-    /// Remove all expired entries and return their `Id`s.
-    pub async fn purge(&self) -> Result<Vec<Id>, Error> {
-        tracing::debug!("purging");
-
-        let conn = self.conn.clone();
-
-        spawn_blocking(move || {
-            let conn = conn.lock().unwrap();
-
-            let mut stmt =
-                conn.prepare("SELECT id FROM entries WHERE expires < datetime('now')")?;
-
-            let ids = stmt
-                .query_map([], |row| Ok(Id::from(row.get::<_, u32>(0)?)))?
-                .collect::<Result<Vec<_>, _>>()?;
-
-            conn.execute("DELETE FROM entries WHERE expires < datetime('now')", [])?;
-
-            Ok(ids)
-        })
-        .await?
-    }
 }
 
 #[cfg(test)]
@@ -227,7 +204,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn expired_is_purged() -> Result<(), Box<dyn std::error::Error>> {
+    async fn expired_does_not_exist() -> Result<(), Box<dyn std::error::Error>> {
         let db = Database::new(Open::Memory)?;
 
         let entry = InsertEntry {

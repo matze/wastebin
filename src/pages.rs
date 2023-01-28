@@ -1,4 +1,5 @@
 use crate::db::CacheKey;
+use crate::env;
 use crate::highlight;
 use askama::Template;
 use axum::http::StatusCode;
@@ -19,9 +20,9 @@ pub type ErrorResponse<'a> = (StatusCode, Error<'a>);
 impl From<crate::Error> for ErrorResponse<'_> {
     fn from(err: crate::Error) -> Self {
         let html = Error {
-            title: &crate::TITLE,
+            title: &env::TITLE,
             error: err.to_string(),
-            version: crate::VERSION,
+            version: env::VERSION,
         };
 
         (err.into(), html)
@@ -40,9 +41,9 @@ pub struct Index<'a> {
 impl<'a> Default for Index<'a> {
     fn default() -> Self {
         Self {
-            title: &crate::TITLE,
+            title: &env::TITLE,
             syntaxes: highlight::DATA.syntax_set.syntaxes(),
-            version: crate::VERSION,
+            version: env::VERSION,
         }
     }
 }
@@ -63,12 +64,12 @@ impl<'a> Paste<'a> {
     /// Construct new paste view from cache `entry` and cache `key`.
     pub fn new(html: String, key: CacheKey, can_delete: bool) -> Self {
         Self {
-            title: &crate::TITLE,
+            title: &env::TITLE,
             id: key.id(),
             extension: key.ext,
             html,
             can_delete,
-            version: crate::VERSION,
+            version: env::VERSION,
         }
     }
 }
@@ -86,9 +87,9 @@ impl<'a> Burn<'a> {
     /// Construct new burn page linking to `id`.
     pub fn new(id: String) -> Self {
         Self {
-            title: &crate::TITLE,
+            title: &env::TITLE,
             id,
-            version: crate::VERSION,
+            version: env::VERSION,
         }
     }
 }

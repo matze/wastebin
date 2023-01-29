@@ -184,11 +184,11 @@ async fn insert(
 }
 
 async fn get_html(
-    id: Path<String>,
+    Path(id): Path<String>,
     state: AppState,
     jar: SignedCookieJar,
 ) -> Result<pages::Paste<'static>, pages::ErrorResponse<'static>> {
-    let key = CacheKey::try_from(id)?;
+    let key = CacheKey::try_from(&id)?;
     let owner_uid = state.db.get_uid(key.id).await?;
     let html = state.db.get_html(&key).await?;
     let can_delete = jar
@@ -199,12 +199,17 @@ async fn get_html(
         .zip(owner_uid)
         .map_or(false, |(user_uid, owner_uid)| user_uid == owner_uid);
 
-    Ok(pages::Paste::new(html, key, can_delete))
+    Ok(pages::Paste::new(key.id(), key.ext, html, can_delete))
 }
 
-async fn get_raw(id: Path<String>, state: AppState) -> Result<String, ErrorResponse> {
-    let key = CacheKey::try_from(id)?;
-    Ok(state.db.get(Id::try_from(key.id().as_str())?).await?.text)
+async fn get_raw(Path(id): Path<String>, state: AppState) -> Result<String, ErrorResponse> {
+    // Remove the extension and try to reconstruct the identifier.
+    let id = id
+        .find('.')
+        .map_or(id.as_str(), |index| &id[..index])
+        .try_into()?;
+
+    Ok(state.db.get(id).await?.text)
 }
 
 async fn get_download(

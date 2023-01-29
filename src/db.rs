@@ -1,7 +1,6 @@
 use crate::errors::Error;
 use crate::highlight::highlight;
 use crate::id::Id;
-use axum::extract::Path;
 use lru::LruCache;
 use once_cell::sync::Lazy;
 use rusqlite::{params, Connection};
@@ -244,10 +243,10 @@ impl CacheKey {
     }
 }
 
-impl TryFrom<Path<String>> for CacheKey {
+impl TryFrom<&String> for CacheKey {
     type Error = Error;
 
-    fn try_from(value: Path<String>) -> Result<Self, Self::Error> {
+    fn try_from(value: &String) -> Result<Self, Self::Error> {
         let (id, ext) = match value.split_once('.') {
             None => (Id::try_from(value.as_str())?, "txt".to_string()),
             Some((id, ext)) => (Id::try_from(id)?, ext.to_string()),

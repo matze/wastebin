@@ -15,7 +15,7 @@
       navigator.clipboard.writeText(window.location.href);
     }
     else if (e.key == 'd') {
-      window.location.href = '/{{ id }}?dl={{ extension }}';
+      window.location.href = '/{{ id }}?dl={{ ext }}';
     }
   }
 </script>
@@ -30,7 +30,7 @@
       {% if can_delete %}
       <a class="punctuation definition tag" href="/delete/{{ id }}">del</a> •
       {% endif %}
-      <a class="punctuation definition tag" href="/{{ id }}?dl={{ extension }}">↓</a>
+      <a class="punctuation definition tag" href="/{{ id }}?dl={{ ext }}">↓</a>
       • <a class="punctuation definition tag" href="/{{ id }}?fmt=raw"/>raw</a>
       • <a class="punctuation definition tag" href="/">new</a>
     </div>

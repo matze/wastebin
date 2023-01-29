@@ -1,4 +1,3 @@
-use crate::db::CacheKey;
 use crate::env;
 use crate::highlight;
 use askama::Template;
@@ -55,21 +54,21 @@ pub struct Paste<'a> {
     title: &'a str,
     id: String,
     html: String,
-    extension: String,
+    ext: String,
     can_delete: bool,
     version: &'a str,
 }
 
 impl<'a> Paste<'a> {
     /// Construct new paste view from cache `entry` and cache `key`.
-    pub fn new(html: String, key: CacheKey, can_delete: bool) -> Self {
+    pub fn new(id: String, ext: String, html: String, can_delete: bool) -> Self {
         Self {
             title: &env::TITLE,
-            id: key.id(),
-            extension: key.ext,
+            version: env::VERSION,
+            id,
+            ext,
             html,
             can_delete,
-            version: env::VERSION,
         }
     }
 }

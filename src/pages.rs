@@ -9,8 +9,8 @@ use std::default::Default;
 #[template(path = "error.html")]
 pub struct Error<'a> {
     title: &'a str,
-    error: String,
     version: &'a str,
+    error: String,
 }
 
 /// Error response carrying a status code and the page itself.
@@ -20,8 +20,8 @@ impl From<crate::Error> for ErrorResponse<'_> {
     fn from(err: crate::Error) -> Self {
         let html = Error {
             title: &env::TITLE,
-            error: err.to_string(),
             version: env::VERSION,
+            error: err.to_string(),
         };
 
         (err.into(), html)
@@ -33,16 +33,16 @@ impl From<crate::Error> for ErrorResponse<'_> {
 #[template(path = "index.html")]
 pub struct Index<'a> {
     title: &'a str,
-    syntaxes: &'a [syntect::parsing::SyntaxReference],
     version: &'a str,
+    syntaxes: &'a [syntect::parsing::SyntaxReference],
 }
 
 impl<'a> Default for Index<'a> {
     fn default() -> Self {
         Self {
             title: &env::TITLE,
-            syntaxes: highlight::DATA.syntax_set.syntaxes(),
             version: env::VERSION,
+            syntaxes: highlight::DATA.syntax_set.syntaxes(),
         }
     }
 }
@@ -52,11 +52,11 @@ impl<'a> Default for Index<'a> {
 #[template(path = "paste.html")]
 pub struct Paste<'a> {
     title: &'a str,
+    version: &'a str,
     id: String,
     html: String,
     ext: String,
     can_delete: bool,
-    version: &'a str,
 }
 
 impl<'a> Paste<'a> {
@@ -78,8 +78,8 @@ impl<'a> Paste<'a> {
 #[template(path = "burn.html")]
 pub struct Burn<'a> {
     title: &'a str,
-    id: String,
     version: &'a str,
+    id: String,
 }
 
 impl<'a> Burn<'a> {
@@ -87,8 +87,8 @@ impl<'a> Burn<'a> {
     pub fn new(id: String) -> Self {
         Self {
             title: &env::TITLE,
-            id,
             version: env::VERSION,
+            id,
         }
     }
 }

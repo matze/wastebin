@@ -9,6 +9,7 @@ use rusqlite_migration::{HookError, Migrations, M};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, BufReader};
 use tokio::task::spawn_blocking;
@@ -292,13 +293,13 @@ impl CacheKey {
     }
 }
 
-impl TryFrom<&String> for CacheKey {
-    type Error = Error;
+impl FromStr for CacheKey {
+    type Err = Error;
 
-    fn try_from(value: &String) -> Result<Self, Self::Error> {
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
         let (id, ext) = match value.split_once('.') {
-            None => (Id::try_from(value.as_str())?, "txt".to_string()),
-            Some((id, ext)) => (Id::try_from(id)?, ext.to_string()),
+            None => (value.parse()?, "txt".to_string()),
+            Some((id, ext)) => (id.parse()?, ext.to_string()),
         };
 
         Ok(Self { id, ext })

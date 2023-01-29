@@ -1,7 +1,7 @@
 use crate::db::InsertEntry;
 use crate::errors::Error;
-use std::convert::{From, TryFrom};
 use std::fmt;
+use std::str::FromStr;
 
 static CHAR_TABLE: &[char; 64] = &[
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
@@ -46,10 +46,10 @@ impl fmt::Display for Id {
     }
 }
 
-impl TryFrom<&str> for Id {
-    type Error = Error;
+impl FromStr for Id {
+    type Err = Error;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
         if value.len() != 6 {
             return Err(Error::WrongSize);
         }
@@ -104,9 +104,9 @@ mod tests {
 
     #[test]
     fn convert_id_from_string() {
-        assert!(Id::try_from("abDE+-").is_ok());
-        assert!(Id::try_from("#bDE+-").is_err());
-        assert!(Id::try_from("abDE+-1").is_err());
-        assert!(Id::try_from("abDE+").is_err());
+        assert!(Id::from_str("abDE+-").is_ok());
+        assert!(Id::from_str("#bDE+-").is_err());
+        assert!(Id::from_str("abDE+-1").is_err());
+        assert!(Id::from_str("abDE+").is_err());
     }
 }

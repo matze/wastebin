@@ -188,7 +188,7 @@ async fn get_html(
     state: AppState,
     jar: SignedCookieJar,
 ) -> Result<pages::Paste<'static>, pages::ErrorResponse<'static>> {
-    let key = CacheKey::try_from(&id)?;
+    let key: CacheKey = id.parse()?;
     let owner_uid = state.db.get_uid(key.id).await?;
     let html = state.db.get_html(&key).await?;
     let can_delete = jar
@@ -207,7 +207,7 @@ async fn get_raw(Path(id): Path<String>, state: AppState) -> Result<String, Erro
     let id = id
         .find('.')
         .map_or(id.as_str(), |index| &id[..index])
-        .try_into()?;
+        .parse()?;
 
     Ok(state.db.get(id).await?.text)
 }
@@ -222,7 +222,7 @@ async fn get_download(
         Err(Error::IllegalCharacters)?;
     }
 
-    let raw_string = state.db.get(Id::try_from(id.as_str())?).await?.text;
+    let raw_string = state.db.get(id.parse()?).await?.text;
     let content_type = "text; charset=utf-8";
     let content_disposition = format!(r#"attachment; filename="{id}.{extension}"#);
 
@@ -266,7 +266,7 @@ async fn delete(
     state: State<AppState>,
     jar: SignedCookieJar,
 ) -> Result<Redirect, pages::ErrorResponse<'static>> {
-    let id = Id::try_from(id.as_str())?;
+    let id = id.parse()?;
     let entry = state.db.get(id).await?;
     let can_delete = jar
         .get("uid")

@@ -32,7 +32,7 @@
           <textarea id="text" name="text" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text or drop file here>" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);"></textarea>
         </div>
         <div class="expiration-list">
-          <select name="expires" size="5">
+          <select name="expires" size="7">
             <option selected="" value="">never</option>
             <option value="600">10 minutes</option>
             <option value="3600">1 hour</option>
@@ -43,7 +43,7 @@
           </select>
         </div>
         <div class="extensions-list">
-          <select name="extension" size="21">
+          <select name="extension" size="23">
           {%- for syntax in syntaxes -%}
             {%- if syntax.file_extensions.len() > 0 %}
             <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>

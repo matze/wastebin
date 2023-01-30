@@ -5,6 +5,7 @@ use std::env::VarError;
 use std::net::SocketAddr;
 use std::num::{NonZeroUsize, ParseIntError};
 use std::path::PathBuf;
+use std::string::String;
 
 pub static TITLE: Lazy<String> =
     Lazy::new(|| std::env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string()));
@@ -57,7 +58,9 @@ pub fn signing_key() -> Result<Key, Error> {
 
 pub fn addr() -> Result<SocketAddr, Error> {
     std::env::var(VAR_ADDRESS_PORT)
-        .unwrap_or_else(|_| "0.0.0.0:8088".to_string())
+        .as_ref()
+        .map(String::as_str)
+        .unwrap_or("0.0.0.0:8088")
         .parse()
         .map_err(|_| Error::AddressPort)
 }

@@ -66,8 +66,8 @@ run-time behavior:
 * `WASTEBIN_MAX_BODY_SIZE` number of bytes to accept for POST requests. Defaults
   to 1 MB.
 * `WASTEBIN_SIGNING_KEY` sets the key to sign cookies. If not set, a random key
-  will be generated which means cookies will become invalid after restarts,
-  hence paste creators cannot delete their pastes anymore.
+  will be generated which means cookies will become invalid after restarts and
+  paste creators will not be able to delete their pastes anymore.
 * `WASTEBIN_TITLE` overrides the HTML page title. Defaults to `wastebin`.
 * `RUST_LOG` influences logging. Besides the typical `trace`, `debug`, `info`
   etc. keys, you can also set the `tower_http` key to some log level to get
@@ -95,9 +95,9 @@ the newly created paste:
 ```
 
 To retrieve the raw content, make a GET request on the `/:id` route and an
-accept header value that does not include `text/html`. You also have _one_
-minute to make a DELETE request on the `/:id` route to delete the entry. After
-that, an entry will only be deleted after the optionally set expiration time.
+accept header value that does not include `text/html`. If you use a client that
+is able to handle cookies you can delete the paste once again using the cookie
+in the `Set-Cookie` header set during redirect after creation.
 
 
 ### Paste from clipboard

@@ -58,11 +58,7 @@ impl FromStr for Id {
 
         for (pos, char) in value.chars().enumerate() {
             let bits: Option<u32> = CHAR_TABLE.iter().enumerate().find_map(|(bits, c)| {
-                if char == *c {
-                    Some(bits.try_into().expect("bits not 32 bits"))
-                } else {
-                    None
-                }
+                (char == *c).then(|| bits.try_into().expect("bits not 32 bits"))
             });
 
             match bits {

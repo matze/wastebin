@@ -1,8 +1,8 @@
-# wastebin
+# <img width="24px" height="24px" style="position: relative; top: 2px;" src="assets/favicon.png"/> wastebin
 
 [![Rust](https://github.com/matze/wastebin/actions/workflows/rust.yml/badge.svg)](https://github.com/matze/wastebin/actions/workflows/rust.yml)
 
-A minimal pastebin shamelessly copied from
+A minimal pastebin with a design shamelessly copied from
 [bin](https://github.com/WantGuns/bin).
 
 <p align="center"><img src="https://raw.githubusercontent.com/matze/wastebin/master/assets/screenshot.webp"></p>
@@ -13,9 +13,11 @@ A minimal pastebin shamelessly copied from
 ## Features
 
 * sqlite3 and axum backend
-* light/dark mode
 * paste expiration
+* light/dark mode
+* drag 'n' drop upload
 * line numbers
+* low memory footprint
 
 
 ## Installation

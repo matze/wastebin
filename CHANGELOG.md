@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 2.3.0
+
+**2022-02-01**
+
 ### Changed
 
 - **Breaking**: replace deletion timer with a cookie based solution that

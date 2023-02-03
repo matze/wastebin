@@ -77,7 +77,7 @@ async fn main() -> ExitCode {
         Ok(_) => ExitCode::SUCCESS,
         Err(err) => {
             eprintln!("Error: {err}");
-            ExitCode::SUCCESS
+            ExitCode::FAILURE
         }
     }
 }

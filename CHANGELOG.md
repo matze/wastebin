@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixed
+
+- Return correct exit code in case of errors.
+
+
 ## 2.3.0
 
 **2022-02-01**

@@ -122,7 +122,7 @@ impl Database {
     }
 
     /// Insert `entry` under `id` into the database and optionally set owner to `uid`.
-    pub async fn insert(&self, id: Id, uid: Option<i64>, entry: InsertEntry) -> Result<(), Error> {
+    pub async fn insert(&self, id: Id, entry: InsertEntry) -> Result<(), Error> {
         let conn = self.conn.clone();
         let id = id.as_u32();
 
@@ -139,13 +139,13 @@ impl Database {
         spawn_blocking(move || match entry.expires {
             None => conn.lock().unwrap().execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading) VALUES (?1, ?2, ?3, ?4)",
-                params![id, uid, data, entry.burn_after_reading],
+                params![id, entry.uid, data, entry.burn_after_reading],
             ),
             Some(expires) => conn.lock().unwrap().execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading, expires) VALUES (?1, ?2, ?3, ?4, datetime('now', ?5))",
                 params![
                     id,
-                    uid,
+                    entry.uid,
                     data,
                     entry.burn_after_reading,
                     format!("{expires} seconds")
@@ -322,11 +322,12 @@ mod tests {
 
         let entry = InsertEntry {
             text: "hello world".to_string(),
+            uid: Some(10),
             ..Default::default()
         };
 
         let id = Id::from(1234);
-        db.insert(id, Some(10), entry).await?;
+        db.insert(id, entry).await?;
 
         let entry = db.get(id).await?;
         assert_eq!(entry.text, "hello world");
@@ -347,7 +348,7 @@ mod tests {
             ..Default::default()
         };
         let id = Id::from(1234);
-        db.insert(id, None, entry).await?;
+        db.insert(id, entry).await?;
         assert!(db.get(id).await.is_ok());
         assert!(db.get(id).await.is_err());
 
@@ -364,7 +365,7 @@ mod tests {
         };
 
         let id = Id::from(1234);
-        db.insert(id, None, entry).await?;
+        db.insert(id, entry).await?;
 
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
@@ -380,7 +381,7 @@ mod tests {
         let db = new_db()?;
 
         let id = Id::from(1234);
-        db.insert(id, None, InsertEntry::default()).await?;
+        db.insert(id, InsertEntry::default()).await?;
 
         assert!(db.get(id).await.is_ok());
         assert!(db.delete(id).await.is_ok());

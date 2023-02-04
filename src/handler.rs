@@ -119,11 +119,13 @@ async fn insert_from_form(
         state.db.next_uid().await?
     };
 
-    let entry: InsertEntry = entry.into();
+    let mut entry: InsertEntry = entry.into();
+    entry.uid = Some(uid);
+
     let url = id.to_url_path(&entry);
     let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
 
-    state.db.insert(id, Some(uid), entry).await?;
+    state.db.insert(id, entry).await?;
 
     let jar = jar.add(Cookie::new("uid", uid.to_string()));
 
@@ -149,7 +151,7 @@ async fn insert_from_json(
     let entry: InsertEntry = entry.into();
     let path = id.to_url_path(&entry);
 
-    state.db.insert(id, None, entry).await?;
+    state.db.insert(id, entry).await?;
 
     Ok(Json::from(RedirectResponse { path }))
 }

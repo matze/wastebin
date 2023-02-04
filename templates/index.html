@@ -43,12 +43,10 @@
           </select>
         </div>
         <div class="extensions-list">
-          <select name="extension" size="23">
-          {%- for syntax in syntaxes -%}
-            {%- if syntax.file_extensions.len() > 0 %}
-            <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
-            {%- endif -%}
-          {%- endfor %}
+          <select name="extension" size="20">
+            {%- for info in infos -%}
+            <option value="{{ info.id }}">{{ info.name }}</option>
+            {%- endfor -%}
           </select>
         </div>
         <div class="paste-button">

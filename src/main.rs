@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use crate::db::Database;
 use crate::errors::Error;
 use axum::extract::{DefaultBodyLimit, FromRef};

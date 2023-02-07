@@ -12,9 +12,9 @@ A minimal pastebin with a design shamelessly copied from
 
 ## Features
 
-* sqlite3 and axum backend
-* paste expiration
+* axum and sqlite3 backend
 * light/dark mode
+* expiration and burn after reading
 * drag 'n' drop upload
 * line numbers
 * low memory footprint
@@ -118,3 +118,8 @@ function waste-paste() {
     xdg-open $URL
 }
 ```
+
+
+## License
+
+[MIT](./LICENSE)

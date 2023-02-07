@@ -1,5 +1,4 @@
 use crate::env;
-use crate::highlight;
 use askama::Template;
 use axum::http::StatusCode;
 use std::default::Default;
@@ -34,7 +33,7 @@ impl From<crate::Error> for ErrorResponse<'_> {
 pub struct Index<'a> {
     title: &'a str,
     version: &'a str,
-    syntaxes: &'a [syntect::parsing::SyntaxReference],
+    infos: &'static [tree_painter::Info; 20],
 }
 
 impl<'a> Default for Index<'a> {
@@ -42,7 +41,7 @@ impl<'a> Default for Index<'a> {
         Self {
             title: &env::TITLE,
             version: env::VERSION,
-            syntaxes: highlight::DATA.syntax_set.syntaxes(),
+            infos: &tree_painter::INFOS,
         }
     }
 }

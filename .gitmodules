@@ -1,0 +1,3 @@
+[submodule "tree-painter"]
+	path = tree-painter
+	url = https://github.com/matze/tree-painter

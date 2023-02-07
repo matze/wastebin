@@ -24,9 +24,7 @@ pub enum Error {
     #[error("join error: {0}")]
     Join(#[from] tokio::task::JoinError),
     #[error("syntax highlighting error: {0}")]
-    SyntaxHighlighting(#[from] syntect::Error),
-    #[error("syntax parsing error: {0}")]
-    SyntaxParsing(#[from] syntect::parsing::ParsingError),
+    Highlighting(#[from] tree_painter::Error),
     #[error("time formatting error: {0}")]
     TimeFormatting(#[from] time::error::Format),
     #[error("could not parse cookie: {0}")]
@@ -49,8 +47,7 @@ impl From<Error> for StatusCode {
             | Error::IntConversion(_)
             | Error::TimeFormatting(_)
             | Error::Migration(_)
-            | Error::SyntaxHighlighting(_)
-            | Error::SyntaxParsing(_)
+            | Error::Highlighting(_)
             | Error::Axum(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Error::Delete => StatusCode::FORBIDDEN,
         }

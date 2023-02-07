@@ -1468,6 +1468,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "772c1426ab886e7362aedf4abc9c0d1348a979517efedfc25862944d10137af0"
+dependencies = [
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "toml_edit",
+]
+
+[[package]]
 name = "toml_datetime"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1597,6 +1609,235 @@ dependencies = [
  "thread_local",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "tree-painter"
+version = "0.0.0"
+dependencies = [
+ "thiserror",
+ "toml",
+ "tree-sitter-c",
+ "tree-sitter-c-sharp",
+ "tree-sitter-cpp",
+ "tree-sitter-css",
+ "tree-sitter-dockerfile",
+ "tree-sitter-go",
+ "tree-sitter-haskell",
+ "tree-sitter-highlight",
+ "tree-sitter-java",
+ "tree-sitter-javascript",
+ "tree-sitter-json",
+ "tree-sitter-julia",
+ "tree-sitter-kotlin",
+ "tree-sitter-latex",
+ "tree-sitter-lua",
+ "tree-sitter-md",
+ "tree-sitter-nix",
+ "tree-sitter-ocaml",
+ "tree-sitter-python",
+ "tree-sitter-rust",
+ "tree-sitter-typescript",
+ "tree-sitter-zig",
+]
+
+[[package]]
+name = "tree-sitter"
+version = "0.19.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad726ec26496bf4c083fff0f43d4eb3a2ad1bba305323af5ff91383c0b6ecac0"
+dependencies = [
+ "cc",
+ "regex",
+]
+
+[[package]]
+name = "tree-sitter"
+version = "0.20.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4423c784fe11398ca91e505cdc71356b07b1a924fc8735cfab5333afe3e18bc"
+dependencies = [
+ "cc",
+ "regex",
+]
+
+[[package]]
+name = "tree-sitter-c"
+version = "0.20.2"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-c-sharp"
+version = "0.20.0"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-cpp"
+version = "0.20.0"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-css"
+version = "0.19.0"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-dockerfile"
+version = "0.1.0"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-go"
+version = "0.19.1"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-haskell"
+version = "0.14.0"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-highlight"
+version = "0.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "042342584c5a7a0b833d9fc4e2bdab3f9868ddc6c4b339a1e01451c6720868bc"
+dependencies = [
+ "regex",
+ "thiserror",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-java"
+version = "0.20.0"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-javascript"
+version = "0.20.0"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-json"
+version = "0.20.0"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-julia"
+version = "0.19.0"
+dependencies = [
+ "cc",
+ "tree-sitter 0.19.5",
+]
+
+[[package]]
+name = "tree-sitter-kotlin"
+version = "0.2.11"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-latex"
+version = "0.3.0"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-lua"
+version = "0.0.14"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-md"
+version = "0.1.2"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-nix"
+version = "0.0.1"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-ocaml"
+version = "0.20.1"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-python"
+version = "0.20.2"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-rust"
+version = "0.20.3"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-typescript"
+version = "0.20.2"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
+]
+
+[[package]]
+name = "tree-sitter-zig"
+version = "0.0.1"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.9",
 ]
 
 [[package]]
@@ -1794,6 +2035,7 @@ dependencies = [
  "tower-service",
  "tracing",
  "tracing-subscriber",
+ "tree-painter",
  "zstd",
 ]
 

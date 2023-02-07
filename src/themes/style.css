@@ -1,25 +1,9 @@
 @import url("light.css") (prefers-color-scheme: light);
 @import url("dark.css") (prefers-color-scheme: dark);
 
-@media (prefers-color-scheme: dark) {
-  body, textarea, select, select > option:hover {
-    background-color: #0f1419;
-    color: #e6e1cf;
-  }
-
-  select {
-    color: #e6e1cf;
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  body, textarea, select, select > option:hover {
-    background-color: #fafafa;
-  }
-
-  select {
-    color: #0f1419;
-  }
+body, textarea, select, select > option:hover {
+  background-color: var(--tsc-main-bg-color);
+  color: var(--tsc-main-fg-color);
 }
 
 body {
@@ -36,6 +20,7 @@ select {
   width: 100%;
   font-family: "JetBrains Mono", monospace;
   border: none;
+  color: var(--tsc-main-fg-color);
 }
 
 select > option:hover {

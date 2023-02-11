@@ -8,10 +8,16 @@ use std::path::PathBuf;
 use std::string::String;
 use std::time::Duration;
 
-pub static TITLE: Lazy<String> =
-    Lazy::new(|| std::env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string()));
+pub struct Metadata<'a> {
+    pub title: String,
+    pub version: &'a str,
+}
 
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub static METADATA: Lazy<Metadata> = Lazy::new(|| {
+    let title = std::env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string());
+    let version = env!("CARGO_PKG_VERSION");
+    Metadata { title, version }
+});
 
 pub const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 

@@ -8,8 +8,7 @@ use std::default::Default;
 #[derive(Template)]
 #[template(path = "error.html")]
 pub struct Error<'a> {
-    title: &'a str,
-    version: &'a str,
+    meta: &'a env::Metadata<'a>,
     error: String,
 }
 
@@ -19,8 +18,7 @@ pub type ErrorResponse<'a> = (StatusCode, Error<'a>);
 impl From<crate::Error> for ErrorResponse<'_> {
     fn from(err: crate::Error) -> Self {
         let html = Error {
-            title: &env::TITLE,
-            version: env::VERSION,
+            meta: &env::METADATA,
             error: err.to_string(),
         };
 
@@ -32,16 +30,14 @@ impl From<crate::Error> for ErrorResponse<'_> {
 #[derive(Template)]
 #[template(path = "index.html")]
 pub struct Index<'a> {
-    title: &'a str,
-    version: &'a str,
+    meta: &'a env::Metadata<'a>,
     syntaxes: &'a [syntect::parsing::SyntaxReference],
 }
 
 impl<'a> Default for Index<'a> {
     fn default() -> Self {
         Self {
-            title: &env::TITLE,
-            version: env::VERSION,
+            meta: &env::METADATA,
             syntaxes: highlight::DATA.syntaxes(),
         }
     }
@@ -51,8 +47,7 @@ impl<'a> Default for Index<'a> {
 #[derive(Template)]
 #[template(path = "paste.html")]
 pub struct Paste<'a> {
-    title: &'a str,
-    version: &'a str,
+    meta: &'a env::Metadata<'a>,
     id: String,
     html: String,
     ext: String,
@@ -63,8 +58,7 @@ impl<'a> Paste<'a> {
     /// Construct new paste view from cache `entry` and cache `key`.
     pub fn new(id: String, ext: String, html: String, can_delete: bool) -> Self {
         Self {
-            title: &env::TITLE,
-            version: env::VERSION,
+            meta: &env::METADATA,
             id,
             ext,
             html,
@@ -77,8 +71,7 @@ impl<'a> Paste<'a> {
 #[derive(Template)]
 #[template(path = "burn.html")]
 pub struct Burn<'a> {
-    title: &'a str,
-    version: &'a str,
+    meta: &'a env::Metadata<'a>,
     id: String,
 }
 
@@ -86,8 +79,7 @@ impl<'a> Burn<'a> {
     /// Construct new burn page linking to `id`.
     pub fn new(id: String) -> Self {
         Self {
-            title: &env::TITLE,
-            version: env::VERSION,
+            meta: &env::METADATA,
             id,
         }
     }

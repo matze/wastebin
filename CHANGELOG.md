@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Format burn page like the rest.
+
 
 ## 2.3.1
 

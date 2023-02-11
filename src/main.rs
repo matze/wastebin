@@ -6,7 +6,6 @@ use axum::extract::{DefaultBodyLimit, FromRef};
 use axum::{Router, Server};
 use axum_extra::extract::cookie::Key;
 use std::process::ExitCode;
-use std::time::Duration;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
@@ -41,7 +40,7 @@ pub(crate) fn make_app(max_body_size: usize) -> Router<AppState> {
             .layer(DefaultBodyLimit::disable())
             .layer(CompressionLayer::new())
             .layer(TraceLayer::new_for_http())
-            .layer(TimeoutLayer::new(Duration::from_secs(5))),
+            .layer(TimeoutLayer::new(env::HTTP_TIMEOUT)),
     )
 }
 

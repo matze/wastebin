@@ -1,15 +1,14 @@
-use crate::highlight;
+use crate::{env, highlight};
 use crate::{AppState, Router};
 use axum::response::{IntoResponse, IntoResponseParts};
 use axum::routing::get;
 use axum::{headers, TypedHeader};
 use bytes::Bytes;
-use std::time::Duration;
 
 fn css_headers() -> impl IntoResponseParts {
     (
         TypedHeader(headers::ContentType::from(mime::TEXT_CSS)),
-        TypedHeader(headers::CacheControl::new().with_max_age(Duration::from_secs(3600))),
+        TypedHeader(headers::CacheControl::new().with_max_age(env::CSS_MAX_AGE)),
     )
 }
 
@@ -28,7 +27,7 @@ fn light_css() -> impl IntoResponse {
 fn favicon() -> impl IntoResponse {
     (
         TypedHeader(headers::ContentType::png()),
-        TypedHeader(headers::CacheControl::new().with_max_age(Duration::from_secs(86400))),
+        TypedHeader(headers::CacheControl::new().with_max_age(env::FAVICON_MAX_AGE)),
         Bytes::from_static(include_bytes!("../../assets/favicon.png")),
     )
 }

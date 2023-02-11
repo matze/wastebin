@@ -6,11 +6,18 @@ use std::net::SocketAddr;
 use std::num::{NonZeroUsize, ParseIntError};
 use std::path::PathBuf;
 use std::string::String;
+use std::time::Duration;
 
 pub static TITLE: Lazy<String> =
     Lazy::new(|| std::env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string()));
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+pub const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
+
+pub const CSS_MAX_AGE: Duration = Duration::from_secs(3600);
+
+pub const FAVICON_MAX_AGE: Duration = Duration::from_secs(86400);
 
 const VAR_ADDRESS_PORT: &str = "WASTEBIN_ADDRESS_PORT";
 const VAR_CACHE_SIZE: &str = "WASTEBIN_CACHE_SIZE";

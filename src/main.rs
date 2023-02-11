@@ -15,10 +15,10 @@ use tower_http::trace::TraceLayer;
 mod db;
 mod env;
 mod errors;
-mod handler;
 mod highlight;
 mod id;
 mod pages;
+mod routes;
 #[cfg(test)]
 mod test_helpers;
 
@@ -35,7 +35,7 @@ impl FromRef<AppState> for Key {
 }
 
 pub(crate) fn make_app(max_body_size: usize) -> Router<AppState> {
-    Router::new().merge(handler::routes()).layer(
+    Router::new().merge(routes::routes()).layer(
         ServiceBuilder::new()
             .layer(DefaultBodyLimit::max(max_body_size))
             .layer(DefaultBodyLimit::disable())

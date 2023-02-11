@@ -311,15 +311,15 @@ pub fn routes() -> Router<AppState> {
         .route("/favicon.png", get(|| async { favicon() }))
         .route(
             "/style.css",
-            get(|| async { (css_headers(), highlight::DATA.main.to_string()) }),
+            get(|| async { (css_headers(), highlight::DATA.style_css()) }),
         )
         .route(
             "/dark.css",
-            get(|| async { (css_headers(), highlight::DATA.dark.to_string()) }),
+            get(|| async { (css_headers(), highlight::DATA.dark_css()) }),
         )
         .route(
             "/light.css",
-            get(|| async { (css_headers(), highlight::DATA.light.to_string()) }),
+            get(|| async { (css_headers(), highlight::DATA.light_css()) }),
         )
 }
 

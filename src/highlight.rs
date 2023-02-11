@@ -22,10 +22,28 @@ pub static DATA: Lazy<Data> = Lazy::new(|| {
 });
 
 pub struct Data<'a> {
-    pub main: &'a str,
-    pub dark: String,
-    pub light: String,
-    pub syntax_set: SyntaxSet,
+    main: &'a str,
+    dark: String,
+    light: String,
+    syntax_set: SyntaxSet,
+}
+
+impl<'a> Data<'a> {
+    pub fn style_css(&self) -> String {
+        self.main.to_string()
+    }
+
+    pub fn dark_css(&self) -> String {
+        self.dark.clone()
+    }
+
+    pub fn light_css(&self) -> String {
+        self.light.clone()
+    }
+
+    pub fn syntaxes(&'a self) -> &'a [syntect::parsing::SyntaxReference] {
+        self.syntax_set.syntaxes()
+    }
 }
 
 pub fn highlight(source: &str, ext: &str) -> Result<String, Error> {

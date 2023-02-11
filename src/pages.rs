@@ -42,7 +42,7 @@ impl<'a> Default for Index<'a> {
         Self {
             title: &env::TITLE,
             version: env::VERSION,
-            syntaxes: highlight::DATA.syntax_set.syntaxes(),
+            syntaxes: highlight::DATA.syntaxes(),
         }
     }
 }

@@ -64,7 +64,7 @@ async fn get_html(
         .zip(owner_uid)
         .map_or(false, |(user_uid, owner_uid)| user_uid == owner_uid);
 
-    Ok(pages::Paste::new(key.id(), key.ext, html, can_delete))
+    Ok(pages::Paste::new(key, html, can_delete))
 }
 
 pub async fn get(

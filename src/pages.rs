@@ -1,5 +1,4 @@
-use crate::env;
-use crate::highlight;
+use crate::{db, env, highlight};
 use askama::Template;
 use axum::http::StatusCode;
 use std::default::Default;
@@ -55,12 +54,12 @@ pub struct Paste<'a> {
 }
 
 impl<'a> Paste<'a> {
-    /// Construct new paste view from cache `entry` and cache `key`.
-    pub fn new(id: String, ext: String, html: String, can_delete: bool) -> Self {
+    /// Construct new paste view from cache `key` and paste `html`.
+    pub fn new(key: db::CacheKey, html: String, can_delete: bool) -> Self {
         Self {
             meta: &env::METADATA,
-            id,
-            ext,
+            id: key.id(),
+            ext: key.ext,
             html,
             can_delete,
         }

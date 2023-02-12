@@ -1,4 +1,6 @@
 use axum::http::StatusCode;
+use axum::Json;
+use serde::Serialize;
 use std::num::TryFromIntError;
 
 #[derive(thiserror::Error, Debug)]
@@ -33,6 +35,14 @@ pub enum Error {
     CookieParsing(String),
 }
 
+#[derive(Serialize)]
+pub struct JsonError {
+    pub message: String,
+}
+
+/// Response carrying a status code and the error message as JSON.
+pub type JsonErrorResponse = (StatusCode, Json<JsonError>);
+
 impl From<Error> for StatusCode {
     fn from(err: Error) -> Self {
         match err {
@@ -54,5 +64,15 @@ impl From<Error> for StatusCode {
             | Error::Axum(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Error::Delete => StatusCode::FORBIDDEN,
         }
+    }
+}
+
+impl From<Error> for JsonErrorResponse {
+    fn from(err: Error) -> Self {
+        let payload = Json::from(JsonError {
+            message: err.to_string(),
+        });
+
+        (err.into(), payload)
     }
 }

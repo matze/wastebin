@@ -1,8 +1,8 @@
 use crate::db::InsertEntry;
+use crate::errors::{Error, JsonErrorResponse};
 use crate::id::Id;
-use crate::{AppState, Error};
+use crate::AppState;
 use axum::extract::State;
-use axum::http::StatusCode;
 use axum::Json;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -20,13 +20,6 @@ pub struct RedirectResponse {
     pub path: String,
 }
 
-#[derive(Serialize)]
-pub struct ErrorPayload {
-    pub message: String,
-}
-
-pub type ErrorResponse = (StatusCode, Json<ErrorPayload>);
-
 impl From<Entry> for InsertEntry {
     fn from(entry: Entry) -> Self {
         Self {
@@ -39,20 +32,10 @@ impl From<Entry> for InsertEntry {
     }
 }
 
-impl From<Error> for ErrorResponse {
-    fn from(err: Error) -> Self {
-        let payload = Json::from(ErrorPayload {
-            message: err.to_string(),
-        });
-
-        (err.into(), payload)
-    }
-}
-
 pub async fn insert(
     state: State<AppState>,
     Json(entry): Json<Entry>,
-) -> Result<Json<RedirectResponse>, ErrorResponse> {
+) -> Result<Json<RedirectResponse>, JsonErrorResponse> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
         rng.gen::<u32>()

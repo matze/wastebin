@@ -29,8 +29,6 @@ pub enum Error {
     SyntaxHighlighting(#[from] syntect::Error),
     #[error("syntax parsing error: {0}")]
     SyntaxParsing(#[from] syntect::parsing::ParsingError),
-    #[error("time formatting error: {0}")]
-    TimeFormatting(#[from] time::error::Format),
     #[error("could not parse cookie: {0}")]
     CookieParsing(String),
 }
@@ -53,7 +51,6 @@ impl From<Error> for StatusCode {
             Error::Join(_)
             | Error::Compression(_)
             | Error::IntConversion(_)
-            | Error::TimeFormatting(_)
             | Error::Migration(_)
             | Error::Sqlite(_)
             | Error::SyntaxHighlighting(_)

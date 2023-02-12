@@ -135,7 +135,6 @@ impl Database {
             .read_to_end(&mut data)
             .await
             .map_err(|e| Error::Compression(e.to_string()))?;
-
         spawn_blocking(move || match entry.expires {
             None => conn.lock().unwrap().execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading) VALUES (?1, ?2, ?3, ?4)",

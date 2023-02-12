@@ -11,10 +11,10 @@ pub enum Error {
     Delete,
     #[error("compression error: {0}")]
     Compression(String),
-    #[error("not found")]
+    #[error("entry not found")]
     NotFound,
     #[error("sqlite error: {0}")]
-    Sqlite(#[from] rusqlite::Error),
+    Sqlite(rusqlite::Error),
     #[error("migrations error: {0}")]
     Migration(#[from] rusqlite_migration::Error),
     #[error("wrong size")]
@@ -46,10 +46,6 @@ pub type JsonErrorResponse = (StatusCode, Json<JsonError>);
 impl From<Error> for StatusCode {
     fn from(err: Error) -> Self {
         match err {
-            Error::Sqlite(err) => match err {
-                rusqlite::Error::QueryReturnedNoRows => StatusCode::NOT_FOUND,
-                _ => StatusCode::INTERNAL_SERVER_ERROR,
-            },
             Error::NotFound => StatusCode::NOT_FOUND,
             Error::IllegalCharacters | Error::WrongSize | Error::CookieParsing(_) => {
                 StatusCode::BAD_REQUEST
@@ -59,6 +55,7 @@ impl From<Error> for StatusCode {
             | Error::IntConversion(_)
             | Error::TimeFormatting(_)
             | Error::Migration(_)
+            | Error::Sqlite(_)
             | Error::SyntaxHighlighting(_)
             | Error::SyntaxParsing(_)
             | Error::Axum(_) => StatusCode::INTERNAL_SERVER_ERROR,
@@ -74,5 +71,14 @@ impl From<Error> for JsonErrorResponse {
         });
 
         (err.into(), payload)
+    }
+}
+
+impl From<rusqlite::Error> for Error {
+    fn from(err: rusqlite::Error) -> Self {
+        match err {
+            rusqlite::Error::QueryReturnedNoRows => Error::NotFound,
+            _ => Error::Sqlite(err),
+        }
     }
 }

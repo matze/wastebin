@@ -41,29 +41,24 @@ impl From<Entry> for InsertEntry {
 
 impl From<Error> for ErrorResponse {
     fn from(err: Error) -> Self {
-        let payload = to_payload(&err);
+        let payload = Json::from(ErrorPayload {
+            message: err.to_string(),
+        });
+
         (err.into(), payload)
     }
-}
-
-fn to_payload<T>(err: &T) -> Json<ErrorPayload>
-where
-    T: ToString,
-{
-    let message = err.to_string();
-    Json::from(ErrorPayload { message })
 }
 
 pub async fn insert(
     state: State<AppState>,
     Json(entry): Json<Entry>,
-) -> Result<Json<RedirectResponse>, (StatusCode, Json<ErrorPayload>)> {
+) -> Result<Json<RedirectResponse>, ErrorResponse> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
         rng.gen::<u32>()
     })
     .await
-    .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, to_payload(&err)))?
+    .map_err(Error::from)?
     .into();
 
     let entry: InsertEntry = entry.into();

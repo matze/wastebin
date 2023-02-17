@@ -281,11 +281,6 @@ impl Database {
 }
 
 impl CacheKey {
-    /// Construct cache key from `id` and file `ext`.
-    pub fn new(id: Id, ext: String) -> Self {
-        Self { id, ext }
-    }
-
     /// Make a copy of the owned id.
     pub fn id(&self) -> String {
         self.id.to_string()

@@ -23,8 +23,8 @@ mod test_helpers;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub db: Database,
-    pub key: Key,
+    db: Database,
+    key: Key,
 }
 
 impl FromRef<AppState> for Key {

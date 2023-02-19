@@ -39,10 +39,12 @@ contained `wastebin` binary.
 
 ### Run a Docker image
 
-Alternatively, you can run a pre-built Docker image pushed to `quxfoo/wastebin`
-with
+Alternatively, you can run a pre-built Docker image pushed to `quxfoo/wastebin`.
+Here is an example how to persist the database as `state.db` via the
+`WASTEBIN_DATABASE_PATH` environment variable and a bind mount to
+`/path/for/storage`:
 
-    $ docker run quxfoo/wastebin:latest
+    $ docker run -e WASTEBIN_DATABASE_PATH=/data/state.db -v /path/for/storage:/data quxfoo/wastebin:latest
 
 
 ## Usage

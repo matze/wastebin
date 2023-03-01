@@ -10,6 +10,10 @@
   select {
     color: #e6e1cf;
   }
+
+  header {
+    border-bottom: 1px solid #163855;
+  }
 }
 
 @media (prefers-color-scheme: light) {
@@ -20,21 +24,65 @@
   select {
     color: #0f1419;
   }
+
+  header {
+    border-bottom: 1px solid #d9d7d7;
+  }
 }
 
 body {
   font-family: "JetBrains Mono", monospace;
-  margin: 2em 2em 0 2em;
+  font-size: 13pt;
+  padding: 0;
+  margin: 0;
+}
+
+header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 1em 0 1em;
+}
+
+#nav-title {
+  margin-right: auto;
+}
+
+header ul {
+  margin: 0;
   padding: 0;
 }
 
-pre {
-  font-size: 13pt;
+header li {
+  list-style: none;
+  display: inline-block;
+}
+
+header button {
+  color: #39bae6;
+  border: none;
+  padding: 1em;
+  background: none;
+}
+
+header button:hover {
+  background-color: #39bae6;
+  color: #0f1419;
+}
+
+button {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14pt;
+}
+
+button:hover {
+  cursor: pointer;
 }
 
 select {
   width: 100%;
   font-family: "JetBrains Mono", monospace;
+  font-size: 13pt;
   border: none;
 }
 
@@ -55,6 +103,7 @@ a, a:visited, a:hover {
   height: 96vh;
   align-items: stretch;
   justify-items: stretch;
+  margin: 2em;
 }
 
 .content {
@@ -90,28 +139,9 @@ a, a:visited, a:hover {
 
 .paste-button > button {
   width: 100%;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 14pt;
   padding: 1em;
   border: none;
   background-color: #39bae6;
-}
-
-.paste-box {
-  position: fixed;
-  top: 0px;
-  right: 0px;
-  padding: 2em;
-  color: #e6e1cf;
-}
-
-.paste-box > a {
-  font-size: 14pt;
-  text-decoration: none;
-}
-
-.paste-box > a:visited {
-  text-decoration: none;
 }
 
 td.line-number {

@@ -10,6 +10,14 @@
     {% block head %}{% endblock %}
   </head>
   <body>
+    <header>
+      <span id="nav-title"><a href="/"><button>home</button></a></span>
+      <nav>
+        <ul>
+          {% block nav %}{% endblock %}
+        </ul>
+      </nav>
+    </header>
     {% block content %}{% endblock %}
   </body>
 </html>

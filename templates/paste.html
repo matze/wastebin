@@ -21,18 +21,18 @@
 </script>
 {% endblock %}
 
+{% block nav %}
+  {% if can_delete %}
+    <li><a href="/delete/{{ id }}"><button>delete</button></a></li>
+  {% endif %}
+    <li><a href="/{{ id }}?dl={{ ext }}"><button>download</button></a></li>
+    <li><a href="/{{ id }}?fmt=raw"><button>raw</button></a></li>
+{% endblock %}
+
 {% block content %}
   <div>
     <div>
       <pre class="code">{{ html|safe }}</pre>
-    </div>
-    <div class="paste-box">
-      {% if can_delete %}
-      <a class="punctuation definition tag" href="/delete/{{ id }}">del</a> •
-      {% endif %}
-      <a class="punctuation definition tag" href="/{{ id }}?dl={{ ext }}">↓</a>
-      • <a class="punctuation definition tag" href="/{{ id }}?fmt=raw"/>raw</a>
-      • <a class="punctuation definition tag" href="/">new</a>
     </div>
   </div>
 {% endblock %}

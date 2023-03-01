@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Replace overlaying link box with a navigation bar containing stylized buttons
+  and homogenize layout in general.
+
 ### Fixed
 
 - Format burn page like the rest.

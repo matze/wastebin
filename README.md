@@ -12,12 +12,12 @@ A minimal pastebin with a design shamelessly copied from
 
 ## Features
 
-* axum and sqlite3 backend
-* light/dark mode
-* expiration and burn after reading
+* axum and sqlite3 backend with compressed paste data
+* single binary with low memory footprint
 * drag 'n' drop upload
-* line numbers
-* low memory footprint
+* deletion after expiration, reading or by owners
+* light/dark mode
+* highlightable line numbers
 
 
 ## Installation
@@ -40,7 +40,7 @@ contained `wastebin` binary.
 ### Run a Docker image
 
 Alternatively, you can run a pre-built Docker image pushed to `quxfoo/wastebin`.
-Here is an example how to persist the database as `state.db` via the
+Here is how to persist the database as `state.db` via the
 `WASTEBIN_DATABASE_PATH` environment variable and a bind mount to
 `/path/for/storage`:
 
@@ -51,9 +51,9 @@ Here is an example how to persist the database as `state.db` via the
 
 ### Browser interface
 
-On a paste view you can use <kbd>r</kbd> and <kbd>n</kbd> to go to the raw view
-and back to the index page. Furthermore, you can use <kbd>y</kbd> to copy the
-paste URL to the clipboard.
+When viewing a paste, you can use <kbd>r</kbd> and <kbd>n</kbd> to go to the raw
+view and back to the index page. Furthermore, you can use <kbd>y</kbd> to copy
+the paste URL to the clipboard.
 
 
 ### Configuration
@@ -107,7 +107,7 @@ in the `Set-Cookie` header set during redirect after creation.
 ### Paste from clipboard
 
 We can use the API POST endpoint to paste clipboard data easily from the command
-line using `xclip`, `curl` and `jq`. Just define the following function in your
+line using `xclip`, `curl` and `jq`. Define the following function in your
 `.bashrc` and you are good to go:
 
 ```bash

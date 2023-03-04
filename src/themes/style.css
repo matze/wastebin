@@ -30,9 +30,12 @@
   }
 }
 
+html {
+  font-size: 16px;
+}
+
 body {
   font-family: "JetBrains Mono", monospace;
-  font-size: 13pt;
   padding: 0;
   margin: 0;
 }
@@ -61,7 +64,7 @@ header li {
 header button {
   color: #39bae6;
   border: none;
-  padding: 1em;
+  padding: 1rem;
   background: none;
 }
 
@@ -72,7 +75,7 @@ header button:hover {
 
 button {
   font-family: "JetBrains Mono", monospace;
-  font-size: 13pt;
+  font-size: 1.125rem;
 }
 
 button:hover {
@@ -82,7 +85,7 @@ button:hover {
 select {
   width: 100%;
   font-family: "JetBrains Mono", monospace;
-  font-size: 13pt;
+  font-size: 1.0625rem;
   border: none;
 }
 
@@ -103,7 +106,7 @@ a, a:visited, a:hover {
   height: 96vh;
   align-items: stretch;
   justify-items: stretch;
-  margin: 2em;
+  margin: 1em 2em 0em 2em;
 }
 
 .content {
@@ -116,8 +119,8 @@ a, a:visited, a:hover {
   width: 100%;
   height: 100%;
   border: none;
-  font-size: 13pt;
   line-height: 1.6rem;
+  font-size: 1rem;
   resize: none;
 }
 
@@ -142,6 +145,10 @@ a, a:visited, a:hover {
   padding: 1em;
   border: none;
   background-color: #39bae6;
+}
+
+#code {
+  overflow-x: scroll;
 }
 
 td.line-number {

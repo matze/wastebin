@@ -63,8 +63,7 @@ pub fn highlight(source: &str, ext: &str) -> Result<String, Error> {
             parsed.as_slice(),
             ClassStyle::Spaced,
             &mut scope_stack,
-        )
-        .unwrap();
+        )?;
 
         line_number += 1;
         let formatted_str = formatted.as_str();

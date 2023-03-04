@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 2.3.2
+
+**2023-03-04**
+
 ### Changed
 
 - Replace overlaying link box with a navigation bar containing stylized buttons

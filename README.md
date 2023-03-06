@@ -46,6 +46,10 @@ Here is how to persist the database as `state.db` via the
 
     $ docker run -e WASTEBIN_DATABASE_PATH=/data/state.db -v /path/for/storage:/data quxfoo/wastebin:latest
 
+**NOTE**: The image is based on scratch which means it neither comes with a
+shell nor is `TMPDIR` set. If database migrations fail with an extended sqlite
+error code 6410, pass `TMPDIR` pointing to a location, sqlite can use to write.
+
 
 ## Usage
 

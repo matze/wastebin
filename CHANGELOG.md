@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Serve style CSS filename based on content hash to force client reload on
+  change. With that bump max age for CSS to six months.
+
 
 ## 2.3.2
 

@@ -1,4 +1,4 @@
-use crate::db;
+use crate::{db, highlight};
 use axum_extra::extract::cookie::Key;
 use once_cell::sync::Lazy;
 use std::env::VarError;
@@ -11,17 +11,24 @@ use std::time::Duration;
 pub struct Metadata<'a> {
     pub title: String,
     pub version: &'a str,
+    pub highlight: &'a highlight::Data<'a>,
 }
 
 pub static METADATA: Lazy<Metadata> = Lazy::new(|| {
     let title = std::env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string());
     let version = env!("CARGO_PKG_VERSION");
-    Metadata { title, version }
+    let highlight = &highlight::DATA;
+
+    Metadata {
+        title,
+        version,
+        highlight,
+    }
 });
 
 pub const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
-pub const CSS_MAX_AGE: Duration = Duration::from_secs(3600);
+pub const CSS_MAX_AGE: Duration = Duration::from_secs(60 * 60 * 24 * 30 * 6);
 
 pub const FAVICON_MAX_AGE: Duration = Duration::from_secs(86400);
 

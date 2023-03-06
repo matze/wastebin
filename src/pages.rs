@@ -1,4 +1,4 @@
-use crate::{db, env, highlight};
+use crate::{db, env};
 use askama::Template;
 use axum::http::StatusCode;
 use std::default::Default;
@@ -30,14 +30,12 @@ impl From<crate::Error> for ErrorResponse<'_> {
 #[template(path = "index.html")]
 pub struct Index<'a> {
     meta: &'a env::Metadata<'a>,
-    syntaxes: &'a [syntect::parsing::SyntaxReference],
 }
 
 impl<'a> Default for Index<'a> {
     fn default() -> Self {
         Self {
             meta: &env::METADATA,
-            syntaxes: highlight::DATA.syntaxes(),
         }
     }
 }

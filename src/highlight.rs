@@ -1,48 +1,60 @@
 use crate::errors::Error;
 use once_cell::sync::Lazy;
+use sha2::{Digest, Sha256};
 use std::io::Cursor;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, line_tokens_to_classed_spans, ClassStyle};
 use syntect::parsing::{ParseState, ScopeStack, SyntaxSet};
 use syntect::util::LinesWithEndings;
 
-pub static DATA: Lazy<Data> = Lazy::new(|| {
+static LIGHT_CSS: Lazy<String> = Lazy::new(|| {
     let data = include_str!("themes/ayu-light.tmTheme");
-    let light_theme = ThemeSet::load_from_reader(&mut Cursor::new(data)).unwrap();
+    let theme = ThemeSet::load_from_reader(&mut Cursor::new(data)).expect("loading theme");
+    css_for_theme_with_class_style(&theme, ClassStyle::Spaced).expect("generating CSS")
+});
 
+static DARK_CSS: Lazy<String> = Lazy::new(|| {
     let data = include_str!("themes/ayu-dark.tmTheme");
-    let dark_theme = ThemeSet::load_from_reader(&mut Cursor::new(data)).unwrap();
+    let theme = ThemeSet::load_from_reader(&mut Cursor::new(data)).expect("loading theme");
+    css_for_theme_with_class_style(&theme, ClassStyle::Spaced).expect("generating CSS")
+});
+
+pub static DATA: Lazy<Data> = Lazy::new(|| {
+    let style = Css::new("style", include_str!("themes/style.css"));
+    let light = Css::new("light", &LIGHT_CSS);
+    let dark = Css::new("dark", &DARK_CSS);
 
     Data {
-        main: include_str!("themes/style.css"),
-        light: css_for_theme_with_class_style(&light_theme, ClassStyle::Spaced).unwrap(),
-        dark: css_for_theme_with_class_style(&dark_theme, ClassStyle::Spaced).unwrap(),
+        style,
+        dark,
+        light,
         syntax_set: SyntaxSet::load_defaults_newlines(),
     }
 });
 
-pub struct Data<'a> {
-    main: &'a str,
-    dark: String,
-    light: String,
-    syntax_set: SyntaxSet,
+/// Combines CSS content with a filename containing the hash of the content.
+pub struct Css<'a> {
+    pub name: String,
+    pub content: &'a str,
 }
 
-impl<'a> Data<'a> {
-    pub fn style_css(&self) -> String {
-        self.main.to_string()
-    }
+pub struct Data<'a> {
+    pub style: Css<'a>,
+    pub light: Css<'a>,
+    pub dark: Css<'a>,
+    pub syntax_set: SyntaxSet,
+}
 
-    pub fn dark_css(&self) -> String {
-        self.dark.clone()
-    }
+impl<'a> Css<'a> {
+    fn new(name: &str, content: &'a str) -> Self {
+        let name = format!(
+            "/{name}.{}.css",
+            hex::encode(Sha256::digest(content.as_bytes()))
+                .get(0..16)
+                .expect("at least 16 characters")
+        );
 
-    pub fn light_css(&self) -> String {
-        self.light.clone()
-    }
-
-    pub fn syntaxes(&'a self) -> &'a [syntect::parsing::SyntaxReference] {
-        self.syntax_set.syntaxes()
+        Self { name, content }
     }
 }
 

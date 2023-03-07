@@ -108,6 +108,12 @@ is able to handle cookies you can delete the paste once again using the cookie
 in the `Set-Cookie` header set during redirect after creation.
 
 
+### Paste from neovim
+
+Use the [wastebin.nvim](https://github.com/matze/wastebin.nvim) plugin and paste
+the current buffer or selection with `:WastePaste`.
+
+
 ### Paste from clipboard
 
 We can use the API POST endpoint to paste clipboard data easily from the command

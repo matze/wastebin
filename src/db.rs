@@ -383,4 +383,20 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn cache_key() {
+        let key = CacheKey::from_str("bJZCna").unwrap();
+        assert_eq!(key.id(), "bJZCna");
+        assert_eq!(key.id, 104651828.into());
+        assert_eq!(key.ext, "txt");
+
+        let key = CacheKey::from_str("sIiFec.rs").unwrap();
+        assert_eq!(key.id(), "sIiFec");
+        assert_eq!(key.id, 1243750162.into());
+        assert_eq!(key.ext, "rs");
+
+        assert!(CacheKey::from_str("foo").is_err());
+        assert!(CacheKey::from_str("bar.rs").is_err());
+    }
 }

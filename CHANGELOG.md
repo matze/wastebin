@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Help overlay accessible via <kbd>?</kbd>.
+
 ### Changed
 
 - Serve style CSS filename based on content hash to force client reload on

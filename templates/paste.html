@@ -17,6 +17,16 @@
     else if (e.key == 'd') {
       window.location.href = '/{{ id }}?dl={{ ext }}';
     }
+    else if (e.key == '?') {
+      var overlay = document.getElementById("overlay");
+
+      overlay.style.display = overlay.style.display != "block" ? "block" : "none";
+      overlay.onclick = function() {
+        if (overlay.style.display == "block") {
+          overlay.style.display = "none";
+        }
+      };
+    }
   }
 </script>
 {% endblock %}
@@ -30,6 +40,28 @@
 {% endblock %}
 
 {% block content %}
+  <div id="overlay">
+    <div id="overlay-content">
+      <table>
+        <tr>
+          <td><kbd>n</kbd></td>
+          <td>Go home</td>
+        </td>
+        <tr>
+          <td><kbd>y</kbd></td>
+          <td>Copy URL</td>
+        </td>
+        <tr>
+          <td><kbd>d</kbd></td>
+          <td>Download</td>
+        </td>
+        <tr>
+          <td><kbd>?</kbd></td>
+          <td>Show this</td>
+        </td>
+      </table>
+    </div>
+  </div>
   <div id="code">
     <pre class="code">{{ html|safe }}</pre>
   </div>

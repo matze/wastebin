@@ -15,6 +15,7 @@ http-body = "0"
 lru = "0"
 mime = "0"
 once_cell = "1"
+qrcodegen = "1"
 rand = "0"
 rusqlite = { version = "0.28", features = ["bundled"] }
 rusqlite_migration = { git = "https://github.com/cljoly/rusqlite_migration", rev = "dff7b6ba305d0d5b334c40fde72a88e28984242a" }

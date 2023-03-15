@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="center">
+    <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 {{ qr.size() + 4 }} {{ qr.size() + 4 }}" stroke="none" width="16rem">
+      <rect width="100%" height="100%" fill="#fafafa"/>
+      <path d="{% for (x, y) in self.dark_modules() %}M{{ x + 2 }},{{ y + 2 }}h1v1h-1z {% endfor %}" fill="#000000"/>
+    </svg>
+  </div>
+{% endblock %}

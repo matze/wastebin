@@ -64,6 +64,33 @@ impl<'a> Paste<'a> {
     }
 }
 
+/// Paste view showing the formatted paste as well as a bunch of links.
+#[derive(Template)]
+#[template(path = "qr.html", escape = "none")]
+pub struct Qr<'a> {
+    meta: &'a env::Metadata<'a>,
+    qr: qrcodegen::QrCode,
+}
+
+impl<'a> Qr<'a> {
+    /// Construct new QR code view from `code`.
+    pub fn new(qr: qrcodegen::QrCode) -> Self {
+        Self {
+            meta: &env::METADATA,
+            qr,
+        }
+    }
+
+    // Return module coordinates that are dark.
+    fn dark_modules(&self) -> Vec<(i32, i32)> {
+        let size = self.qr.size();
+        (0..size)
+            .flat_map(|x| (0..size).map(move |y| (x, y)))
+            .filter(|(x, y)| self.qr.get_module(*x, *y))
+            .collect()
+    }
+}
+
 /// Burn page shown if "burn-after-reading" was selected during insertion.
 #[derive(Template)]
 #[template(path = "burn.html")]

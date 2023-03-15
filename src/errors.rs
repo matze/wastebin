@@ -31,6 +31,10 @@ pub enum Error {
     SyntaxParsing(#[from] syntect::parsing::ParsingError),
     #[error("could not parse cookie: {0}")]
     CookieParsing(String),
+    #[error("could not generate QR code: {0}")]
+    QrCode(#[from] qrcodegen::DataTooLong),
+    #[error("could not find Host header to generate QR code URL")]
+    NoHost,
 }
 
 #[derive(Serialize)]
@@ -45,10 +49,12 @@ impl From<Error> for StatusCode {
     fn from(err: Error) -> Self {
         match err {
             Error::NotFound => StatusCode::NOT_FOUND,
-            Error::IllegalCharacters | Error::WrongSize | Error::CookieParsing(_) => {
-                StatusCode::BAD_REQUEST
-            }
+            Error::NoHost
+            | Error::IllegalCharacters
+            | Error::WrongSize
+            | Error::CookieParsing(_) => StatusCode::BAD_REQUEST,
             Error::Join(_)
+            | Error::QrCode(_)
             | Error::Compression(_)
             | Error::IntConversion(_)
             | Error::Migration(_)

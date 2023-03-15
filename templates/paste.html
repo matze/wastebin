@@ -17,6 +17,9 @@
     else if (e.key == 'd') {
       window.location.href = '/{{ id }}?dl={{ ext }}';
     }
+    else if (e.key == 'q') {
+      window.location.href = '/{{ id }}?fmt=qr';
+    }
     else if (e.key == '?') {
       var overlay = document.getElementById("overlay");
 
@@ -54,6 +57,10 @@
         <tr>
           <td><kbd>d</kbd></td>
           <td>Download</td>
+        </td>
+        <tr>
+          <td><kbd>q</kbd></td>
+          <td>Show QR code</td>
         </td>
         <tr>
           <td><kbd>?</kbd></td>

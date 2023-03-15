@@ -15,6 +15,8 @@ use serde::Deserialize;
 enum Format {
     #[serde(rename(deserialize = "raw"))]
     Raw,
+    #[serde(rename(deserialize = "qr"))]
+    Qr,
 }
 
 #[derive(Deserialize, Debug)]
@@ -31,6 +33,33 @@ async fn get_raw(state: AppState, Path(id): Path<String>) -> Result<String, Stat
         .parse()?;
 
     Ok(state.db.get(id).await?.text)
+}
+
+fn qr_code_from(headers: HeaderMap, id: String) -> Result<qrcodegen::QrCode, Error> {
+    let host = headers
+        .get(header::HOST)
+        .ok_or_else(|| Error::NoHost)?
+        .to_str()
+        .map_err(|_| Error::IllegalCharacters)?;
+
+    // FIXME: this is a crude approximation ...
+    let url = format!("https://{host}/{id}");
+
+    Ok(qrcodegen::QrCode::encode_text(
+        &url,
+        qrcodegen::QrCodeEcc::High,
+    )?)
+}
+
+async fn get_qr(
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Result<pages::Qr<'static>, pages::ErrorResponse<'static>> {
+    let qr_code = tokio::task::spawn_blocking(|| qr_code_from(headers, id))
+        .await
+        .map_err(Error::from)??;
+
+    Ok(pages::Qr::new(qr_code))
 }
 
 async fn get_download(
@@ -80,8 +109,10 @@ pub async fn get(
     Query(query): Query<QueryData>,
     State(state): State<AppState>,
 ) -> Response {
-    if let Some(Format::Raw) = query.fmt {
-        return get_raw(state, id).await.into_response();
+    match query.fmt {
+        Some(Format::Raw) => return get_raw(state, id).await.into_response(),
+        Some(Format::Qr) => return get_qr(id, headers).await.into_response(),
+        None => (),
     }
 
     if let Some(extension) = query.dl {

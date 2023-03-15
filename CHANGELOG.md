@@ -4,6 +4,7 @@
 
 ### Added
 
+- QR code display to browse the URL on phones.
 - Help overlay accessible via <kbd>?</kbd>.
 
 ### Changed

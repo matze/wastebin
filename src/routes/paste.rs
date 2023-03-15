@@ -12,8 +12,14 @@ use axum_extra::extract::cookie::SignedCookieJar;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
+enum Format {
+    #[serde(rename(deserialize = "raw"))]
+    Raw,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct QueryData {
-    fmt: Option<String>,
+    fmt: Option<Format>,
     dl: Option<String>,
 }
 
@@ -74,10 +80,8 @@ pub async fn get(
     Query(query): Query<QueryData>,
     State(state): State<AppState>,
 ) -> Response {
-    if let Some(fmt) = query.fmt {
-        if fmt == "raw" {
-            return get_raw(state, id).await.into_response();
-        }
+    if let Some(Format::Raw) = query.fmt {
+        return get_raw(state, id).await.into_response();
     }
 
     if let Some(extension) = query.dl {

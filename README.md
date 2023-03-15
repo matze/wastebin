@@ -55,9 +55,12 @@ error code 6410, pass `TMPDIR` pointing to a location, sqlite can use to write.
 
 ### Browser interface
 
-When viewing a paste, you can use <kbd>r</kbd> and <kbd>n</kbd> to go to the raw
-view and back to the index page. Furthermore, you can use <kbd>y</kbd> to copy
-the paste URL to the clipboard.
+When viewing a paste, you can use
+
+* <kbd>r</kbd> to view the raw paste,
+* <kbd>n</kbd> to the index page,
+* <kbd>y</kbd> to copy the current URL to the clipboard and
+* <kbd>?</kbd> to view the list of keybindings.
 
 
 ### Configuration

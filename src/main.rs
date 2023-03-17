@@ -10,6 +10,7 @@ use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
+use url::Url;
 
 mod db;
 mod env;
@@ -25,6 +26,7 @@ mod test_helpers;
 pub struct AppState {
     db: Database,
     key: Key,
+    base_url: Option<Url>,
 }
 
 impl FromRef<AppState> for Key {
@@ -52,9 +54,10 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let key = env::signing_key()?;
     let addr = env::addr()?;
     let max_body_size = env::max_body_size()?;
+    let base_url = env::base_url()?;
     let cache = db::Cache::new(cache_size);
     let db = Database::new(method, cache)?;
-    let state = AppState { db, key };
+    let state = AppState { db, key, base_url };
 
     tracing::debug!("serving on {addr}");
     tracing::debug!("caching {cache_size} paste highlights");

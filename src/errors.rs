@@ -35,6 +35,8 @@ pub enum Error {
     QrCode(#[from] qrcodegen::DataTooLong),
     #[error("could not find Host header to generate QR code URL")]
     NoHost,
+    #[error("could not parse URL: {0}")]
+    UrlParsing(#[from] url::ParseError),
 }
 
 #[derive(Serialize)]
@@ -52,6 +54,7 @@ impl From<Error> for StatusCode {
             Error::NoHost
             | Error::IllegalCharacters
             | Error::WrongSize
+            | Error::UrlParsing(_)
             | Error::CookieParsing(_) => StatusCode::BAD_REQUEST,
             Error::Join(_)
             | Error::QrCode(_)

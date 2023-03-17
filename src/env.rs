@@ -37,6 +37,7 @@ const VAR_CACHE_SIZE: &str = "WASTEBIN_CACHE_SIZE";
 const VAR_DATABASE_PATH: &str = "WASTEBIN_DATABASE_PATH";
 const VAR_MAX_BODY_SIZE: &str = "WASTEBIN_MAX_BODY_SIZE";
 const VAR_SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
+const VAR_BASE_URL: &str = "WASTEBIN_BASE_URL";
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -48,6 +49,8 @@ pub enum Error {
     MaxBodySize(ParseIntError),
     #[error("failed to parse {VAR_ADDRESS_PORT}, expected `host:port`")]
     AddressPort,
+    #[error("failed to parse {VAR_BASE_URL}: {0}")]
+    BaseUrl(String),
     #[error("failed to generate key from {VAR_SIGNING_KEY}: {0}")]
     SigningKey(String),
 }
@@ -89,4 +92,20 @@ pub fn max_body_size() -> Result<usize, Error> {
     std::env::var(VAR_MAX_BODY_SIZE)
         .map_or_else(|_| Ok(1024 * 1024), |s| s.parse::<usize>())
         .map_err(Error::MaxBodySize)
+}
+
+pub fn base_url() -> Result<Option<url::Url>, Error> {
+    let result = std::env::var(VAR_BASE_URL).map_or_else(
+        |err| match err {
+            VarError::NotPresent => Ok(None),
+            VarError::NotUnicode(_) => Err(Error::BaseUrl("Not Unicode".to_string())),
+        },
+        |var| {
+            Ok(Some(
+                url::Url::parse(&var).map_err(|err| Error::BaseUrl(err.to_string()))?,
+            ))
+        },
+    )?;
+
+    Ok(result)
 }

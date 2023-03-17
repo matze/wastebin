@@ -18,6 +18,7 @@ A minimal pastebin with a design shamelessly copied from
 * deletion after expiration, reading or by owners
 * light/dark mode
 * highlightable line numbers
+* QR code to browse a paste's URL on mobile devices
 
 
 ## Installation
@@ -71,6 +72,9 @@ run-time behavior:
 
 * `WASTEBIN_ADDRESS_PORT` string that determines which address and port to bind
   a. If not set, it binds by default to `0.0.0.0:8088`.
+* `WASTEBIN_BASE_URL` string that determines the base URL for the QR code
+  display. If not set, the user agent's `Host` header field is used as an
+  approximation.
 * `WASTEBIN_CACHE_SIZE` number of rendered syntax highlight items to cache.
   Defaults to 128 and can be disabled by setting to 0.
 * `WASTEBIN_DATABASE_PATH` path to the sqlite3 database file. If not set, an

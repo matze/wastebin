@@ -10,6 +10,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum::RequestExt;
 use axum_extra::extract::cookie::SignedCookieJar;
 use serde::Deserialize;
+use url::Url;
 
 #[derive(Deserialize, Debug)]
 enum Format {
@@ -35,27 +36,37 @@ async fn get_raw(state: AppState, Path(id): Path<String>) -> Result<String, Stat
     Ok(state.db.get(id).await?.text)
 }
 
-fn qr_code_from(headers: HeaderMap, id: String) -> Result<qrcodegen::QrCode, Error> {
-    let host = headers
-        .get(header::HOST)
-        .ok_or_else(|| Error::NoHost)?
-        .to_str()
-        .map_err(|_| Error::IllegalCharacters)?;
+fn qr_code_from(
+    state: AppState,
+    headers: HeaderMap,
+    id: String,
+) -> Result<qrcodegen::QrCode, Error> {
+    let base_url = &state.base_url.map_or_else(
+        || {
+            // Fall back to the user agent's `Host` header field.
+            let host = headers
+                .get(header::HOST)
+                .ok_or_else(|| Error::NoHost)?
+                .to_str()
+                .map_err(|_| Error::IllegalCharacters)?;
 
-    // FIXME: this is a crude approximation ...
-    let url = format!("https://{host}/{id}");
+            Ok::<_, Error>(Url::parse(&format!("https://{host}"))?)
+        },
+        |url| Ok(url),
+    )?;
 
     Ok(qrcodegen::QrCode::encode_text(
-        &url,
+        base_url.join(&id)?.as_str(),
         qrcodegen::QrCodeEcc::High,
     )?)
 }
 
 async fn get_qr(
+    state: AppState,
     Path(id): Path<String>,
     headers: HeaderMap,
 ) -> Result<pages::Qr<'static>, pages::ErrorResponse<'static>> {
-    let qr_code = tokio::task::spawn_blocking(|| qr_code_from(headers, id))
+    let qr_code = tokio::task::spawn_blocking(|| qr_code_from(state, headers, id))
         .await
         .map_err(Error::from)??;
 
@@ -111,7 +122,7 @@ pub async fn get(
 ) -> Response {
     match query.fmt {
         Some(Format::Raw) => return get_raw(state, id).await.into_response(),
-        Some(Format::Qr) => return get_qr(id, headers).await.into_response(),
+        Some(Format::Qr) => return get_qr(state, id, headers).await.into_response(),
         None => (),
     }
 

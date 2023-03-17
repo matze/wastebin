@@ -42,13 +42,13 @@ impl<'a> Default for Index<'a> {
 
 /// Paste view showing the formatted paste as well as a bunch of links.
 #[derive(Template)]
-#[template(path = "paste.html")]
+#[template(path = "formatted.html")]
 pub struct Paste<'a> {
     meta: &'a env::Metadata<'a>,
     id: String,
-    html: String,
     ext: String,
     can_delete: bool,
+    html: String,
 }
 
 impl<'a> Paste<'a> {
@@ -58,8 +58,8 @@ impl<'a> Paste<'a> {
             meta: &env::METADATA,
             id: key.id(),
             ext: key.ext,
-            html,
             can_delete,
+            html,
         }
     }
 }
@@ -69,15 +69,21 @@ impl<'a> Paste<'a> {
 #[template(path = "qr.html", escape = "none")]
 pub struct Qr<'a> {
     meta: &'a env::Metadata<'a>,
+    id: String,
+    ext: String,
+    can_delete: bool,
     qr: qrcodegen::QrCode,
 }
 
 impl<'a> Qr<'a> {
     /// Construct new QR code view from `code`.
-    pub fn new(qr: qrcodegen::QrCode) -> Self {
+    pub fn new(qr: qrcodegen::QrCode, key: db::CacheKey) -> Self {
         Self {
             meta: &env::METADATA,
+            id: key.id(),
+            ext: key.ext,
             qr,
+            can_delete: false,
         }
     }
 

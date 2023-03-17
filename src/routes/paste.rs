@@ -66,11 +66,12 @@ async fn get_qr(
     Path(id): Path<String>,
     headers: HeaderMap,
 ) -> Result<pages::Qr<'static>, pages::ErrorResponse<'static>> {
+    let key: CacheKey = id.parse()?;
     let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state, &headers, &id))
         .await
         .map_err(Error::from)??;
 
-    Ok(pages::Qr::new(qr_code))
+    Ok(pages::Qr::new(qr_code, key))
 }
 
 async fn get_download(

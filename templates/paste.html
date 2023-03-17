@@ -20,6 +20,9 @@
     else if (e.key == 'q') {
       window.location.href = '/{{ id }}?fmt=qr';
     }
+    else if (e.key == 'p') {
+      window.location.href = '/{{ id }}';
+    }
     else if (e.key == '?') {
       var overlay = document.getElementById("overlay");
 
@@ -40,36 +43,4 @@
   {% endif %}
     <li><a href="/{{ id }}?dl={{ ext }}"><button>download</button></a></li>
     <li><a href="/{{ id }}?fmt=raw"><button>raw</button></a></li>
-{% endblock %}
-
-{% block content %}
-  <div id="overlay">
-    <div id="overlay-content">
-      <table>
-        <tr>
-          <td><kbd>n</kbd></td>
-          <td>Go home</td>
-        </td>
-        <tr>
-          <td><kbd>y</kbd></td>
-          <td>Copy URL</td>
-        </td>
-        <tr>
-          <td><kbd>d</kbd></td>
-          <td>Download</td>
-        </td>
-        <tr>
-          <td><kbd>q</kbd></td>
-          <td>Show QR code</td>
-        </td>
-        <tr>
-          <td><kbd>?</kbd></td>
-          <td>Show this</td>
-        </td>
-      </table>
-    </div>
-  </div>
-  <div id="code">
-    <pre class="code">{{ html|safe }}</pre>
-  </div>
 {% endblock %}

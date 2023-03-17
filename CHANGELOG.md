@@ -7,7 +7,7 @@
 - QR code display accessible via <kbd>q</kbd> to browse the URL on phones and
   corresponding `WASTEBIN_BASE_URL` environment variable to control the base. In
   case it is not set, the user agent's `Host` header field is used as an
-  approximation.
+  approximation. To go back to normal paste view you can use <kbd>p</kbd>.
 - Help overlay accessible via <kbd>?</kbd>.
 
 ### Changed

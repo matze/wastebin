@@ -38,8 +38,8 @@ async fn get_raw(state: AppState, Path(id): Path<String>) -> Result<String, Stat
 
 fn qr_code_from(
     state: AppState,
-    headers: HeaderMap,
-    id: String,
+    headers: &HeaderMap,
+    id: &str,
 ) -> Result<qrcodegen::QrCode, Error> {
     let base_url = &state.base_url.map_or_else(
         || {
@@ -52,11 +52,11 @@ fn qr_code_from(
 
             Ok::<_, Error>(Url::parse(&format!("https://{host}"))?)
         },
-        |url| Ok(url),
+        Ok,
     )?;
 
     Ok(qrcodegen::QrCode::encode_text(
-        base_url.join(&id)?.as_str(),
+        base_url.join(id)?.as_str(),
         qrcodegen::QrCodeEcc::High,
     )?)
 }
@@ -66,7 +66,7 @@ async fn get_qr(
     Path(id): Path<String>,
     headers: HeaderMap,
 ) -> Result<pages::Qr<'static>, pages::ErrorResponse<'static>> {
-    let qr_code = tokio::task::spawn_blocking(|| qr_code_from(state, headers, id))
+    let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state, &headers, &id))
         .await
         .map_err(Error::from)??;
 

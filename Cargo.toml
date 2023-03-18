@@ -4,8 +4,8 @@ version = "2.3.2"
 edition = "2021"
 
 [dependencies]
-askama = { git = "https://github.com/djc/askama", default-features = false, features = ["with-axum"] }
-askama_axum = { git = "https://github.com/djc/askama" }
+askama = { version = "0.12", default-features = false, features = ["with-axum"] }
+askama_axum = { version = "0.3" }
 async-compression = { version = "0.3", features = ["tokio", "zstd"] }
 axum = { version = "0.6", features = ["headers", "json", "query"] }
 axum-extra = { version = "0", features = ["cookie-signed"] }

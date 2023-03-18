@@ -57,7 +57,8 @@ dependencies = [
 [[package]]
 name = "askama"
 version = "0.12.0"
-source = "git+https://github.com/djc/askama#cb5a37dabf9d3abb5b32d24d7da148d9988231b0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47cbc3cf73fa8d9833727bbee4835ba5c421a0d65b72daf9a7b5d0e0f9cfb57e"
 dependencies = [
  "askama_derive",
  "askama_escape",
@@ -69,7 +70,8 @@ dependencies = [
 [[package]]
 name = "askama_axum"
 version = "0.3.0"
-source = "git+https://github.com/djc/askama#cb5a37dabf9d3abb5b32d24d7da148d9988231b0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07b336dea26a2eb67f04e1134385721f794b654a870ce5146d2fcb69ea39c3a4"
 dependencies = [
  "askama",
  "axum-core",
@@ -79,7 +81,8 @@ dependencies = [
 [[package]]
 name = "askama_derive"
 version = "0.12.0"
-source = "git+https://github.com/djc/askama#cb5a37dabf9d3abb5b32d24d7da148d9988231b0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e80b5ad1afe82872b7aa3e9de9b206ecb85584aa324f0f60fa4c903ce935936b"
 dependencies = [
  "basic-toml",
  "mime",
@@ -94,7 +97,8 @@ dependencies = [
 [[package]]
 name = "askama_escape"
 version = "0.10.3"
-source = "git+https://github.com/djc/askama#cb5a37dabf9d3abb5b32d24d7da148d9988231b0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "619743e34b5ba4e9703bba34deac3427c72507c7159f5fd030aea8cac0cfe341"
 
 [[package]]
 name = "async-compression"

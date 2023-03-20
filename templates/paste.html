@@ -33,6 +33,14 @@
         }
       };
     }
+
+    if (e.keyCode == 27) {
+      var overlay = document.getElementById("overlay");
+
+      if (overlay.style.display == "block") {
+        overlay.style.display = "none";
+      }
+    }
   }
 </script>
 {% endblock %}

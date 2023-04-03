@@ -103,6 +103,32 @@ pub struct ReadEntry {
     pub uid: Option<i64>,
 }
 
+async fn compress(text: &str) -> Result<Vec<u8>, Error> {
+    let reader = BufReader::new(Cursor::new(text));
+    let mut encoder = ZstdEncoder::new(reader);
+    let mut data = Vec::new();
+
+    encoder
+        .read_to_end(&mut data)
+        .await
+        .map_err(|e| Error::Compression(e.to_string()))?;
+
+    Ok(data)
+}
+
+async fn decompress(data: &[u8]) -> Result<String, Error> {
+    let reader = BufReader::new(Cursor::new(data));
+    let mut decoder = ZstdDecoder::new(reader);
+    let mut text = String::new();
+
+    decoder
+        .read_to_string(&mut text)
+        .await
+        .map_err(|e| Error::Compression(e.to_string()))?;
+
+    Ok(text)
+}
+
 impl Database {
     /// Create new database with the given `method` and `cache`.
     pub fn new(method: Open, cache: Cache) -> Result<Self, Error> {
@@ -125,16 +151,8 @@ impl Database {
     pub async fn insert(&self, id: Id, entry: InsertEntry) -> Result<(), Error> {
         let conn = self.conn.clone();
         let id = id.as_u32();
+        let data = compress(&entry.text).await?;
 
-        let cursor = Cursor::new(entry.text);
-        let reader = BufReader::new(cursor);
-        let mut encoder = ZstdEncoder::new(reader);
-        let mut data = Vec::new();
-
-        encoder
-            .read_to_end(&mut data)
-            .await
-            .map_err(|e| Error::Compression(e.to_string()))?;
         spawn_blocking(move || match entry.expires {
             None => conn.lock().unwrap().execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading) VALUES (?1, ?2, ?3, ?4)",
@@ -181,15 +199,7 @@ impl Database {
             self.delete(id).await?;
         }
 
-        let cursor = Cursor::new(data);
-        let reader = BufReader::new(cursor);
-        let mut decoder = ZstdDecoder::new(reader);
-        let mut text = String::new();
-
-        decoder
-            .read_to_string(&mut text)
-            .await
-            .map_err(|e| Error::Compression(e.to_string()))?;
+        let text = decompress(&data).await?;
 
         Ok(ReadEntry {
             text,

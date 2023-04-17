@@ -35,12 +35,12 @@ impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut s = String::with_capacity(6);
 
-        s.push(CHAR_TABLE[(((self.n >> 26) & 0x3f) as usize)]);
-        s.push(CHAR_TABLE[(((self.n >> 20) & 0x3f) as usize)]);
-        s.push(CHAR_TABLE[(((self.n >> 14) & 0x3f) as usize)]);
-        s.push(CHAR_TABLE[(((self.n >> 8) & 0x3f) as usize)]);
-        s.push(CHAR_TABLE[(((self.n >> 2) & 0x3f) as usize)]);
-        s.push(CHAR_TABLE[((self.n & 0x3) as usize)]);
+        s.push(CHAR_TABLE[((self.n >> 26) & 0x3f) as usize]);
+        s.push(CHAR_TABLE[((self.n >> 20) & 0x3f) as usize]);
+        s.push(CHAR_TABLE[((self.n >> 14) & 0x3f) as usize]);
+        s.push(CHAR_TABLE[((self.n >> 8) & 0x3f) as usize]);
+        s.push(CHAR_TABLE[((self.n >> 2) & 0x3f) as usize]);
+        s.push(CHAR_TABLE[(self.n & 0x3) as usize]);
 
         write!(f, "{s}")
     }

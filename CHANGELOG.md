@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 2.3.3
+
+**2023-04-21**
+
 ### Added
 
 - QR code display accessible via <kbd>q</kbd> to browse the URL on phones and

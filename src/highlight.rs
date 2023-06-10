@@ -1,36 +1,49 @@
 use crate::errors::Error;
-use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
+use std::sync::OnceLock;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, line_tokens_to_classed_spans, ClassStyle};
 use syntect::parsing::{ParseState, ScopeStack, SyntaxSet};
 use syntect::util::LinesWithEndings;
 
-static LIGHT_CSS: Lazy<String> = Lazy::new(|| {
-    let data = include_str!("themes/ayu-light.tmTheme");
-    let theme = ThemeSet::load_from_reader(&mut Cursor::new(data)).expect("loading theme");
-    css_for_theme_with_class_style(&theme, ClassStyle::Spaced).expect("generating CSS")
-});
+fn light_css() -> &'static String {
+    static DATA: OnceLock<String> = OnceLock::new();
 
-static DARK_CSS: Lazy<String> = Lazy::new(|| {
-    let data = include_str!("themes/ayu-dark.tmTheme");
-    let theme = ThemeSet::load_from_reader(&mut Cursor::new(data)).expect("loading theme");
-    css_for_theme_with_class_style(&theme, ClassStyle::Spaced).expect("generating CSS")
-});
+    DATA.get_or_init(|| {
+        let theme = include_str!("themes/ayu-light.tmTheme");
+        let theme = ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme");
+        css_for_theme_with_class_style(&theme, ClassStyle::Spaced).expect("generating CSS")
+    })
+}
 
-pub static DATA: Lazy<Data> = Lazy::new(|| {
-    let style = Css::new("style", include_str!("themes/style.css"));
-    let light = Css::new("light", &LIGHT_CSS);
-    let dark = Css::new("dark", &DARK_CSS);
+fn dark_css() -> &'static String {
+    static DATA: OnceLock<String> = OnceLock::new();
 
-    Data {
-        style,
-        dark,
-        light,
-        syntax_set: SyntaxSet::load_defaults_newlines(),
-    }
-});
+    DATA.get_or_init(|| {
+        let theme = include_str!("themes/ayu-dark.tmTheme");
+        let theme = ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme");
+        css_for_theme_with_class_style(&theme, ClassStyle::Spaced).expect("generating CSS")
+    })
+}
+
+/// Retrieve reference to initialized highlight [`Data`].
+pub fn data() -> &'static Data<'static> {
+    static DATA: OnceLock<Data> = OnceLock::new();
+
+    DATA.get_or_init(|| {
+        let style = Css::new("style", include_str!("themes/style.css"));
+        let light = Css::new("light", light_css());
+        let dark = Css::new("dark", dark_css());
+
+        Data {
+            style,
+            dark,
+            light,
+            syntax_set: SyntaxSet::load_defaults_newlines(),
+        }
+    })
+}
 
 /// Combines CSS content with a filename containing the hash of the content.
 pub struct Css<'a> {
@@ -59,17 +72,17 @@ impl<'a> Css<'a> {
 }
 
 pub fn highlight(source: &str, ext: &str) -> Result<String, Error> {
-    let syntax_ref = DATA
+    let syntax_ref = data()
         .syntax_set
         .find_syntax_by_extension(ext)
-        .unwrap_or_else(|| DATA.syntax_set.find_syntax_by_extension("txt").unwrap());
+        .unwrap_or_else(|| data().syntax_set.find_syntax_by_extension("txt").unwrap());
 
     let mut parse_state = ParseState::new(syntax_ref);
     let mut html = String::from("<table><tbody>");
     let mut scope_stack = ScopeStack::new();
 
     for (mut line_number, line) in LinesWithEndings::from(source).enumerate() {
-        let parsed = parse_state.parse_line(line, &DATA.syntax_set)?;
+        let parsed = parse_state.parse_line(line, &data().syntax_set)?;
         let (formatted, delta) = line_tokens_to_classed_spans(
             line,
             parsed.as_slice(),

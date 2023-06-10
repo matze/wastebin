@@ -1,4 +1,4 @@
-use crate::highlight::DATA;
+use crate::highlight::data;
 use crate::{env, AppState, Router};
 use axum::response::{IntoResponse, IntoResponseParts};
 use axum::routing::get;
@@ -13,15 +13,15 @@ fn css_headers() -> impl IntoResponseParts {
 }
 
 fn style_css() -> impl IntoResponse {
-    (css_headers(), DATA.style.content.to_string())
+    (css_headers(), data().style.content.to_string())
 }
 
 fn dark_css() -> impl IntoResponse {
-    (css_headers(), DATA.dark.content.to_string())
+    (css_headers(), data().dark.content.to_string())
 }
 
 fn light_css() -> impl IntoResponse {
-    (css_headers(), DATA.light.content.to_string())
+    (css_headers(), data().light.content.to_string())
 }
 
 fn favicon() -> impl IntoResponse {
@@ -35,7 +35,7 @@ fn favicon() -> impl IntoResponse {
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/favicon.png", get(|| async { favicon() }))
-        .route(&DATA.style.name, get(|| async { style_css() }))
+        .route(&data().style.name, get(|| async { style_css() }))
         .route("/dark.css", get(|| async { dark_css() }))
         .route("/light.css", get(|| async { light_css() }))
 }

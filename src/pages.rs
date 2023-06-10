@@ -17,7 +17,7 @@ pub type ErrorResponse<'a> = (StatusCode, Error<'a>);
 impl From<crate::Error> for ErrorResponse<'_> {
     fn from(err: crate::Error) -> Self {
         let html = Error {
-            meta: &env::METADATA,
+            meta: env::metadata(),
             error: err.to_string(),
         };
 
@@ -35,7 +35,7 @@ pub struct Index<'a> {
 impl<'a> Default for Index<'a> {
     fn default() -> Self {
         Self {
-            meta: &env::METADATA,
+            meta: env::metadata(),
         }
     }
 }
@@ -55,7 +55,7 @@ impl<'a> Paste<'a> {
     /// Construct new paste view from cache `key` and paste `html`.
     pub fn new(key: db::CacheKey, html: String, can_delete: bool) -> Self {
         Self {
-            meta: &env::METADATA,
+            meta: env::metadata(),
             id: key.id(),
             ext: key.ext,
             can_delete,
@@ -79,7 +79,7 @@ impl<'a> Qr<'a> {
     /// Construct new QR code view from `code`.
     pub fn new(qr: qrcodegen::QrCode, key: db::CacheKey) -> Self {
         Self {
-            meta: &env::METADATA,
+            meta: env::metadata(),
             id: key.id(),
             ext: key.ext,
             qr,
@@ -109,7 +109,7 @@ impl<'a> Burn<'a> {
     /// Construct new burn page linking to `id`.
     pub fn new(id: String) -> Self {
         Self {
-            meta: &env::METADATA,
+            meta: env::metadata(),
             id,
         }
     }

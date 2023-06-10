@@ -1,11 +1,11 @@
 use crate::{db, highlight};
 use axum_extra::extract::cookie::Key;
-use once_cell::sync::Lazy;
 use std::env::VarError;
 use std::net::SocketAddr;
 use std::num::{NonZeroUsize, ParseIntError};
 use std::path::PathBuf;
 use std::string::String;
+use std::sync::OnceLock;
 use std::time::Duration;
 
 pub struct Metadata<'a> {
@@ -13,18 +13,6 @@ pub struct Metadata<'a> {
     pub version: &'a str,
     pub highlight: &'a highlight::Data<'a>,
 }
-
-pub static METADATA: Lazy<Metadata> = Lazy::new(|| {
-    let title = std::env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string());
-    let version = env!("CARGO_PKG_VERSION");
-    let highlight = &highlight::DATA;
-
-    Metadata {
-        title,
-        version,
-        highlight,
-    }
-});
 
 pub const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -53,6 +41,23 @@ pub enum Error {
     BaseUrl(String),
     #[error("failed to generate key from {VAR_SIGNING_KEY}: {0}")]
     SigningKey(String),
+}
+
+/// Retrieve reference to initialized metadata.
+pub fn metadata() -> &'static Metadata<'static> {
+    static DATA: OnceLock<Metadata> = OnceLock::new();
+
+    DATA.get_or_init(|| {
+        let title = std::env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string());
+        let version = env!("CARGO_PKG_VERSION");
+        let highlight = &highlight::data();
+
+        Metadata {
+            title,
+            version,
+            highlight,
+        }
+    })
 }
 
 pub fn cache_size() -> Result<NonZeroUsize, Error> {

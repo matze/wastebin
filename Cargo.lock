@@ -1761,7 +1761,6 @@ dependencies = [
  "hyper",
  "lru",
  "mime",
- "once_cell",
  "qrcodegen",
  "rand",
  "reqwest",

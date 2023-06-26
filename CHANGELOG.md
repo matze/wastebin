@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Add anchors to line number, so the links actually make some sense.
+
 
 ## 2.3.3
 

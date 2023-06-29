@@ -7,6 +7,8 @@ use syntect::html::{css_for_theme_with_class_style, line_tokens_to_classed_spans
 use syntect::parsing::{ParseState, ScopeStack, SyntaxSet};
 use syntect::util::LinesWithEndings;
 
+const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
+
 fn light_css() -> &'static String {
     static DATA: OnceLock<String> = OnceLock::new();
 
@@ -82,13 +84,17 @@ pub fn highlight(source: &str, ext: &str) -> Result<String, Error> {
     let mut scope_stack = ScopeStack::new();
 
     for (mut line_number, line) in LinesWithEndings::from(source).enumerate() {
-        let parsed = parse_state.parse_line(line, &data().syntax_set)?;
-        let (formatted, delta) = line_tokens_to_classed_spans(
-            line,
-            parsed.as_slice(),
-            ClassStyle::Spaced,
-            &mut scope_stack,
-        )?;
+        let (formatted, delta) = if line.len() > HIGHLIGHT_LINE_LENGTH_CUTOFF {
+            (line.to_string(), 0)
+        } else {
+            let parsed = parse_state.parse_line(line, &data().syntax_set)?;
+            line_tokens_to_classed_spans(
+                line,
+                parsed.as_slice(),
+                ClassStyle::Spaced,
+                &mut scope_stack,
+            )?
+        };
 
         line_number += 1;
         let formatted_str = formatted.as_str();

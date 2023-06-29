@@ -5,6 +5,8 @@
 ### Fixed
 
 - Add anchors to line number, so the links actually make some sense.
+- Do not highlight lines longer than 2048 characters. This can take a
+  considerable amount of time effectively DoS'ing the server.
 
 
 ## 2.3.3

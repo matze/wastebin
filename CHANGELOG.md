@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 2.3.4
+
+**2023-06-29**
+
 ### Fixed
 
 - Add anchors to line number, so the links actually make some sense.

@@ -2,7 +2,7 @@
 @import url("dark.css") (prefers-color-scheme: dark);
 
 @media (prefers-color-scheme: dark) {
-  body, textarea, select, select > option:hover {
+  body, textarea, select, input, select > option:hover {
     background-color: #0f1419;
     color: #e6e1cf;
   }
@@ -17,7 +17,7 @@
 }
 
 @media (prefers-color-scheme: light) {
-  body, textarea, select, select > option:hover {
+  body, textarea, select, input, select > option:hover {
     background-color: #fafafa;
   }
 
@@ -94,6 +94,15 @@ select > option:hover {
   color: #0f1419;
 }
 
+input {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1.0625rem;
+  padding: 0.25rem;
+  border-color: #39bae6;
+  border-style: solid;
+  border-width: 1px;
+}
+
 a, a:visited, a:hover {
   text-decoration: none;
 }
@@ -138,7 +147,7 @@ a, a:visited, a:hover {
 .content {
   grid-area: content;
   grid-column: 1/2;
-  grid-row: 1/5;
+  grid-row: 1/6;
 }
 
 .content > textarea {
@@ -158,12 +167,20 @@ a, a:visited, a:hover {
   grid-row: 1/2;
 }
 
-.expiration-list {
+.extension-filter {
   grid-row: 2/3;
 }
 
-.paste-button {
+.expiration-list {
   grid-row: 3/4;
+}
+
+.paste-button {
+  grid-row: 4/5;
+}
+
+.extension-filter > input {
+  width: 100%;
 }
 
 .paste-button > button {

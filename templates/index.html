@@ -22,6 +22,21 @@
   function dragOverHandler(ev) {
     ev.preventDefault();
   }
+
+  function filterLangs(ev) {
+    ev.preventDefault();
+    let langs = document.getElementById("langs");
+    const term = document.getElementById("filter").value.toLowerCase();
+
+    for (option of langs) {
+      if (option.innerText.toLowerCase().search(term) < 0) {
+        option.style.display = "none";
+      }
+      else {
+        option.style.display = "";
+      }
+    }
+  }
 </script>
 {% endblock %}
 
@@ -43,7 +58,7 @@
           </select>
         </div>
         <div class="extensions-list">
-          <select name="extension" size="23">
+          <select name="extension" id="langs" size="23">
           {%- for syntax in meta.highlight.syntaxes -%}
             {%- if syntax.file_extensions.len() > 0 %}
             <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
@@ -53,6 +68,9 @@
         </div>
         <div class="paste-button">
           <button type="submit" title="Paste">Paste</button>
+        </div>
+        <div class="extension-filter">
+          <input type="search" id="filter" placeholder="Filter ..." onchange="filterLangs(event);" onkeyup="filterLangs(event)"></input>
         </div>
       </div>
     </form>

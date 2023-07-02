@@ -4,7 +4,7 @@ use std::io::Cursor;
 use std::sync::OnceLock;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, line_tokens_to_classed_spans, ClassStyle};
-use syntect::parsing::{ParseState, ScopeStack, SyntaxSet};
+use syntect::parsing::{ParseState, ScopeStack, SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
 
 const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
@@ -37,12 +37,17 @@ pub fn data() -> &'static Data<'static> {
         let style = Css::new("style", include_str!("themes/style.css"));
         let light = Css::new("light", light_css());
         let dark = Css::new("dark", dark_css());
+        let syntax_set: SyntaxSet =
+            syntect::dumps::from_binary(include_bytes!("../assets/newlines.packdump"));
+        let mut syntaxes = syntax_set.syntaxes().to_vec();
+        syntaxes.sort_by(|a, b| a.name.partial_cmp(&b.name).unwrap());
 
         Data {
             style,
-            dark,
             light,
-            syntax_set: SyntaxSet::load_defaults_newlines(),
+            dark,
+            syntax_set,
+            syntaxes,
         }
     })
 }
@@ -58,6 +63,7 @@ pub struct Data<'a> {
     pub light: Css<'a>,
     pub dark: Css<'a>,
     pub syntax_set: SyntaxSet,
+    pub syntaxes: Vec<SyntaxReference>,
 }
 
 impl<'a> Css<'a> {

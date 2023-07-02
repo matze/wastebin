@@ -44,7 +44,7 @@
         </div>
         <div class="extensions-list">
           <select name="extension" size="23">
-          {%- for syntax in meta.highlight.syntax_set.syntaxes() -%}
+          {%- for syntax in meta.highlight.syntaxes -%}
             {%- if syntax.file_extensions.len() > 0 %}
             <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
             {%- endif -%}

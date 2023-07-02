@@ -12,7 +12,7 @@ A minimal pastebin with a design shamelessly copied from
 
 ## Features
 
-* axum and sqlite3 backend with compressed paste data
+* axum and sqlite3 backend storing compressed paste data
 * single binary with low memory footprint
 * drag 'n' drop upload
 * deletion after expiration, reading or by owners
@@ -25,8 +25,8 @@ A minimal pastebin with a design shamelessly copied from
 
 ### Build from source
 
-Install a Rust 2021 toolchain with [rustup](https://rustup.rs) and run the
-server binary with
+Install a Rust 2021 toolchain containing Rust 1.70 with
+[rustup](https://rustup.rs) and run the server binary with
 
     $ cargo run --release
 
@@ -48,8 +48,9 @@ Here is how to persist the database as `state.db` via the
     $ docker run -e WASTEBIN_DATABASE_PATH=/data/state.db -v /path/for/storage:/data quxfoo/wastebin:latest
 
 **NOTE**: The image is based on scratch which means it neither comes with a
-shell nor is `TMPDIR` set. If database migrations fail with an extended sqlite
-error code 6410, pass `TMPDIR` pointing to a location, sqlite can use to write.
+shell nor with `TMPDIR` being set. If database migrations fail with an extended
+sqlite error code 6410, pass `TMPDIR` pointing to a location, sqlite can write
+to.
 
 
 ## Usage
@@ -59,7 +60,7 @@ error code 6410, pass `TMPDIR` pointing to a location, sqlite can use to write.
 When viewing a paste, you can use
 
 * <kbd>r</kbd> to view the raw paste,
-* <kbd>n</kbd> to the index page,
+* <kbd>n</kbd> to go the index page,
 * <kbd>y</kbd> to copy the current URL to the clipboard,
 * <kbd>q</kbd> to display the current URL as a QR code and
 * <kbd>p</kbd> to view the formatted paste,

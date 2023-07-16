@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 2.3.5
+
+**2023-07-17**
+
 ### Added
 
 - Additional syntaxes compiled by the [zola](https://github.com/getzola/zola)

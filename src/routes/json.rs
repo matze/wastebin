@@ -1,4 +1,4 @@
-use crate::db::InsertEntry;
+use crate::db::write;
 use crate::errors::{Error, JsonErrorResponse};
 use crate::id::Id;
 use crate::AppState;
@@ -13,6 +13,7 @@ pub struct Entry {
     pub extension: Option<String>,
     pub expires: Option<u32>,
     pub burn_after_reading: Option<bool>,
+    pub password: Option<String>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -20,7 +21,7 @@ pub struct RedirectResponse {
     pub path: String,
 }
 
-impl From<Entry> for InsertEntry {
+impl From<Entry> for write::Entry {
     fn from(entry: Entry) -> Self {
         Self {
             text: entry.text,
@@ -28,6 +29,7 @@ impl From<Entry> for InsertEntry {
             expires: entry.expires,
             burn_after_reading: entry.burn_after_reading,
             uid: None,
+            password: entry.password,
         }
     }
 }
@@ -44,7 +46,7 @@ pub async fn insert(
     .map_err(Error::from)?
     .into();
 
-    let entry: InsertEntry = entry.into();
+    let entry: write::Entry = entry.into();
     let path = id.to_url_path(&entry);
 
     state.db.insert(id, entry).await?;

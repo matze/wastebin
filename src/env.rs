@@ -26,6 +26,7 @@ const VAR_DATABASE_PATH: &str = "WASTEBIN_DATABASE_PATH";
 const VAR_MAX_BODY_SIZE: &str = "WASTEBIN_MAX_BODY_SIZE";
 const VAR_SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
 const VAR_BASE_URL: &str = "WASTEBIN_BASE_URL";
+const VAR_PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -113,4 +114,8 @@ pub fn base_url() -> Result<Option<url::Url>, Error> {
     )?;
 
     Ok(result)
+}
+
+pub fn password_hash_salt() -> String {
+    std::env::var(VAR_PASSWORD_SALT).unwrap_or_else(|_| "somesalt".to_string())
 }

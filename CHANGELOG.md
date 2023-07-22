@@ -2,9 +2,18 @@
 
 ## Unreleased
 
+### Changed
+
+- ⚠️ Database schema updated to version 6. Like previous migrations rolling back
+  is not (easily) possible, so plan on making a backup in case you want to roll
+  back the server itself.
+- Allow optional encryption of pastes based on Argon 2 password hashing and
+  ChaCha20/Poly1305 symmetric encryption.
+
 ### Fixed
 
-- Language selection filter was not working correctly with certain characters.
+- Language selection filter which was not working correctly with certain
+  characters.
 
 
 ## 2.3.5

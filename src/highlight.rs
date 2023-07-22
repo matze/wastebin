@@ -1,4 +1,4 @@
-use crate::db::ReadEntry;
+use crate::db::read::Entry;
 use crate::errors::Error;
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
@@ -125,7 +125,7 @@ fn highlight(source: &str, ext: &str) -> Result<String, Error> {
 }
 
 impl Html {
-    pub async fn from(entry: ReadEntry, ext: String) -> Result<Self, Error> {
+    pub async fn from(entry: Entry, ext: String) -> Result<Self, Error> {
         Ok(Self(
             tokio::task::spawn_blocking(move || highlight(&entry.text, &ext)).await??,
         ))

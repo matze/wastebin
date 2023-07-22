@@ -1,6 +1,7 @@
-use crate::cache::CacheKey;
+use crate::cache::Key as CacheKey;
 use crate::env;
 use crate::highlight::Html;
+use crate::routes::paste::{Format, QueryData};
 use askama::Template;
 use axum::http::StatusCode;
 use std::default::Default;
@@ -64,6 +65,35 @@ impl<'a> Paste<'a> {
             ext: key.ext,
             can_delete,
             html,
+        }
+    }
+}
+
+/// View showing password input.
+#[derive(Template)]
+#[template(path = "encrypted.html")]
+pub struct Encrypted<'a> {
+    meta: &'a env::Metadata<'a>,
+    id: String,
+    ext: String,
+    query: String,
+}
+
+impl<'a> Encrypted<'a> {
+    /// Construct new paste view from cache `key` and paste `html`.
+    pub fn new(key: CacheKey, query: QueryData) -> Self {
+        let query = match (query.fmt, query.dl) {
+            (Some(Format::Raw), None) => "?fmt=raw".to_string(),
+            (Some(Format::Qr), None) => "?fmt=qr".to_string(),
+            (None, Some(dl)) => format!("?dl={dl}"),
+            _ => String::new(),
+        };
+
+        Self {
+            meta: env::metadata(),
+            id: key.id(),
+            ext: key.ext,
+            query,
         }
     }
 }

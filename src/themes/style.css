@@ -101,6 +101,7 @@ input {
   border-color: #39bae6;
   border-style: solid;
   border-width: 1px;
+  box-sizing: border-box;
 }
 
 a, a:visited, a:hover {
@@ -136,7 +137,7 @@ a, a:visited, a:hover {
 .container {
   display: grid;
   grid-template-columns: 4fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr 20fr;
+  grid-template-rows: 1fr 1fr 1fr 1fr 20fr;
   grid-gap: 2em;
   height: 96vh;
   align-items: stretch;
@@ -147,7 +148,7 @@ a, a:visited, a:hover {
 .content {
   grid-area: content;
   grid-column: 1/2;
-  grid-row: 1/6;
+  grid-row: 1/7;
 }
 
 .content > textarea {
@@ -175,15 +176,30 @@ a, a:visited, a:hover {
   grid-row: 3/4;
 }
 
-.paste-button {
+.password {
   grid-row: 4/5;
+}
+
+.paste-button {
+  grid-row: 5/6;
 }
 
 .extension-filter > input {
   width: 100%;
 }
 
-.paste-button > button {
+.password > input {
+  width: 100%;
+}
+
+.decrypt-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 1fr;
+  grid-gap: 0.5em;
+}
+
+.button {
   width: 100%;
   padding: 1em;
   border: none;

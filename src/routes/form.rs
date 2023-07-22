@@ -1,4 +1,4 @@
-use crate::db::InsertEntry;
+use crate::db::write;
 use crate::id::Id;
 use crate::{pages, AppState, Error};
 use axum::extract::{Form, State};
@@ -12,11 +12,13 @@ pub struct Entry {
     pub text: String,
     pub extension: Option<String>,
     pub expires: String,
+    pub password: String,
 }
 
-impl From<Entry> for InsertEntry {
+impl From<Entry> for write::Entry {
     fn from(entry: Entry) -> Self {
         let burn_after_reading = Some(entry.expires == "burn");
+        let password = (!entry.password.is_empty()).then_some(entry.password);
 
         let expires = match entry.expires.parse::<u32>() {
             Ok(0) | Err(_) => None,
@@ -29,6 +31,7 @@ impl From<Entry> for InsertEntry {
             expires,
             burn_after_reading,
             uid: None,
+            password,
         }
     }
 }
@@ -56,7 +59,7 @@ pub async fn insert(
         state.db.next_uid().await?
     };
 
-    let mut entry: InsertEntry = entry.into();
+    let mut entry: write::Entry = entry.into();
     entry.uid = Some(uid);
 
     let url = id.to_url_path(&entry);

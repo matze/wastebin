@@ -1,4 +1,4 @@
-use crate::db::InsertEntry;
+use crate::db::write::Entry;
 use crate::errors::Error;
 use std::fmt;
 use std::str::FromStr;
@@ -23,7 +23,7 @@ impl Id {
     }
 
     /// Generate a URL path from the string representation and `entry`'s extension.
-    pub fn to_url_path(self, entry: &InsertEntry) -> String {
+    pub fn to_url_path(self, entry: &Entry) -> String {
         entry
             .extension
             .as_ref()

@@ -6,12 +6,15 @@ use axum::routing::{get, Router};
 mod assets;
 mod form;
 mod json;
-mod paste;
+pub(crate) mod paste;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(|| async { Index::default() }).post(paste::insert))
-        .route("/:id", get(paste::get).delete(paste::delete))
+        .route(
+            "/:id",
+            get(paste::get).post(paste::get).delete(paste::delete),
+        )
         .route("/burn/:id", get(|Path(id)| async { Burn::new(id) }))
         .route("/delete/:id", get(paste::delete))
         .merge(assets::routes())
@@ -19,7 +22,7 @@ pub fn routes() -> Router<AppState> {
 
 #[cfg(test)]
 mod tests {
-    use crate::db::InsertEntry;
+    use crate::db::write::Entry;
     use crate::routes;
     use crate::test_helpers::{make_app, Client};
     use http::StatusCode;
@@ -43,6 +46,7 @@ mod tests {
             text: "FooBarBaz".to_string(),
             extension: Some("rs".to_string()),
             expires: "0".to_string(),
+            password: "".to_string(),
         };
 
         let res = client.post("/").form(&data).send().await?;
@@ -86,7 +90,7 @@ mod tests {
     async fn insert_via_json() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new(make_app()?);
 
-        let entry = InsertEntry {
+        let entry = Entry {
             text: "FooBarBaz".to_string(),
             ..Default::default()
         };
@@ -111,6 +115,7 @@ mod tests {
             text: "FooBarBaz".to_string(),
             extension: None,
             expires: "0".to_string(),
+            password: "".to_string(),
         };
 
         let res = client.post("/").form(&data).send().await?;
@@ -136,6 +141,7 @@ mod tests {
             text: "FooBarBaz".to_string(),
             extension: None,
             expires: "0".to_string(),
+            password: "".to_string(),
         };
 
         let res = client.post("/").form(&data).send().await?;

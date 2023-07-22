@@ -1,4 +1,6 @@
-use crate::cache::CacheKey;
+use crate::cache::Key as CacheKey;
+use crate::crypto::Password;
+use crate::db::read::Entry;
 use crate::highlight::Html;
 use crate::routes::{form, json};
 use crate::{pages, AppState, Error};
@@ -14,7 +16,7 @@ use serde::Deserialize;
 use url::Url;
 
 #[derive(Deserialize, Debug)]
-enum Format {
+pub enum Format {
     #[serde(rename(deserialize = "raw"))]
     Raw,
     #[serde(rename(deserialize = "qr"))]
@@ -23,18 +25,13 @@ enum Format {
 
 #[derive(Deserialize, Debug)]
 pub struct QueryData {
-    fmt: Option<Format>,
-    dl: Option<String>,
+    pub fmt: Option<Format>,
+    pub dl: Option<String>,
 }
 
-async fn get_raw(state: AppState, Path(id): Path<String>) -> Result<String, StatusCode> {
-    // Remove the extension and try to reconstruct the identifier.
-    let id = id
-        .find('.')
-        .map_or(id.as_str(), |index| &id[..index])
-        .parse()?;
-
-    Ok(state.db.get(id).await?.text)
+#[derive(Deserialize, Debug)]
+pub struct PasswordForm {
+    password: String,
 }
 
 fn qr_code_from(
@@ -64,10 +61,10 @@ fn qr_code_from(
 
 async fn get_qr(
     state: AppState,
-    Path(id): Path<String>,
+    key: CacheKey,
     headers: HeaderMap,
 ) -> Result<pages::Qr<'static>, pages::ErrorResponse<'static>> {
-    let key: CacheKey = id.parse()?;
+    let id = key.id();
     let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state, &headers, &id))
         .await
         .map_err(Error::from)??;
@@ -75,51 +72,34 @@ async fn get_qr(
     Ok(pages::Qr::new(qr_code, key))
 }
 
-async fn get_download(
-    state: AppState,
-    Path(id): Path<String>,
-    extension: String,
+fn get_download(
+    text: String,
+    id: &str,
+    extension: &str,
 ) -> Result<Response<String>, pages::ErrorResponse<'static>> {
     // Validate extension.
     if !extension.is_ascii() {
         Err(Error::IllegalCharacters)?;
     }
 
-    let raw_string = state.db.get(id.parse()?).await?.text;
     let content_type = "text; charset=utf-8";
     let content_disposition = format!(r#"attachment; filename="{id}.{extension}"#);
 
     Ok(Response::builder()
         .header(header::CONTENT_TYPE, HeaderValue::from_static(content_type))
         .header(header::CONTENT_DISPOSITION, content_disposition)
-        .body(raw_string)
+        .body(text)
         .map_err(Error::from)?)
 }
 
 async fn get_html(
-    Path(id): Path<String>,
     state: AppState,
+    key: CacheKey,
+    entry: Entry,
     jar: SignedCookieJar,
-) -> Result<pages::Paste<'static>, pages::ErrorResponse<'static>> {
-    let key: CacheKey = id.parse()?;
+    is_protected: bool,
+) -> Result<impl IntoResponse, pages::ErrorResponse<'static>> {
     let owner_uid = state.db.get_uid(key.id).await?;
-    let entry = state.db.get(key.id).await?;
-
-    let html = if let Some(html) = state.cache.get(&key) {
-        tracing::trace!(?key, "found cached item");
-        html
-    } else {
-        let can_be_cached = !entry.must_be_deleted;
-        let ext = key.ext.clone();
-        let html = Html::from(entry, ext).await?;
-
-        if can_be_cached {
-            tracing::trace!(?key, "cache item");
-            state.cache.put(key.clone(), html.clone());
-        }
-
-        html
-    };
 
     let can_delete = jar
         .get("uid")
@@ -129,35 +109,63 @@ async fn get_html(
         .zip(owner_uid)
         .map_or(false, |(user_uid, owner_uid)| user_uid == owner_uid);
 
-    Ok(pages::Paste::new(key, html, can_delete))
+    if let Some(html) = state.cache.get(&key) {
+        tracing::trace!(?key, "found cached item");
+        return Ok(pages::Paste::new(key, html, can_delete).into_response());
+    }
+
+    // TODO: turn this upside-down, i.e. cache it but only return a cached version if we were able
+    // to decrypt the content. Highlighting is probably still much slower than decryption.
+    let can_be_cached = !entry.must_be_deleted;
+    let ext = key.ext.clone();
+    let html = Html::from(entry, ext).await?;
+
+    if can_be_cached && !is_protected {
+        tracing::trace!(?key, "cache item");
+        state.cache.put(key.clone(), html.clone());
+    }
+
+    Ok(pages::Paste::new(key, html, can_delete).into_response())
 }
 
 pub async fn get(
-    id: Path<String>,
+    Path(id): Path<String>,
     headers: HeaderMap,
     jar: SignedCookieJar,
     Query(query): Query<QueryData>,
     State(state): State<AppState>,
-) -> Response {
-    match query.fmt {
-        Some(Format::Raw) => return get_raw(state, id).await.into_response(),
-        Some(Format::Qr) => return get_qr(state, id, headers).await.into_response(),
-        None => (),
-    }
+    form: Option<Form<PasswordForm>>,
+) -> Result<Response, pages::ErrorResponse<'static>> {
+    let password = form.map(|form| Password::from(form.password.as_bytes().to_vec()));
+    let key: CacheKey = id.parse()?;
 
-    if let Some(extension) = query.dl {
-        return get_download(state, id, extension).await.into_response();
-    }
-
-    if let Some(value) = headers.get(header::ACCEPT) {
-        if let Ok(value) = value.to_str() {
-            if value.contains("text/html") {
-                return get_html(id, state, jar).await.into_response();
+    match state.db.get(key.id, password.clone()).await {
+        Err(Error::NoPassword) => Ok(pages::Encrypted::new(key, query).into_response()),
+        Err(err) => Err(err.into()),
+        Ok(entry) => {
+            match query.fmt {
+                Some(Format::Raw) => return Ok(entry.text.into_response()),
+                Some(Format::Qr) => return Ok(get_qr(state, key, headers).await.into_response()),
+                None => (),
             }
+
+            if let Some(extension) = query.dl {
+                return Ok(get_download(entry.text, &key.id(), &extension).into_response());
+            }
+
+            if let Some(value) = headers.get(header::ACCEPT) {
+                if let Ok(value) = value.to_str() {
+                    if value.contains("text/html") {
+                        return Ok(get_html(state, key, entry, jar, password.is_some())
+                            .await
+                            .into_response());
+                    }
+                }
+            }
+
+            Ok(entry.text.into_response())
         }
     }
-
-    get_raw(state, id).await.into_response()
 }
 
 pub async fn insert(
@@ -195,13 +203,13 @@ pub async fn delete(
     jar: SignedCookieJar,
 ) -> Result<Redirect, pages::ErrorResponse<'static>> {
     let id = id.parse()?;
-    let entry = state.db.get(id).await?;
+    let uid = state.db.get_uid(id).await?;
     let can_delete = jar
         .get("uid")
         .map(|cookie| cookie.value().parse::<i64>())
         .transpose()
         .map_err(|err| Error::CookieParsing(err.to_string()))?
-        .zip(entry.uid)
+        .zip(uid)
         .map_or(false, |(user_uid, db_uid)| user_uid == db_uid);
 
     if !can_delete {

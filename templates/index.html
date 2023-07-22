@@ -46,6 +46,18 @@
         <div class="content">
           <textarea id="text" name="text" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text or drop file here>" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);"></textarea>
         </div>
+        <div class="extensions-list">
+          <select name="extension" id="langs" size="23">
+          {%- for syntax in meta.highlight.syntaxes -%}
+            {%- if syntax.file_extensions.len() > 0 %}
+            <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
+            {%- endif -%}
+          {%- endfor %}
+          </select>
+        </div>
+        <div class="extension-filter">
+          <input type="search" id="filter" placeholder="Filter ..." onchange="filterLangs(event);" onkeyup="filterLangs(event)"></input>
+        </div>
         <div class="expiration-list">
           <select name="expires" size="7">
             <option selected="" value="">never</option>
@@ -57,20 +69,11 @@
             <option value="burn">🔥 after reading</option>
           </select>
         </div>
-        <div class="extensions-list">
-          <select name="extension" id="langs" size="23">
-          {%- for syntax in meta.highlight.syntaxes -%}
-            {%- if syntax.file_extensions.len() > 0 %}
-            <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
-            {%- endif -%}
-          {%- endfor %}
-          </select>
+        <div class="password">
+          <input type="password" name="password" id="password" placeholder="Password ..."></input>
         </div>
         <div class="paste-button">
-          <button type="submit" title="Paste">Paste</button>
-        </div>
-        <div class="extension-filter">
-          <input type="search" id="filter" placeholder="Filter ..." onchange="filterLangs(event);" onkeyup="filterLangs(event)"></input>
+          <button type="submit" title="Paste" class="button">Paste</button>
         </div>
       </div>
     </form>

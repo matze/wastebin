@@ -37,6 +37,12 @@ pub enum Error {
     NoHost,
     #[error("could not parse URL: {0}")]
     UrlParsing(#[from] url::ParseError),
+    #[error("argon2 error: {0}")]
+    Argon2(#[from] argon2::Error),
+    #[error("decryption failed")]
+    ChaCha20Poly1305,
+    #[error("password not given")]
+    NoPassword,
 }
 
 #[derive(Serialize)]
@@ -55,6 +61,7 @@ impl From<Error> for StatusCode {
             | Error::IllegalCharacters
             | Error::WrongSize
             | Error::UrlParsing(_)
+            | Error::NoPassword
             | Error::CookieParsing(_) => StatusCode::BAD_REQUEST,
             Error::Join(_)
             | Error::QrCode(_)
@@ -64,6 +71,8 @@ impl From<Error> for StatusCode {
             | Error::Sqlite(_)
             | Error::SyntaxHighlighting(_)
             | Error::SyntaxParsing(_)
+            | Error::Argon2(_)
+            | Error::ChaCha20Poly1305
             | Error::Axum(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Error::Delete => StatusCode::FORBIDDEN,
         }

@@ -19,6 +19,7 @@ A minimal pastebin with a design shamelessly copied from
 * light/dark mode
 * highlightable line numbers
 * QR code to browse a paste's URL on mobile devices
+* optional encryption with argon2 hashing and ChaCha20Poly1305 encryption
 
 
 ## Installation
@@ -83,6 +84,8 @@ run-time behavior:
   in-memory database is used.
 * `WASTEBIN_MAX_BODY_SIZE` number of bytes to accept for POST requests. Defaults
   to 1 MB.
+* `WASTEBIN_PASSWORD_SALT` salt used to hash user passwords used for encrypting
+  pastes.
 * `WASTEBIN_SIGNING_KEY` sets the key to sign cookies. If not set, a random key
   will be generated which means cookies will become invalid after restarts and
   paste creators will not be able to delete their pastes anymore.

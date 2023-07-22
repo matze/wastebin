@@ -14,13 +14,14 @@ use tower_http::trace::TraceLayer;
 use url::Url;
 
 mod cache;
+mod crypto;
 mod db;
 mod env;
 mod errors;
 mod highlight;
 mod id;
 mod pages;
-mod routes;
+pub(crate) mod routes;
 #[cfg(test)]
 mod test_helpers;
 

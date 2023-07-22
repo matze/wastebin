@@ -1,14 +1,12 @@
+use crate::crypto::Password;
 use crate::errors::Error;
 use crate::id::Id;
-use async_compression::tokio::bufread::{ZstdDecoder, ZstdEncoder};
 use rusqlite::{params, Connection, Transaction};
 use rusqlite_migration::{HookError, Migrations, M};
-use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::sync::{Arc, Mutex};
-use tokio::io::{AsyncReadExt, BufReader};
 use tokio::task::spawn_blocking;
 
 fn migrations() -> &'static Migrations<'static> {
@@ -48,6 +46,7 @@ fn migrations() -> &'static Migrations<'static> {
                 },
             ),
             M::up(include_str!("migrations/0005-drop-text-column.sql")),
+            M::up(include_str!("migrations/0006-add-nonce-column.sql")),
         ])
     })
 }
@@ -67,92 +66,171 @@ pub enum Open {
     Path(PathBuf),
 }
 
-/// An uncompressed entry to be inserted into the database.
-#[derive(Default, Debug, Serialize, Deserialize)]
-pub struct InsertEntry {
-    /// Content
-    pub text: String,
-    /// File extension
-    pub extension: Option<String>,
-    /// Expiration in seconds from now
-    pub expires: Option<u32>,
-    /// Delete if read
-    pub burn_after_reading: Option<bool>,
-    /// User identifier that inserted the entry
-    pub uid: Option<i64>,
-}
+/// Module with types for insertion.
+pub mod write {
+    use crate::crypto::{Encrypted, Password, Plaintext};
+    use crate::errors::Error;
+    use async_compression::tokio::bufread::ZstdEncoder;
+    use serde::{Deserialize, Serialize};
+    use std::io::Cursor;
+    use tokio::io::{AsyncReadExt, BufReader};
 
-/// A compressed entry to be inserted.
-pub struct CompressedEntry {
-    /// Compressed data
-    data: Vec<u8>,
-    /// Expiration in seconds from now
-    expires: Option<u32>,
-    /// Delete if read
-    burn_after_reading: Option<bool>,
-    /// User identifier that inserted the entry
-    uid: Option<i64>,
-}
+    /// An uncompressed entry to be inserted into the database.
+    #[derive(Default, Debug, Serialize, Deserialize)]
+    pub struct Entry {
+        /// Content
+        pub text: String,
+        /// File extension
+        pub extension: Option<String>,
+        /// Expiration in seconds from now
+        pub expires: Option<u32>,
+        /// Delete if read
+        pub burn_after_reading: Option<bool>,
+        /// User identifier that inserted the entry
+        pub uid: Option<i64>,
+        /// Optional password to encrypt the entry
+        pub password: Option<String>,
+    }
 
-/// A raw entry as read from the database.
-struct RawEntry {
-    /// Compressed data
-    data: Vec<u8>,
-    /// Entry is expired
-    expired: bool,
-    /// Entry must be deleted
-    must_be_deleted: bool,
-    /// User identifier that inserted the entry
-    uid: Option<i64>,
-}
+    /// A compressed entry to be inserted.
+    pub struct CompressedEntry {
+        /// Original data
+        entry: Entry,
+        /// Compressed data
+        data: Vec<u8>,
+    }
 
-/// An entry read from the database.
-pub struct ReadEntry {
-    /// Content
-    pub text: String,
-    /// Delete if read
-    pub must_be_deleted: bool,
-    /// User identifier that inserted the entry
-    pub uid: Option<i64>,
-}
+    /// An entry that might be encrypted.
+    pub struct DatabaseEntry {
+        /// Original data
+        pub entry: Entry,
+        /// Compressed and potentially encrypted data
+        pub data: Vec<u8>,
+        /// Nonce for this entry
+        pub nonce: Option<Vec<u8>>,
+    }
 
-impl InsertEntry {
-    /// Compress the entry for insertion.
-    pub async fn compress(self) -> Result<CompressedEntry, Error> {
-        let reader = BufReader::new(Cursor::new(self.text));
-        let mut encoder = ZstdEncoder::new(reader);
-        let mut data = Vec::new();
+    impl Entry {
+        /// Compress the entry for insertion.
+        pub async fn compress(self) -> Result<CompressedEntry, Error> {
+            let reader = BufReader::new(Cursor::new(&self.text));
+            let mut encoder = ZstdEncoder::new(reader);
+            let mut data = Vec::new();
 
-        encoder
-            .read_to_end(&mut data)
-            .await
-            .map_err(|e| Error::Compression(e.to_string()))?;
+            encoder
+                .read_to_end(&mut data)
+                .await
+                .map_err(|e| Error::Compression(e.to_string()))?;
 
-        Ok(CompressedEntry {
-            data,
-            expires: self.expires,
-            burn_after_reading: self.burn_after_reading,
-            uid: self.uid,
-        })
+            Ok(CompressedEntry { entry: self, data })
+        }
+    }
+
+    impl CompressedEntry {
+        /// Encrypt if password is set.
+        pub async fn encrypt(self) -> Result<DatabaseEntry, Error> {
+            let (data, nonce) = if let Some(password) = &self.entry.password {
+                let password = Password::from(password.as_bytes().to_vec());
+                let plaintext = Plaintext::from(self.data);
+                let encrypted = Encrypted::encrypt(password, plaintext).await?;
+                (encrypted.ciphertext, Some(encrypted.nonce))
+            } else {
+                (self.data, None)
+            };
+
+            Ok(DatabaseEntry {
+                entry: self.entry,
+                data,
+                nonce,
+            })
+        }
     }
 }
 
-impl RawEntry {
-    async fn decompress(self) -> Result<ReadEntry, Error> {
-        let reader = BufReader::new(Cursor::new(self.data));
-        let mut decoder = ZstdDecoder::new(reader);
-        let mut text = String::new();
+/// Module with types for reading from the database.
+pub mod read {
+    use crate::crypto::{Encrypted, Password};
+    use crate::errors::Error;
+    use async_compression::tokio::bufread::ZstdDecoder;
+    use std::io::Cursor;
+    use tokio::io::{AsyncReadExt, BufReader};
 
-        decoder
-            .read_to_string(&mut text)
-            .await
-            .map_err(|e| Error::Compression(e.to_string()))?;
+    /// A raw entry as read from the database.
+    pub struct DatabaseEntry {
+        /// Compressed and potentially encrypted data
+        pub data: Vec<u8>,
+        /// Entry is expired
+        pub expired: bool,
+        /// Entry must be deleted
+        pub must_be_deleted: bool,
+        /// User identifier that inserted the entry
+        pub uid: Option<i64>,
+        /// Nonce for this entry
+        pub nonce: Option<Vec<u8>>,
+    }
 
-        Ok(ReadEntry {
-            text,
-            uid: self.uid,
-            must_be_deleted: self.must_be_deleted,
-        })
+    /// Potentially decrypted but still compressed entry
+    pub struct CompressedReadEntry {
+        /// Compressed data
+        data: Vec<u8>,
+        /// Entry must be deleted
+        must_be_deleted: bool,
+        /// User identifier that inserted the entry
+        uid: Option<i64>,
+    }
+
+    /// An entry read from the database.
+    pub struct Entry {
+        /// Content
+        pub text: String,
+        /// Delete if read
+        pub must_be_deleted: bool,
+        /// User identifier that inserted the entry
+        pub uid: Option<i64>,
+    }
+
+    impl DatabaseEntry {
+        pub async fn decrypt(
+            self,
+            password: Option<Password>,
+        ) -> Result<CompressedReadEntry, Error> {
+            match (self.nonce, password) {
+                (Some(_), None) => Err(Error::NoPassword),
+                (None, None | Some(_)) => Ok(CompressedReadEntry {
+                    data: self.data,
+                    must_be_deleted: self.must_be_deleted,
+                    uid: self.uid,
+                }),
+                (Some(nonce), Some(password)) => {
+                    let encrypted = Encrypted::new(self.data, nonce);
+                    let decrypted = encrypted.decrypt(password).await?;
+                    Ok(CompressedReadEntry {
+                        data: decrypted,
+                        must_be_deleted: self.must_be_deleted,
+                        uid: self.uid,
+                    })
+                }
+            }
+        }
+    }
+
+    impl CompressedReadEntry {
+        pub async fn decompress(self) -> Result<Entry, Error> {
+            let reader = BufReader::new(Cursor::new(self.data));
+            let mut decoder = ZstdDecoder::new(reader);
+            let mut text = String::new();
+
+            decoder
+                .read_to_string(&mut text)
+                .await
+                .map_err(|e| Error::Compression(e.to_string()))?;
+
+            Ok(Entry {
+                text,
+                uid: self.uid,
+                must_be_deleted: self.must_be_deleted,
+            })
+        }
     }
 }
 
@@ -174,23 +252,24 @@ impl Database {
     }
 
     /// Insert `entry` under `id` into the database and optionally set owner to `uid`.
-    pub async fn insert(&self, id: Id, entry: InsertEntry) -> Result<(), Error> {
+    pub async fn insert(&self, id: Id, entry: write::Entry) -> Result<(), Error> {
         let conn = self.conn.clone();
         let id = id.as_u32();
-        let entry = entry.compress().await?;
+        let write::DatabaseEntry { entry, data, nonce } = entry.compress().await?.encrypt().await?;
 
         spawn_blocking(move || match entry.expires {
             None => conn.lock().unwrap().execute(
-                "INSERT INTO entries (id, uid, data, burn_after_reading) VALUES (?1, ?2, ?3, ?4)",
-                params![id, entry.uid, entry.data, entry.burn_after_reading],
+                "INSERT INTO entries (id, uid, data, burn_after_reading, nonce) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![id, entry.uid, data, entry.burn_after_reading, nonce],
             ),
             Some(expires) => conn.lock().unwrap().execute(
-                "INSERT INTO entries (id, uid, data, burn_after_reading, expires) VALUES (?1, ?2, ?3, ?4, datetime('now', ?5))",
+                "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, expires) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now', ?6))",
                 params![
                     id,
                     entry.uid,
-                    entry.data,
+                    data,
                     entry.burn_after_reading,
+                    nonce,
                     format!("{expires} seconds")
                 ],
             ),
@@ -201,20 +280,21 @@ impl Database {
     }
 
     /// Get entire entry for `id`.
-    pub async fn get(&self, id: Id) -> Result<ReadEntry, Error> {
+    pub async fn get(&self, id: Id, password: Option<Password>) -> Result<read::Entry, Error> {
         let conn = self.conn.clone();
         let id_as_u32 = id.as_u32();
 
         let entry = spawn_blocking(move || {
             conn.lock().unwrap().query_row(
-                "SELECT data, burn_after_reading, uid, expires < datetime('now') FROM entries WHERE id=?1",
+                "SELECT data, burn_after_reading, uid, nonce, expires < datetime('now') FROM entries WHERE id=?1",
                 params![id_as_u32],
                 |row| {
-                    Ok(RawEntry {
+                    Ok(read::DatabaseEntry {
                         data: row.get(0)?,
                         must_be_deleted: row.get::<_, Option<bool>>(1)?.unwrap_or(false),
                         uid: row.get(2)?,
-                        expired: row.get::<_, Option<bool>>(3)?.unwrap_or(false),
+                        nonce: row.get(3)?,
+                        expired: row.get::<_, Option<bool>>(4)?.unwrap_or(false),
                     })
                 },
             )
@@ -230,7 +310,7 @@ impl Database {
             self.delete(id).await?;
         }
 
-        entry.decompress().await
+        entry.decrypt(password).await?.decompress().await
     }
 
     /// Get optional `uid` for `id` if it exists but error with `Error::NotFound` if `id` is
@@ -306,7 +386,7 @@ mod tests {
     async fn insert() -> Result<(), Box<dyn std::error::Error>> {
         let db = new_db()?;
 
-        let entry = InsertEntry {
+        let entry = write::Entry {
             text: "hello world".to_string(),
             uid: Some(10),
             ..Default::default()
@@ -315,12 +395,12 @@ mod tests {
         let id = Id::from(1234);
         db.insert(id, entry).await?;
 
-        let entry = db.get(id).await?;
+        let entry = db.get(id, None).await?;
         assert_eq!(entry.text, "hello world");
         assert!(entry.uid.is_some());
         assert_eq!(entry.uid.unwrap(), 10);
 
-        let result = db.get(Id::from(5678)).await;
+        let result = db.get(Id::from(5678), None).await;
         assert!(result.is_err());
 
         Ok(())
@@ -329,14 +409,14 @@ mod tests {
     #[tokio::test]
     async fn burn_after_reading() -> Result<(), Box<dyn std::error::Error>> {
         let db = new_db()?;
-        let entry = InsertEntry {
+        let entry = write::Entry {
             burn_after_reading: Some(true),
             ..Default::default()
         };
         let id = Id::from(1234);
         db.insert(id, entry).await?;
-        assert!(db.get(id).await.is_ok());
-        assert!(db.get(id).await.is_err());
+        assert!(db.get(id, None).await.is_ok());
+        assert!(db.get(id, None).await.is_err());
 
         Ok(())
     }
@@ -345,7 +425,7 @@ mod tests {
     async fn expired_does_not_exist() -> Result<(), Box<dyn std::error::Error>> {
         let db = new_db()?;
 
-        let entry = InsertEntry {
+        let entry = write::Entry {
             expires: Some(1),
             ..Default::default()
         };
@@ -355,7 +435,7 @@ mod tests {
 
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-        let result = db.get(id).await;
+        let result = db.get(id, None).await;
         assert!(result.is_err());
         assert!(matches!(result.err().unwrap(), Error::NotFound));
 
@@ -367,11 +447,11 @@ mod tests {
         let db = new_db()?;
 
         let id = Id::from(1234);
-        db.insert(id, InsertEntry::default()).await?;
+        db.insert(id, write::Entry::default()).await?;
 
-        assert!(db.get(id).await.is_ok());
+        assert!(db.get(id, None).await.is_ok());
         assert!(db.delete(id).await.is_ok());
-        assert!(db.get(id).await.is_err());
+        assert!(db.get(id, None).await.is_err());
 
         Ok(())
     }

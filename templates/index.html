@@ -29,11 +29,11 @@
     const term = document.getElementById("filter").value.toLowerCase();
 
     for (option of langs) {
-      if (option.innerText.toLowerCase().search(term) < 0) {
-        option.style.display = "none";
+      if (option.innerText.toLowerCase().includes(term)) {
+        option.style.display = "";
       }
       else {
-        option.style.display = "";
+        option.style.display = "none";
       }
     }
   }

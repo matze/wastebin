@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Language selection filter was not working correctly with certain characters.
+
 
 ## 2.3.5
 

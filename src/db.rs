@@ -81,7 +81,7 @@ pub struct CacheKey {
     pub ext: String,
 }
 
-/// An entry inserted into the database.
+/// An uncompressed entry to be inserted into the database.
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct InsertEntry {
     /// Content
@@ -92,46 +92,82 @@ pub struct InsertEntry {
     pub expires: Option<u32>,
     /// Delete if read
     pub burn_after_reading: Option<bool>,
-    /// User identifier that inserted the paste
+    /// User identifier that inserted the entry
     pub uid: Option<i64>,
+}
+
+/// A compressed entry to be inserted.
+pub struct CompressedEntry {
+    /// Compressed data
+    data: Vec<u8>,
+    /// Expiration in seconds from now
+    expires: Option<u32>,
+    /// Delete if read
+    burn_after_reading: Option<bool>,
+    /// User identifier that inserted the entry
+    uid: Option<i64>,
+}
+
+/// A raw entry as read from the database.
+struct RawEntry {
+    /// Compressed data
+    data: Vec<u8>,
+    /// Entry is expired
+    expired: bool,
+    /// Entry must be deleted
+    must_be_deleted: bool,
+    /// User identifier that inserted the entry
+    uid: Option<i64>,
 }
 
 /// An entry read from the database.
 pub struct ReadEntry {
     /// Content
     pub text: String,
-    /// Entry is expired
-    pub expired: Option<bool>,
     /// Delete if read
-    pub burn_after_reading: Option<bool>,
-    /// User identifier that inserted the paste
+    must_be_deleted: bool,
+    /// User identifier that inserted the entry
     pub uid: Option<i64>,
 }
 
-async fn compress(text: &str) -> Result<Vec<u8>, Error> {
-    let reader = BufReader::new(Cursor::new(text));
-    let mut encoder = ZstdEncoder::new(reader);
-    let mut data = Vec::new();
+impl InsertEntry {
+    /// Compress the entry for insertion.
+    pub async fn compress(self) -> Result<CompressedEntry, Error> {
+        let reader = BufReader::new(Cursor::new(self.text));
+        let mut encoder = ZstdEncoder::new(reader);
+        let mut data = Vec::new();
 
-    encoder
-        .read_to_end(&mut data)
-        .await
-        .map_err(|e| Error::Compression(e.to_string()))?;
+        encoder
+            .read_to_end(&mut data)
+            .await
+            .map_err(|e| Error::Compression(e.to_string()))?;
 
-    Ok(data)
+        Ok(CompressedEntry {
+            data,
+            expires: self.expires,
+            burn_after_reading: self.burn_after_reading,
+            uid: self.uid,
+        })
+    }
 }
 
-async fn decompress(data: &[u8]) -> Result<String, Error> {
-    let reader = BufReader::new(Cursor::new(data));
-    let mut decoder = ZstdDecoder::new(reader);
-    let mut text = String::new();
+impl RawEntry {
+    async fn decompress(self) -> Result<ReadEntry, Error> {
+        let reader = BufReader::new(Cursor::new(self.data));
+        let mut decoder = ZstdDecoder::new(reader);
+        let mut text = String::new();
 
-    decoder
-        .read_to_string(&mut text)
-        .await
-        .map_err(|e| Error::Compression(e.to_string()))?;
+        decoder
+            .read_to_string(&mut text)
+            .await
+            .map_err(|e| Error::Compression(e.to_string()))?;
 
-    Ok(text)
+        Ok(ReadEntry {
+            text,
+            uid: self.uid,
+            must_be_deleted: self.must_be_deleted,
+        })
+    }
 }
 
 impl Database {
@@ -156,19 +192,19 @@ impl Database {
     pub async fn insert(&self, id: Id, entry: InsertEntry) -> Result<(), Error> {
         let conn = self.conn.clone();
         let id = id.as_u32();
-        let data = compress(&entry.text).await?;
+        let entry = entry.compress().await?;
 
         spawn_blocking(move || match entry.expires {
             None => conn.lock().unwrap().execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading) VALUES (?1, ?2, ?3, ?4)",
-                params![id, entry.uid, data, entry.burn_after_reading],
+                params![id, entry.uid, entry.data, entry.burn_after_reading],
             ),
             Some(expires) => conn.lock().unwrap().execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading, expires) VALUES (?1, ?2, ?3, ?4, datetime('now', ?5))",
                 params![
                     id,
                     entry.uid,
-                    data,
+                    entry.data,
                     entry.burn_after_reading,
                     format!("{expires} seconds")
                 ],
@@ -184,34 +220,32 @@ impl Database {
         let conn = self.conn.clone();
         let id_as_u32 = id.as_u32();
 
-        let (data, burn_after_reading, uid, expired): (Vec<u8>, Option<bool>, _, Option<bool>) = spawn_blocking(move || {
+        let entry = spawn_blocking(move || {
             conn.lock().unwrap().query_row(
                 "SELECT data, burn_after_reading, uid, expires < datetime('now') FROM entries WHERE id=?1",
                 params![id_as_u32],
                 |row| {
-                    Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+                    Ok(RawEntry {
+                        data: row.get(0)?,
+                        must_be_deleted: row.get::<_, Option<bool>>(1)?.unwrap_or(false),
+                        uid: row.get(2)?,
+                        expired: row.get::<_, Option<bool>>(3)?.unwrap_or(false),
+                    })
                 },
             )
         })
         .await??;
 
-        if expired.unwrap_or(false) {
+        if entry.expired {
             self.delete(id).await?;
             return Err(Error::NotFound);
         }
 
-        if burn_after_reading.unwrap_or(false) {
+        if entry.must_be_deleted {
             self.delete(id).await?;
         }
 
-        let text = decompress(&data).await?;
-
-        Ok(ReadEntry {
-            text,
-            expired,
-            burn_after_reading,
-            uid,
-        })
+        entry.decompress().await
     }
 
     /// Get optional `uid` for `id` if it exists but error with `Error::NotFound` if `id` is
@@ -249,11 +283,10 @@ impl Database {
         }
 
         let entry = self.get(key.id).await?;
-        let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
         let ext = key.ext.clone();
         let html = tokio::task::spawn_blocking(move || highlight(&entry.text, &ext)).await??;
 
-        if !burn_after_reading {
+        if !entry.must_be_deleted {
             tracing::trace!(?key, "cache item");
             self.cache.lock().unwrap().put(key.clone(), html.clone());
         }

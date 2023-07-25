@@ -1,4 +1,5 @@
-use crate::db::CacheKey;
+use crate::cache::CacheKey;
+use crate::highlight::Html;
 use crate::routes::{form, json};
 use crate::{pages, AppState, Error};
 use axum::body::Body;
@@ -102,7 +103,24 @@ async fn get_html(
 ) -> Result<pages::Paste<'static>, pages::ErrorResponse<'static>> {
     let key: CacheKey = id.parse()?;
     let owner_uid = state.db.get_uid(key.id).await?;
-    let html = state.db.get_html(&key).await?;
+    let entry = state.db.get(key.id).await?;
+
+    let html = if let Some(html) = state.cache.get(&key) {
+        tracing::trace!(?key, "found cached item");
+        html
+    } else {
+        let can_be_cached = !entry.must_be_deleted;
+        let ext = key.ext.clone();
+        let html = Html::from(entry, ext).await?;
+
+        if can_be_cached {
+            tracing::trace!(?key, "cache item");
+            state.cache.put(key.clone(), html.clone());
+        }
+
+        html
+    };
+
     let can_delete = jar
         .get("uid")
         .map(|cookie| cookie.value().parse::<i64>())

@@ -1,14 +1,11 @@
 use crate::errors::Error;
-use crate::highlight::Html;
 use crate::id::Id;
 use async_compression::tokio::bufread::{ZstdDecoder, ZstdEncoder};
-use lru::LruCache;
 use rusqlite::{params, Connection, Transaction};
 use rusqlite_migration::{HookError, Migrations, M};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::sync::OnceLock;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, BufReader};
@@ -59,7 +56,6 @@ fn migrations() -> &'static Migrations<'static> {
 #[derive(Clone)]
 pub struct Database {
     conn: Arc<Mutex<Connection>>,
-    cache: Arc<Mutex<Cache>>,
 }
 
 /// Database opening modes
@@ -69,16 +65,6 @@ pub enum Open {
     Memory,
     /// Open database from given path
     Path(PathBuf),
-}
-
-/// Type that stores formatted HTML.
-pub type Cache = LruCache<CacheKey, Html>;
-
-/// Cache based on identifier and format.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct CacheKey {
-    pub id: Id,
-    pub ext: String,
 }
 
 /// An uncompressed entry to be inserted into the database.
@@ -125,7 +111,7 @@ pub struct ReadEntry {
     /// Content
     pub text: String,
     /// Delete if read
-    must_be_deleted: bool,
+    pub must_be_deleted: bool,
     /// User identifier that inserted the entry
     pub uid: Option<i64>,
 }
@@ -171,8 +157,8 @@ impl RawEntry {
 }
 
 impl Database {
-    /// Create new database with the given `method` and `cache`.
-    pub fn new(method: Open, cache: Cache) -> Result<Self, Error> {
+    /// Create new database with the given `method`.
+    pub fn new(method: Open) -> Result<Self, Error> {
         tracing::debug!("opening {method:?}");
 
         let mut conn = match method {
@@ -183,9 +169,8 @@ impl Database {
         migrations().to_latest(&mut conn)?;
 
         let conn = Arc::new(Mutex::new(conn));
-        let cache = Arc::new(Mutex::new(cache));
 
-        Ok(Self { conn, cache })
+        Ok(Self { conn })
     }
 
     /// Insert `entry` under `id` into the database and optionally set owner to `uid`.
@@ -275,26 +260,6 @@ impl Database {
         Ok(uid)
     }
 
-    /// Look up or generate HTML formatted data. Return `None` if `key` is not found.
-    pub async fn get_html(&self, key: &CacheKey) -> Result<Html, Error> {
-        if let Some(html) = self.cache.lock().unwrap().get(key) {
-            tracing::trace!(?key, "found cached item");
-            return Ok(html.clone());
-        }
-
-        let entry = self.get(key.id).await?;
-        let can_be_cached = !entry.must_be_deleted;
-        let ext = key.ext.clone();
-        let html = Html::from(entry, ext).await?;
-
-        if can_be_cached {
-            tracing::trace!(?key, "cache item");
-            self.cache.lock().unwrap().put(key.clone(), html.clone());
-        }
-
-        Ok(html)
-    }
-
     /// Delete `id`.
     pub async fn delete(&self, id: Id) -> Result<(), Error> {
         let conn = self.conn.clone();
@@ -329,34 +294,12 @@ impl Database {
     }
 }
 
-impl CacheKey {
-    /// Make a copy of the owned id.
-    pub fn id(&self) -> String {
-        self.id.to_string()
-    }
-}
-
-impl FromStr for CacheKey {
-    type Err = Error;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let (id, ext) = match value.split_once('.') {
-            None => (value.parse()?, "txt".to_string()),
-            Some((id, ext)) => (id.parse()?, ext.to_string()),
-        };
-
-        Ok(Self { id, ext })
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::num::NonZeroUsize;
 
     fn new_db() -> Result<Database, Box<dyn std::error::Error>> {
-        let cache = Cache::new(NonZeroUsize::new(128).unwrap());
-        Ok(Database::new(Open::Memory, cache)?)
+        Ok(Database::new(Open::Memory)?)
     }
 
     #[tokio::test]
@@ -431,21 +374,5 @@ mod tests {
         assert!(db.get(id).await.is_err());
 
         Ok(())
-    }
-
-    #[test]
-    fn cache_key() {
-        let key = CacheKey::from_str("bJZCna").unwrap();
-        assert_eq!(key.id(), "bJZCna");
-        assert_eq!(key.id, 104651828.into());
-        assert_eq!(key.ext, "txt");
-
-        let key = CacheKey::from_str("sIiFec.rs").unwrap();
-        assert_eq!(key.id(), "sIiFec");
-        assert_eq!(key.id, 1243750162.into());
-        assert_eq!(key.ext, "rs");
-
-        assert!(CacheKey::from_str("foo").is_err());
-        assert!(CacheKey::from_str("bar.rs").is_err());
     }
 }

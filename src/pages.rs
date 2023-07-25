@@ -1,5 +1,6 @@
+use crate::cache::CacheKey;
+use crate::env;
 use crate::highlight::Html;
-use crate::{db, env};
 use askama::Template;
 use axum::http::StatusCode;
 use std::default::Default;
@@ -54,7 +55,7 @@ pub struct Paste<'a> {
 
 impl<'a> Paste<'a> {
     /// Construct new paste view from cache `key` and paste `html`.
-    pub fn new(key: db::CacheKey, html: Html, can_delete: bool) -> Self {
+    pub fn new(key: CacheKey, html: Html, can_delete: bool) -> Self {
         let html = html.into_inner();
 
         Self {
@@ -80,7 +81,7 @@ pub struct Qr<'a> {
 
 impl<'a> Qr<'a> {
     /// Construct new QR code view from `code`.
-    pub fn new(qr: qrcodegen::QrCode, key: db::CacheKey) -> Self {
+    pub fn new(qr: qrcodegen::QrCode, key: CacheKey) -> Self {
         Self {
             meta: env::metadata(),
             id: key.id(),

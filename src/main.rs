@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+use crate::cache::Cache;
 use crate::db::Database;
 use crate::errors::Error;
 use axum::extract::{DefaultBodyLimit, FromRef};
@@ -12,6 +13,7 @@ use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 use url::Url;
 
+mod cache;
 mod db;
 mod env;
 mod errors;
@@ -25,6 +27,7 @@ mod test_helpers;
 #[derive(Clone)]
 pub struct AppState {
     db: Database,
+    cache: Cache,
     key: Key,
     base_url: Option<Url>,
 }
@@ -55,9 +58,14 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let addr = env::addr()?;
     let max_body_size = env::max_body_size()?;
     let base_url = env::base_url()?;
-    let cache = db::Cache::new(cache_size);
-    let db = Database::new(method, cache)?;
-    let state = AppState { db, key, base_url };
+    let cache = Cache::new(cache_size);
+    let db = Database::new(method)?;
+    let state = AppState {
+        db,
+        cache,
+        key,
+        base_url,
+    };
 
     tracing::debug!("serving on {addr}");
     tracing::debug!("caching {cache_size} paste highlights");

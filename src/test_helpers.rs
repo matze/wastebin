@@ -1,3 +1,4 @@
+use crate::cache::Cache;
 use crate::db::{self, Database};
 use axum::body::HttpBody;
 use axum::{BoxError, Router};
@@ -52,10 +53,15 @@ impl Client {
 }
 
 pub(crate) fn make_app() -> Result<Router, Box<dyn std::error::Error>> {
-    let cache = db::Cache::new(NonZeroUsize::new(128).unwrap());
-    let db = Database::new(db::Open::Memory, cache)?;
+    let db = Database::new(db::Open::Memory)?;
+    let cache = Cache::new(NonZeroUsize::new(128).unwrap());
     let key = Key::generate();
     let base_url = None;
-    let state = crate::AppState { db, key, base_url };
+    let state = crate::AppState {
+        db,
+        cache,
+        key,
+        base_url,
+    };
     Ok(crate::make_app(4096).with_state(state))
 }

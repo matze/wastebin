@@ -1,3 +1,4 @@
+use crate::highlight::Html;
 use crate::{db, env};
 use askama::Template;
 use axum::http::StatusCode;
@@ -53,7 +54,9 @@ pub struct Paste<'a> {
 
 impl<'a> Paste<'a> {
     /// Construct new paste view from cache `key` and paste `html`.
-    pub fn new(key: db::CacheKey, html: String, can_delete: bool) -> Self {
+    pub fn new(key: db::CacheKey, html: Html, can_delete: bool) -> Self {
+        let html = html.into_inner();
+
         Self {
             meta: env::metadata(),
             id: key.id(),

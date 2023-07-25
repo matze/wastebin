@@ -1,3 +1,4 @@
+use crate::db::ReadEntry;
 use crate::errors::Error;
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
@@ -8,6 +9,9 @@ use syntect::parsing::{ParseState, ScopeStack, SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
 
 const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
+
+#[derive(Clone)]
+pub struct Html(String);
 
 fn light_css() -> &'static String {
     static DATA: OnceLock<String> = OnceLock::new();
@@ -79,7 +83,7 @@ impl<'a> Css<'a> {
     }
 }
 
-pub fn highlight(source: &str, ext: &str) -> Result<String, Error> {
+fn highlight(source: &str, ext: &str) -> Result<String, Error> {
     let syntax_ref = data()
         .syntax_set
         .find_syntax_by_extension(ext)
@@ -118,4 +122,16 @@ pub fn highlight(source: &str, ext: &str) -> Result<String, Error> {
     html.push_str("</tbody></table>");
 
     Ok(html)
+}
+
+impl Html {
+    pub async fn from(entry: ReadEntry, ext: String) -> Result<Self, Error> {
+        Ok(Self(
+            tokio::task::spawn_blocking(move || highlight(&entry.text, &ext)).await??,
+        ))
+    }
+
+    pub fn into_inner(self) -> String {
+        self.0
+    }
 }

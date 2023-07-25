@@ -1,5 +1,5 @@
 use crate::errors::Error;
-use crate::highlight::highlight;
+use crate::highlight::Html;
 use crate::id::Id;
 use async_compression::tokio::bufread::{ZstdDecoder, ZstdEncoder};
 use lru::LruCache;
@@ -72,7 +72,7 @@ pub enum Open {
 }
 
 /// Type that stores formatted HTML.
-pub type Cache = LruCache<CacheKey, String>;
+pub type Cache = LruCache<CacheKey, Html>;
 
 /// Cache based on identifier and format.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -276,17 +276,18 @@ impl Database {
     }
 
     /// Look up or generate HTML formatted data. Return `None` if `key` is not found.
-    pub async fn get_html(&self, key: &CacheKey) -> Result<String, Error> {
+    pub async fn get_html(&self, key: &CacheKey) -> Result<Html, Error> {
         if let Some(html) = self.cache.lock().unwrap().get(key) {
             tracing::trace!(?key, "found cached item");
-            return Ok(html.to_string());
+            return Ok(html.clone());
         }
 
         let entry = self.get(key.id).await?;
+        let can_be_cached = !entry.must_be_deleted;
         let ext = key.ext.clone();
-        let html = tokio::task::spawn_blocking(move || highlight(&entry.text, &ext)).await??;
+        let html = Html::from(entry, ext).await?;
 
-        if !entry.must_be_deleted {
+        if can_be_cached {
             tracing::trace!(?key, "cache item");
             self.cache.lock().unwrap().put(key.clone(), html.clone());
         }

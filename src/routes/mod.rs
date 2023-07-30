@@ -108,6 +108,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn insert_via_json_encrypted() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(make_app()?);
+        let password = "SuperSecretPassword";
+
+        let entry = Entry {
+            text: "FooBarBaz".to_string(),
+            password: Some(password.to_string()),
+            ..Default::default()
+        };
+
+        let res = client.post("/").json(&entry).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let payload = res.json::<routes::json::RedirectResponse>().await?;
+
+        let res = client
+            .get(&payload.path)
+            .header("Wastebin-Password", password)
+            .send()
+            .await?;
+
+        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(res.text().await?, "FooBarBaz");
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn delete_via_link() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new(make_app()?);
 

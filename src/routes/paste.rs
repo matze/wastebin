@@ -136,7 +136,14 @@ pub async fn get(
     State(state): State<AppState>,
     form: Option<Form<PasswordForm>>,
 ) -> Result<Response, pages::ErrorResponse<'static>> {
-    let password = form.map(|form| Password::from(form.password.as_bytes().to_vec()));
+    let password = form
+        .map(|form| form.password.clone())
+        .or_else(|| {
+            headers
+                .get("Wastebin-Password")
+                .and_then(|header| header.to_str().ok().map(std::string::ToString::to_string))
+        })
+        .map(|password| Password::from(password.as_bytes().to_vec()));
     let key: CacheKey = id.parse()?;
 
     match state.db.get(key.id, password.clone()).await {

@@ -120,6 +120,9 @@ accept header value that does not include `text/html`. If you use a client that
 is able to handle cookies you can delete the paste once again using the cookie
 in the `Set-Cookie` header set during redirect after creation.
 
+In case the paste was encrypted, pass the password via the `Wastebin-Password`
+header.
+
 
 ### Paste from neovim
 

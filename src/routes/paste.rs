@@ -9,7 +9,7 @@ use axum::extract::{Form, Json, Path, Query, State};
 use axum::headers::{self, HeaderMapExt, HeaderValue};
 use axum::http::header::{self, HeaderMap};
 use axum::http::{Request, StatusCode};
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::response::{AppendHeaders, IntoResponse, Redirect, Response};
 use axum::RequestExt;
 use axum_extra::extract::cookie::SignedCookieJar;
 use serde::Deserialize;
@@ -76,20 +76,24 @@ fn get_download(
     text: String,
     id: &str,
     extension: &str,
-) -> Result<Response<String>, pages::ErrorResponse<'static>> {
+) -> Result<impl IntoResponse, pages::ErrorResponse<'static>> {
     // Validate extension.
     if !extension.is_ascii() {
         Err(Error::IllegalCharacters)?;
     }
 
     let content_type = "text; charset=utf-8";
-    let content_disposition = format!(r#"attachment; filename="{id}.{extension}"#);
+    let content_disposition =
+        HeaderValue::from_str(&format!(r#"attachment; filename="{id}.{extension}"#))
+            .expect("constructing valid header value");
 
-    Ok(Response::builder()
-        .header(header::CONTENT_TYPE, HeaderValue::from_static(content_type))
-        .header(header::CONTENT_DISPOSITION, content_disposition)
-        .body(text)
-        .map_err(Error::from)?)
+    Ok((
+        AppendHeaders([
+            (header::CONTENT_TYPE, HeaderValue::from_static(content_type)),
+            (header::CONTENT_DISPOSITION, content_disposition),
+        ]),
+        text,
+    ))
 }
 
 async fn get_html(

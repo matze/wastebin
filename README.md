@@ -53,6 +53,20 @@ shell nor with `TMPDIR` being set. If database migrations fail with an extended
 sqlite error code 6410, pass `TMPDIR` pointing to a location, sqlite can write
 to.
 
+### Run with docker-compose
+```
+version: '3.3'
+services:
+  wastebin:
+    environment:
+      - WASTEBIN_DATABASE_PATH=/data/state.db
+    ports:
+      - "8088:8088"
+    volumes:
+      - './data:/data'
+    image: 'quxfoo/wastebin:latest'
+```
+Make sure the `./data` folder is writable by the user 10001.
 
 ## Usage
 

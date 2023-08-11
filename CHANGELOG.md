@@ -7,6 +7,10 @@
 
 **2023-08-11**
 
+### Added
+
+- `WASTEBIN_HTTP_TIMEOUT` environment variable to control request timeouts.
+
 ### Changed
 
 - ⚠️ Database schema updated to version 6. Like previous migrations rolling back

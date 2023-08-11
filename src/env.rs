@@ -14,7 +14,7 @@ pub struct Metadata<'a> {
     pub highlight: &'a highlight::Data<'a>,
 }
 
-pub const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
+pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub const CSS_MAX_AGE: Duration = Duration::from_secs(60 * 60 * 24 * 30 * 6);
 
@@ -27,6 +27,7 @@ const VAR_MAX_BODY_SIZE: &str = "WASTEBIN_MAX_BODY_SIZE";
 const VAR_SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
 const VAR_BASE_URL: &str = "WASTEBIN_BASE_URL";
 const VAR_PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
+const VAR_HTTP_TIMEOUT: &str = "WASTEBIN_HTTP_TIMEOUT";
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -42,6 +43,8 @@ pub enum Error {
     BaseUrl(String),
     #[error("failed to generate key from {VAR_SIGNING_KEY}: {0}")]
     SigningKey(String),
+    #[error("failed to parse {VAR_HTTP_TIMEOUT}: {0}")]
+    HttpTimeout(ParseIntError),
 }
 
 /// Retrieve reference to initialized metadata.
@@ -118,4 +121,13 @@ pub fn base_url() -> Result<Option<url::Url>, Error> {
 
 pub fn password_hash_salt() -> String {
     std::env::var(VAR_PASSWORD_SALT).unwrap_or_else(|_| "somesalt".to_string())
+}
+
+pub fn http_timeout() -> Result<Duration, Error> {
+    std::env::var(VAR_HTTP_TIMEOUT)
+        .map_or_else(
+            |_| Ok(DEFAULT_HTTP_TIMEOUT),
+            |s| s.parse::<u64>().map(|v| Duration::new(v, 0)),
+        )
+        .map_err(Error::HttpTimeout)
 }

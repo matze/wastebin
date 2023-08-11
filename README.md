@@ -96,6 +96,8 @@ run-time behavior:
   Defaults to 128 and can be disabled by setting to 0.
 * `WASTEBIN_DATABASE_PATH` path to the sqlite3 database file. If not set, an
   in-memory database is used.
+* `WASTEBIN_HTTP_TIMEOUT` maximum number of seconds a request can be processed
+  until wastebin responds with 408, by default it is set to 5 seconds.
 * `WASTEBIN_MAX_BODY_SIZE` number of bytes to accept for POST requests. Defaults
   to 1 MB.
 * `WASTEBIN_PASSWORD_SALT` salt used to hash user passwords used for encrypting

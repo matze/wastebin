@@ -7,6 +7,7 @@ use axum::extract::{DefaultBodyLimit, FromRef};
 use axum::{Router, Server};
 use axum_extra::extract::cookie::Key;
 use std::process::ExitCode;
+use std::time::Duration;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
@@ -39,14 +40,14 @@ impl FromRef<AppState> for Key {
     }
 }
 
-pub(crate) fn make_app(max_body_size: usize) -> Router<AppState> {
+pub(crate) fn make_app(max_body_size: usize, timeout: Duration) -> Router<AppState> {
     Router::new().merge(routes::routes()).layer(
         ServiceBuilder::new()
             .layer(DefaultBodyLimit::max(max_body_size))
             .layer(DefaultBodyLimit::disable())
             .layer(CompressionLayer::new())
             .layer(TraceLayer::new_for_http())
-            .layer(TimeoutLayer::new(env::HTTP_TIMEOUT)),
+            .layer(TimeoutLayer::new(timeout)),
     )
 }
 
@@ -59,6 +60,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let addr = env::addr()?;
     let max_body_size = env::max_body_size()?;
     let base_url = env::base_url()?;
+    let timeout = env::http_timeout()?;
     let cache = Cache::new(cache_size);
     let db = Database::new(method)?;
     let state = AppState {
@@ -72,7 +74,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
 
-    let service: Router<()> = make_app(max_body_size).with_state(state);
+    let service: Router<()> = make_app(max_body_size, timeout).with_state(state);
 
     Server::bind(&addr)
         .serve(service.into_make_service())

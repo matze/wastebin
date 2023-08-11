@@ -8,6 +8,7 @@ use hyper::{Body, Server};
 use reqwest::RequestBuilder;
 use std::net::{SocketAddr, TcpListener};
 use std::num::NonZeroUsize;
+use std::time::Duration;
 use tower::make::Shared;
 use tower_service::Service;
 
@@ -63,5 +64,6 @@ pub(crate) fn make_app() -> Result<Router, Box<dyn std::error::Error>> {
         key,
         base_url,
     };
-    Ok(crate::make_app(4096).with_state(state))
+
+    Ok(crate::make_app(4096, Duration::new(30, 0)).with_state(state))
 }

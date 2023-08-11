@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 2.4.0
+
+**2023-08-11**
+
 ### Changed
 
 - ⚠️ Database schema updated to version 6. Like previous migrations rolling back

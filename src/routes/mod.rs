@@ -87,6 +87,44 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn burn_after_reading() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(make_app()?);
+
+        let data = routes::form::Entry {
+            text: "FooBarBaz".to_string(),
+            extension: None,
+            expires: "burn".to_string(),
+            password: "".to_string(),
+        };
+
+        let res = client.post("/").form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+
+        let location = res.headers().get("location").unwrap().to_str()?;
+
+        // Location is the `/burn/foo` page not the paste itself, so ignore the prefix.
+        let location = location.split_at(5).1;
+
+        let res = client
+            .get(location)
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let res = client
+            .get(location)
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn insert_via_json() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new(make_app()?);
 

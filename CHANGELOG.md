@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 2.4.1
+
+**2023-08-13**
+
 ### Fixed
 
 - Initial reading of pastes set to burn-after-reading.

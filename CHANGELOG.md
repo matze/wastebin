@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Initial reading of pastes set to burn-after-reading.
+
 
 ## 2.4.0
 

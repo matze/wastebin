@@ -103,14 +103,12 @@ async fn get_html(
     jar: SignedCookieJar,
     is_protected: bool,
 ) -> Result<impl IntoResponse, pages::ErrorResponse<'static>> {
-    let owner_uid = state.db.get_uid(key.id).await?;
-
     let can_delete = jar
         .get("uid")
         .map(|cookie| cookie.value().parse::<i64>())
         .transpose()
         .map_err(|err| Error::CookieParsing(err.to_string()))?
-        .zip(owner_uid)
+        .zip(entry.uid)
         .map_or(false, |(user_uid, owner_uid)| user_uid == owner_uid);
 
     if let Some(html) = state.cache.get(&key) {

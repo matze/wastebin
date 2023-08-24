@@ -1971,7 +1971,7 @@ checksum = "ca6ad05a4870b2bf5fe995117d3728437bd27d7cd5f06f13c17443ef369775a1"
 
 [[package]]
 name = "wastebin"
-version = "2.4.1"
+version = "2.4.2"
 dependencies = [
  "askama",
  "askama_axum",

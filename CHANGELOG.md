@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Reading of encrypted pastes set to burn-after-reading.
+
 
 ## 2.4.1
 

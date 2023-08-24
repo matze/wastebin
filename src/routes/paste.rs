@@ -152,6 +152,10 @@ pub async fn get(
         Err(Error::NoPassword) => Ok(pages::Encrypted::new(key, query).into_response()),
         Err(err) => Err(err.into()),
         Ok(entry) => {
+            if entry.must_be_deleted {
+                state.db.delete(key.id).await?;
+            }
+
             match query.fmt {
                 Some(Format::Raw) => return Ok(entry.text.into_response()),
                 Some(Format::Qr) => return Ok(get_qr(state, key, headers).await.into_response()),

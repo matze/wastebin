@@ -306,10 +306,6 @@ impl Database {
             return Err(Error::NotFound);
         }
 
-        if entry.must_be_deleted {
-            self.delete(id).await?;
-        }
-
         entry.decrypt(password).await?.decompress().await
     }
 
@@ -402,21 +398,6 @@ mod tests {
 
         let result = db.get(Id::from(5678), None).await;
         assert!(result.is_err());
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn burn_after_reading() -> Result<(), Box<dyn std::error::Error>> {
-        let db = new_db()?;
-        let entry = write::Entry {
-            burn_after_reading: Some(true),
-            ..Default::default()
-        };
-        let id = Id::from(1234);
-        db.insert(id, entry).await?;
-        assert!(db.get(id, None).await.is_ok());
-        assert!(db.get(id, None).await.is_err());
 
         Ok(())
     }

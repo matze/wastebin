@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 2.4.2
+
+**2023-08-24**
+
 ### Fixed
 
 - Reading of encrypted pastes set to burn-after-reading.

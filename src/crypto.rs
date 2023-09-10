@@ -15,7 +15,6 @@ fn config() -> &'static argon2::Config<'static> {
         mem_cost: 65536,
         time_cost: 10,
         lanes: 4,
-        thread_mode: argon2::ThreadMode::Parallel,
         secret: &[],
         ad: &[],
         hash_length: 32,

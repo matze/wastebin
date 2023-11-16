@@ -91,7 +91,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
 #[tokio::main]
 async fn main() -> ExitCode {
     match start().await {
-        Ok(_) => ExitCode::SUCCESS,
+        Ok(()) => ExitCode::SUCCESS,
         Err(err) => {
             eprintln!("Error: {err}");
             ExitCode::FAILURE

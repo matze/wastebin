@@ -6,10 +6,10 @@ rust-version = "1.70"
 
 [dependencies]
 askama = { version = "0.12", default-features = false, features = ["with-axum"] }
-askama_axum = { version = "0.3" }
+askama_axum = { version = "0.4" }
 async-compression = { version = "0.4", features = ["tokio", "zstd"] }
-axum = { version = "0.6", features = ["headers", "json", "query"] }
-axum-extra = { version = "0", features = ["cookie-signed"] }
+axum = { version = "0.7", features = ["json", "query"] }
+axum-extra = { version = "0", features = ["cookie-signed", "typed-header"] }
 bytes = "1"
 chacha20poly1305 = "0.10.1"
 hex = "0"
@@ -37,7 +37,7 @@ zstd = "0.13"
 
 [dev-dependencies]
 http = "0"
-hyper = { version = "0", features = ["server", "tcp", "stream"] }
+hyper = { version = "1", features = ["server"] }
 reqwest = { version = "0", default-features = false, features = ["cookies", "json"] }
 tower = { version = "0", default-features = false, features = ["util", "make"] }
 tower-service = "0"

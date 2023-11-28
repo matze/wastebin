@@ -4,10 +4,11 @@ use crate::cache::Cache;
 use crate::db::Database;
 use crate::errors::Error;
 use axum::extract::{DefaultBodyLimit, FromRef};
-use axum::{Router, Server};
+use axum::Router;
 use axum_extra::extract::cookie::Key;
 use std::process::ExitCode;
 use std::time::Duration;
+use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
@@ -74,16 +75,9 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
 
-    let service: Router<()> = make_app(max_body_size, timeout).with_state(state);
-
-    Server::bind(&addr)
-        .serve(service.into_make_service())
-        .with_graceful_shutdown(async {
-            tokio::signal::ctrl_c()
-                .await
-                .expect("failed to listen to ctrl-c");
-        })
-        .await?;
+    let service = make_app(max_body_size, timeout).with_state(state);
+    let listener = TcpListener::bind(&addr).await?;
+    axum::serve(listener, service).await?;
 
     Ok(())
 }

@@ -31,7 +31,7 @@ mod tests {
 
     #[tokio::test]
     async fn unknown_paste() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?);
+        let client = Client::new(make_app()?).await;
 
         let res = client.get("/000000").send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
@@ -41,7 +41,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_via_form() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?);
+        let client = Client::new(make_app()?).await;
 
         let data = routes::form::Entry {
             text: "FooBarBaz".to_string(),
@@ -89,7 +89,7 @@ mod tests {
 
     #[tokio::test]
     async fn burn_after_reading() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?);
+        let client = Client::new(make_app()?).await;
 
         let data = routes::form::Entry {
             text: "FooBarBaz".to_string(),
@@ -127,7 +127,7 @@ mod tests {
 
     #[tokio::test]
     async fn burn_after_reading_with_encryption() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?);
+        let client = Client::new(make_app()?).await;
         let password = "asd";
 
         let data = routes::form::Entry {
@@ -184,7 +184,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_via_json() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?);
+        let client = Client::new(make_app()?).await;
 
         let entry = Entry {
             text: "FooBarBaz".to_string(),
@@ -205,7 +205,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_via_json_encrypted() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?);
+        let client = Client::new(make_app()?).await;
         let password = "SuperSecretPassword";
 
         let entry = Entry {
@@ -233,7 +233,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_via_link() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?);
+        let client = Client::new(make_app()?).await;
 
         let data = routes::form::Entry {
             text: "FooBarBaz".to_string(),
@@ -259,7 +259,7 @@ mod tests {
 
     #[tokio::test]
     async fn download() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?);
+        let client = Client::new(make_app()?).await;
 
         let data = routes::form::Entry {
             text: "FooBarBaz".to_string(),

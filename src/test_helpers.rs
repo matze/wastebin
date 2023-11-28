@@ -1,14 +1,15 @@
 use crate::cache::Cache;
 use crate::db::{self, Database};
-use axum::body::HttpBody;
-use axum::{BoxError, Router};
+use axum::extract::Request;
+use axum::response::Response;
+use axum::Router;
 use axum_extra::extract::cookie::Key;
-use http::Request;
-use hyper::{Body, Server};
 use reqwest::RequestBuilder;
-use std::net::{SocketAddr, TcpListener};
+use std::convert::Infallible;
+use std::net::SocketAddr;
 use std::num::NonZeroUsize;
 use std::time::Duration;
+use tokio::net::TcpListener;
 use tower::make::Shared;
 use tower_service::Service;
 
@@ -18,21 +19,19 @@ pub(crate) struct Client {
 }
 
 impl Client {
-    pub(crate) fn new<S, ResBody>(svc: S) -> Self
+    pub(crate) async fn new<S>(svc: S) -> Self
     where
-        S: Service<Request<Body>, Response = http::Response<ResBody>> + Clone + Send + 'static,
-        ResBody: HttpBody + Send + 'static,
-        ResBody::Data: Send,
-        ResBody::Error: Into<BoxError>,
+        S: Service<Request, Response = Response, Error = Infallible> + Clone + Send + 'static,
         S::Future: Send,
-        S::Error: Into<BoxError>,
     {
-        let listener = TcpListener::bind("127.0.0.1:0").expect("Could not bind ephemeral socket");
+        let listener = TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("Could not bind ephemeral socket");
+
         let addr = listener.local_addr().unwrap();
 
         tokio::spawn(async move {
-            let server = Server::from_tcp(listener).unwrap().serve(Shared::new(svc));
-            server.await.expect("server error");
+            axum::serve(listener, Shared::new(svc)).await.unwrap();
         });
 
         let client = reqwest::Client::builder()

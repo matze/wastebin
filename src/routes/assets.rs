@@ -2,7 +2,7 @@ use crate::highlight::data;
 use crate::{env, AppState, Router};
 use axum::response::{IntoResponse, IntoResponseParts};
 use axum::routing::get;
-use axum::{headers, TypedHeader};
+use axum_extra::{headers, TypedHeader};
 use bytes::Bytes;
 
 fn css_headers() -> impl IntoResponseParts {

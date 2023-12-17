@@ -13,7 +13,7 @@ axum-extra = { version = "0", features = ["cookie-signed", "typed-header"] }
 bytes = "1"
 chacha20poly1305 = "0.10.1"
 hex = "0"
-http-body = "0"
+http-body = "1"
 lru = "0"
 mime = "0"
 qrcodegen = "1"

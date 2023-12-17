@@ -2110,7 +2110,7 @@ dependencies = [
  "chacha20poly1305",
  "hex",
  "http 0.2.11",
- "http-body 0.4.5",
+ "http-body 1.0.0",
  "hyper 1.0.1",
  "lru",
  "mime",

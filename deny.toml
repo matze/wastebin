@@ -37,6 +37,3 @@ external-default-features = "allow"
 unknown-registry = "warn"
 unknown-git = "warn"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-
-[sources.allow-org]
-github = ["cljoly"]

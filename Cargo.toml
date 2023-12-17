@@ -18,8 +18,8 @@ lru = "0"
 mime = "0"
 qrcodegen = "1"
 rand = "0"
-rusqlite = { version = "0.28", features = ["bundled"] }
-rusqlite_migration = { git = "https://github.com/cljoly/rusqlite_migration", rev = "dff7b6ba305d0d5b334c40fde72a88e28984242a" }
+rusqlite = { version = "0.30", features = ["bundled"] }
+rusqlite_migration = { version = "1.1", default-features = false }
 rust-argon2 = "2.0.0"
 sha2 = "0"
 serde = { version = "1", features = ["derive"] }

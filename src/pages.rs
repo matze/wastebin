@@ -106,27 +106,27 @@ pub struct Qr<'a> {
     id: String,
     ext: String,
     can_delete: bool,
-    qr: qrcodegen::QrCode,
+    code: qrcodegen::QrCode,
 }
 
 impl<'a> Qr<'a> {
     /// Construct new QR code view from `code`.
-    pub fn new(qr: qrcodegen::QrCode, key: CacheKey) -> Self {
+    pub fn new(code: qrcodegen::QrCode, key: CacheKey) -> Self {
         Self {
             meta: env::metadata(),
             id: key.id(),
             ext: key.ext,
-            qr,
+            code,
             can_delete: false,
         }
     }
 
     // Return module coordinates that are dark.
     fn dark_modules(&self) -> Vec<(i32, i32)> {
-        let size = self.qr.size();
+        let size = self.code.size();
         (0..size)
             .flat_map(|x| (0..size).map(move |y| (x, y)))
-            .filter(|(x, y)| self.qr.get_module(*x, *y))
+            .filter(|(x, y)| self.code.get_module(*x, *y))
             .collect()
     }
 }

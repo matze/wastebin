@@ -52,6 +52,32 @@ pub(crate) fn make_app(max_body_size: usize, timeout: Duration) -> Router<AppSta
     )
 }
 
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    tracing::info!("received signal, exiting ...");
+}
+
 async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
@@ -77,7 +103,10 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
 
     let service = make_app(max_body_size, timeout).with_state(state);
     let listener = TcpListener::bind(&addr).await?;
-    axum::serve(listener, service).await?;
+
+    axum::serve(listener, service)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
 
     Ok(())
 }

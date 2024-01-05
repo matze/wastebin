@@ -112,10 +112,18 @@ fn highlight(source: &str, ext: &str) -> Result<String, Error> {
             r#"<tr><td class="line-number" id="L{line_number}"><a href=#L{line_number}>{line_number:>4}</a></td>"#
         );
         html.push_str(&line_number);
+        html.push_str(&r#"<td class="line">"#);
 
-        let line = format!(r#"<td class="line">{formatted_str}"#);
-        html.push_str(&line);
-        html.push_str(&"</span>".repeat(delta.max(0).try_into()?));
+        if delta < 0 {
+            html.push_str(&"<span>".repeat(delta.abs().try_into()?));
+        }
+
+        html.push_str(&formatted_str);
+
+        if delta > 0 {
+            html.push_str(&"</span>".repeat(delta.try_into()?));
+        }
+
         html.push_str("</td></tr>");
     }
 

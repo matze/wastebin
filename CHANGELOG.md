@@ -10,6 +10,7 @@
 ### Fixed
 
 - Reading of encrypted pastes set to burn-after-reading.
+- Stretched vertically lines, mostly with bash scripts.
 
 
 ## 2.4.1

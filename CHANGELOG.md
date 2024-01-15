@@ -3,6 +3,19 @@
 ## Unreleased
 
 
+## 2.4.3
+
+**2023-08-24**
+
+### Changed
+
+- Focus main input elements (thanks @egor-tensin)
+
+### Fixed
+
+- Stretched vertically lines, mostly with bash scripts.
+
+
 ## 2.4.2
 
 **2023-08-24**
@@ -10,7 +23,6 @@
 ### Fixed
 
 - Reading of encrypted pastes set to burn-after-reading.
-- Stretched vertically lines, mostly with bash scripts.
 
 
 ## 2.4.1

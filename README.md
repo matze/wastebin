@@ -16,7 +16,7 @@ A minimal pastebin with a design shamelessly copied from
 * single binary with low memory footprint
 * drag 'n' drop upload
 * deletion after expiration, reading or by owners
-* light/dark mode
+* light/dark mode according to browser settings
 * highlightable line numbers
 * QR code to browse a paste's URL on mobile devices
 * optional encryption with argon2 hashing and ChaCha20Poly1305 encryption

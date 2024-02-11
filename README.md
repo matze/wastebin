@@ -68,6 +68,17 @@ services:
 ```
 Make sure the `./data` folder is writable by the user 10001.
 
+### Run with Nix
+
+For Nix users, a `flake.nix` is also provided. Build and execute it directly
+with:
+
+```sh
+nix run 'github:matze/wastebin#wastebin' 
+```
+
+Or install the provided `wastebin` package like you normally would.
+
 ## Usage
 
 ### Browser interface

@@ -41,8 +41,13 @@ impl FromRef<AppState> for Key {
     }
 }
 
-pub(crate) fn make_app(max_body_size: usize, timeout: Duration) -> Router<AppState> {
-    Router::new().merge(routes::routes()).layer(
+pub(crate) fn make_app(
+    max_body_size: usize,
+    timeout: Duration,
+    base_url: &Option<Url>,
+) -> Router<AppState> {
+    let base_path = routes::base_path(base_url); // TODO: must end with slash
+    Router::new().nest(base_path, routes::routes()).layer(
         ServiceBuilder::new()
             .layer(DefaultBodyLimit::max(max_body_size))
             .layer(DefaultBodyLimit::disable())
@@ -101,7 +106,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
 
-    let service = make_app(max_body_size, timeout).with_state(state);
+    let service = make_app(max_body_size, timeout, &state.base_url).with_state(state);
     let listener = TcpListener::bind(&addr).await?;
 
     axum::serve(listener, service)

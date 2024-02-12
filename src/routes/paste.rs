@@ -16,6 +16,8 @@ use axum_extra::headers::{HeaderMapExt, HeaderValue};
 use serde::Deserialize;
 use url::Url;
 
+use super::base_path;
+
 #[derive(Deserialize, Debug)]
 pub enum Format {
     #[serde(rename(deserialize = "raw"))]
@@ -232,5 +234,5 @@ pub async fn delete(
 
     state.db.delete(id).await?;
 
-    Ok(Redirect::to("/"))
+    Ok(Redirect::to(base_path(&state.base_url)))
 }

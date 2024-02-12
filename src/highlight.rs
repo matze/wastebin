@@ -73,7 +73,7 @@ pub struct Data<'a> {
 impl<'a> Css<'a> {
     fn new(name: &str, content: &'a str) -> Self {
         let name = format!(
-            "/{name}.{}.css",
+            "{name}.{}.css",
             hex::encode(Sha256::digest(content.as_bytes()))
                 .get(0..16)
                 .expect("at least 16 characters")

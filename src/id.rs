@@ -27,7 +27,7 @@ impl Id {
         entry
             .extension
             .as_ref()
-            .map_or_else(|| format!("/{self}"), |ext| format!("/{self}.{ext}"))
+            .map_or_else(|| format!("{self}"), |ext| format!("{self}.{ext}"))
     }
 }
 

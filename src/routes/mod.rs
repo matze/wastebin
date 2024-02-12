@@ -2,11 +2,21 @@ use crate::pages::{Burn, Index};
 use crate::AppState;
 use axum::extract::Path;
 use axum::routing::{get, Router};
+use url::Url;
 
 mod assets;
 mod form;
 mod json;
 pub(crate) mod paste;
+
+pub const DEFAULT_BASE_PATH: &str = "/";
+
+pub fn base_path(base_url: &Option<Url>) -> &str {
+    match base_url {
+        Some(base_url) => base_url.path(),
+        None => DEFAULT_BASE_PATH,
+    }
+}
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -28,6 +38,8 @@ mod tests {
     use http::StatusCode;
     use reqwest::header;
     use serde::Serialize;
+
+    // TODO: Add tests for base path
 
     #[tokio::test]
     async fn unknown_paste() -> Result<(), Box<dyn std::error::Error>> {

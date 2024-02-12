@@ -7,6 +7,8 @@ use axum::Json;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
+use super::base_path;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Entry {
     pub text: String,
@@ -47,8 +49,10 @@ pub async fn insert(
     .into();
 
     let entry: write::Entry = entry.into();
-    let path = id.to_url_path(&entry);
 
+    let base_path = base_path(&state.base_url);
+    let url = id.to_url_path(&entry);
+    let path = format!("{base_path}{url}");
     state.db.insert(id, entry).await?;
 
     Ok(Json::from(RedirectResponse { path }))

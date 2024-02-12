@@ -1,3 +1,4 @@
+use crate::routes::{base_path, DEFAULT_BASE_PATH};
 use crate::{db, highlight};
 use axum_extra::extract::cookie::Key;
 use std::env::VarError;
@@ -12,6 +13,7 @@ pub struct Metadata<'a> {
     pub title: String,
     pub version: &'a str,
     pub highlight: &'a highlight::Data<'a>,
+    pub base_path: &'a str,
 }
 
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
@@ -56,10 +58,16 @@ pub fn metadata() -> &'static Metadata<'static> {
         let version = env!("CARGO_PKG_VERSION");
         let highlight = &highlight::data();
 
+        let base_path = match base_url() {
+            Err(_) => DEFAULT_BASE_PATH,
+            Ok(base_url) => String::from(base_path(&base_url)).leak(),
+        };
+
         Metadata {
             title,
             version,
             highlight,
+            base_path,
         }
     })
 }

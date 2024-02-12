@@ -7,6 +7,8 @@ use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
+use super::base_path;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Entry {
     pub text: String,
@@ -62,16 +64,18 @@ pub async fn insert(
     let mut entry: write::Entry = entry.into();
     entry.uid = Some(uid);
 
-    let url = id.to_url_path(&entry);
+    let base_path = base_path(&state.base_url);
+    let mut url = id.to_url_path(&entry);
+
     let burn_after_reading = entry.burn_after_reading.unwrap_or(false);
+    if burn_after_reading {
+        url = format!("burn/{url}");
+    }
+
+    let url_with_base = format!("{base_path}{url}");
 
     state.db.insert(id, entry).await?;
 
     let jar = jar.add(Cookie::new("uid", uid.to_string()));
-
-    if burn_after_reading {
-        Ok((jar, Redirect::to(&format!("/burn{url}"))))
-    } else {
-        Ok((jar, Redirect::to(&url)))
-    }
+    Ok((jar, Redirect::to(&url_with_base)))
 }

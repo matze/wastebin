@@ -15,6 +15,8 @@ use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 use url::Url;
 
+use self::env::base_path;
+
 mod cache;
 mod crypto;
 mod db;
@@ -41,20 +43,18 @@ impl FromRef<AppState> for Key {
     }
 }
 
-pub(crate) fn make_app(
-    max_body_size: usize,
-    timeout: Duration,
-    base_url: &Option<Url>,
-) -> Router<AppState> {
-    let base_path = routes::base_path(base_url); // TODO: must end with slash
-    Router::new().nest(base_path, routes::routes()).layer(
-        ServiceBuilder::new()
-            .layer(DefaultBodyLimit::max(max_body_size))
-            .layer(DefaultBodyLimit::disable())
-            .layer(CompressionLayer::new())
-            .layer(TraceLayer::new_for_http())
-            .layer(TimeoutLayer::new(timeout)),
-    )
+pub(crate) fn make_app(max_body_size: usize, timeout: Duration) -> Router<AppState> {
+    let base_path = base_path();
+    Router::new()
+        .nest(base_path.path(), routes::routes())
+        .layer(
+            ServiceBuilder::new()
+                .layer(DefaultBodyLimit::max(max_body_size))
+                .layer(DefaultBodyLimit::disable())
+                .layer(CompressionLayer::new())
+                .layer(TraceLayer::new_for_http())
+                .layer(TimeoutLayer::new(timeout)),
+        )
 }
 
 async fn shutdown_signal() {
@@ -106,7 +106,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
 
-    let service = make_app(max_body_size, timeout, &state.base_url).with_state(state);
+    let service = make_app(max_body_size, timeout).with_state(state);
     let listener = TcpListener::bind(&addr).await?;
 
     axum::serve(listener, service)

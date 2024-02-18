@@ -11,6 +11,7 @@ use std::default::Default;
 #[template(path = "error.html")]
 pub struct Error<'a> {
     meta: &'a env::Metadata<'a>,
+    base_path: &'static env::BasePath,
     error: String,
 }
 
@@ -21,6 +22,7 @@ impl From<crate::Error> for ErrorResponse<'_> {
     fn from(err: crate::Error) -> Self {
         let html = Error {
             meta: env::metadata(),
+            base_path: env::base_path(),
             error: err.to_string(),
         };
 
@@ -33,12 +35,14 @@ impl From<crate::Error> for ErrorResponse<'_> {
 #[template(path = "index.html")]
 pub struct Index<'a> {
     meta: &'a env::Metadata<'a>,
+    base_path: &'static env::BasePath,
 }
 
 impl<'a> Default for Index<'a> {
     fn default() -> Self {
         Self {
             meta: env::metadata(),
+            base_path: env::base_path(),
         }
     }
 }
@@ -48,6 +52,7 @@ impl<'a> Default for Index<'a> {
 #[template(path = "formatted.html")]
 pub struct Paste<'a> {
     meta: &'a env::Metadata<'a>,
+    base_path: &'static env::BasePath,
     id: String,
     ext: String,
     can_delete: bool,
@@ -61,6 +66,7 @@ impl<'a> Paste<'a> {
 
         Self {
             meta: env::metadata(),
+            base_path: env::base_path(),
             id: key.id(),
             ext: key.ext,
             can_delete,
@@ -74,6 +80,7 @@ impl<'a> Paste<'a> {
 #[template(path = "encrypted.html")]
 pub struct Encrypted<'a> {
     meta: &'a env::Metadata<'a>,
+    base_path: &'static env::BasePath,
     id: String,
     ext: String,
     query: String,
@@ -91,6 +98,7 @@ impl<'a> Encrypted<'a> {
 
         Self {
             meta: env::metadata(),
+            base_path: env::base_path(),
             id: key.id(),
             ext: key.ext,
             query,
@@ -103,6 +111,7 @@ impl<'a> Encrypted<'a> {
 #[template(path = "qr.html", escape = "none")]
 pub struct Qr<'a> {
     meta: &'a env::Metadata<'a>,
+    base_path: &'static env::BasePath,
     id: String,
     ext: String,
     can_delete: bool,
@@ -114,6 +123,7 @@ impl<'a> Qr<'a> {
     pub fn new(code: qrcodegen::QrCode, key: CacheKey) -> Self {
         Self {
             meta: env::metadata(),
+            base_path: env::base_path(),
             id: key.id(),
             ext: key.ext,
             code,
@@ -136,6 +146,7 @@ impl<'a> Qr<'a> {
 #[template(path = "burn.html")]
 pub struct Burn<'a> {
     meta: &'a env::Metadata<'a>,
+    base_path: &'static env::BasePath,
     id: String,
 }
 
@@ -144,6 +155,7 @@ impl<'a> Burn<'a> {
     pub fn new(id: String) -> Self {
         Self {
             meta: env::metadata(),
+            base_path: env::base_path(),
             id,
         }
     }

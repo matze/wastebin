@@ -1,6 +1,7 @@
 use crate::cache::Key as CacheKey;
 use crate::crypto::Password;
 use crate::db::read::Entry;
+use crate::env::base_path;
 use crate::highlight::Html;
 use crate::routes::{form, json};
 use crate::{pages, AppState, Error};
@@ -15,8 +16,6 @@ use axum_extra::headers;
 use axum_extra::headers::{HeaderMapExt, HeaderValue};
 use serde::Deserialize;
 use url::Url;
-
-use super::base_path;
 
 #[derive(Deserialize, Debug)]
 pub enum Format {
@@ -234,5 +233,5 @@ pub async fn delete(
 
     state.db.delete(id).await?;
 
-    Ok(Redirect::to(base_path(&state.base_url)))
+    Ok(Redirect::to(base_path().path()))
 }

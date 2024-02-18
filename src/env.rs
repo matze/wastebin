@@ -160,7 +160,7 @@ pub fn base_path() -> &'static BasePath {
                     if path.ends_with('/') {
                         BasePath(path.to_string())
                     } else {
-                        BasePath("${path}/".to_string())
+                        BasePath(format!("{path}/"))
                     }
                 }
                 Err(err) => {

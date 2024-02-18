@@ -41,7 +41,7 @@
 {% endblock %}
 
 {%- block content -%}
-    <form action="{{ meta.base_path }}" method="post">
+    <form action="{{ base_path.path() }}" method="post">
       <div class="container">
         <div class="content">
           <textarea id="text" name="text" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text or drop file here>" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);" autofocus></textarea>

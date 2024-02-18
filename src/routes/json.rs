@@ -1,4 +1,5 @@
 use crate::db::write;
+use crate::env::base_path;
 use crate::errors::{Error, JsonErrorResponse};
 use crate::id::Id;
 use crate::AppState;
@@ -6,8 +7,6 @@ use axum::extract::State;
 use axum::Json;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-
-use super::base_path;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Entry {
@@ -50,9 +49,8 @@ pub async fn insert(
 
     let entry: write::Entry = entry.into();
 
-    let base_path = base_path(&state.base_url);
     let url = id.to_url_path(&entry);
-    let path = format!("{base_path}{url}");
+    let path = base_path().join(&url);
     state.db.insert(id, entry).await?;
 
     Ok(Json::from(RedirectResponse { path }))

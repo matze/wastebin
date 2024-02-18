@@ -1,4 +1,3 @@
-use crate::routes::{base_path, DEFAULT_BASE_PATH};
 use crate::{db, highlight};
 use axum_extra::extract::cookie::Key;
 use std::env::VarError;
@@ -13,7 +12,6 @@ pub struct Metadata<'a> {
     pub title: String,
     pub version: &'a str,
     pub highlight: &'a highlight::Data<'a>,
-    pub base_path: &'a str,
 }
 
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
@@ -49,6 +47,25 @@ pub enum Error {
     HttpTimeout(ParseIntError),
 }
 
+pub struct BasePath(String);
+
+impl BasePath {
+    pub fn path(&self) -> &str {
+        &self.0
+    }
+
+    pub fn join(&self, s: &str) -> String {
+        let b = &self.0;
+        format!("{b}{s}")
+    }
+}
+
+impl Default for BasePath {
+    fn default() -> Self {
+        BasePath("/".to_string())
+    }
+}
+
 /// Retrieve reference to initialized metadata.
 pub fn metadata() -> &'static Metadata<'static> {
     static DATA: OnceLock<Metadata> = OnceLock::new();
@@ -58,16 +75,10 @@ pub fn metadata() -> &'static Metadata<'static> {
         let version = env!("CARGO_PKG_VERSION");
         let highlight = &highlight::data();
 
-        let base_path = match base_url() {
-            Err(_) => DEFAULT_BASE_PATH,
-            Ok(base_url) => String::from(base_path(&base_url)).leak(),
-        };
-
         Metadata {
             title,
             version,
             highlight,
-            base_path,
         }
     })
 }
@@ -125,6 +136,40 @@ pub fn base_url() -> Result<Option<url::Url>, Error> {
     )?;
 
     Ok(result)
+}
+
+pub fn base_path() -> &'static BasePath {
+    // NOTE: This relies on `VAR_BASE_URL` but repeates parsing to handle errors.
+    static BASE_PATH: OnceLock<BasePath> = OnceLock::new();
+
+    BASE_PATH.get_or_init(|| {
+        std::env::var(VAR_BASE_URL).map_or_else(
+            |err| {
+                match err {
+                    VarError::NotPresent => (),
+                    VarError::NotUnicode(_) => {
+                        tracing::warn!("`VAR_BASE_URL` not Unicode, defaulting to '/'")
+                    }
+                };
+                BasePath::default()
+            },
+            |var| match url::Url::parse(&var) {
+                Ok(url) => {
+                    let path = url.path();
+
+                    if path.ends_with('/') {
+                        BasePath(path.to_string())
+                    } else {
+                        BasePath("${path}/".to_string())
+                    }
+                }
+                Err(err) => {
+                    tracing::error!("error parsing `VAR_BASE_URL`, defaulting to '/': {err}");
+                    BasePath::default()
+                }
+            },
+        )
+    })
 }
 
 pub fn password_hash_salt() -> String {

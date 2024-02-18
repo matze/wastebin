@@ -64,5 +64,5 @@ pub(crate) fn make_app() -> Result<Router, Box<dyn std::error::Error>> {
         base_url,
     };
 
-    Ok(crate::make_app(4096, Duration::new(30, 0), &None).with_state(state))
+    Ok(crate::make_app(4096, Duration::new(30, 0)).with_state(state))
 }

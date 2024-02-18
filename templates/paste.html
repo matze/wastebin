@@ -6,22 +6,22 @@
 
   function onKey(e) {
     if (e.key == 'n') {
-      window.location.href = '{{ meta.base_path }}';
+      window.location.href = '{{ base_path.path() }}';
     }
     else if (e.key == 'r') {
-      window.location.href = '{{ meta.base_path }}{{ id }}?fmt=raw';
+      window.location.href = '{{ base_path.join(id) }}?fmt=raw';
     }
     else if (e.key == 'y') {
       navigator.clipboard.writeText(window.location.href);
     }
     else if (e.key == 'd') {
-      window.location.href = '{{ meta.base_path }}{{ id }}?dl={{ ext }}';
+      window.location.href = '{{ base_path.join(id) }}?dl={{ ext }}';
     }
     else if (e.key == 'q') {
-      window.location.href = '{{ meta.base_path }}{{ id }}?fmt=qr';
+      window.location.href = '{{ base_path.join(id) }}?fmt=qr';
     }
     else if (e.key == 'p') {
-      window.location.href = '{{ meta.base_path }}{{ id }}';
+      window.location.href = '{{ base_path.join(id) }}';
     }
     else if (e.key == '?') {
       var overlay = document.getElementById("overlay");
@@ -47,8 +47,8 @@
 
 {% block nav %}
   {% if can_delete %}
-    <li><a href="{{ meta.base_path }}delete/{{ id }}"><button>delete</button></a></li>
+    <li><a href="{{ base_path.join("delete/") }}{{ id }}"><button>delete</button></a></li>
   {% endif %}
-    <li><a href="{{ meta.base_path }}{{ id }}?dl={{ ext }}"><button>download</button></a></li>
-    <li><a href="{{ meta.base_path }}{{ id }}?fmt=raw"><button>raw</button></a></li>
+    <li><a href="{{ base_path.join(id) }}?dl={{ ext }}"><button>download</button></a></li>
+    <li><a href="{{ base_path.join(id) }}?fmt=raw"><button>raw</button></a></li>
 {% endblock %}

@@ -5,13 +5,13 @@
     <meta name="generator" content="wastebin {{ meta.version }}"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <title>{{ meta.title }}</title>
-    <link rel="stylesheet" href="{{ meta.base_path }}{{ meta.highlight.style.name }}">
-    <link rel="icon" href="{{ meta.base_path }}favicon.png" type="image/png">
+    <link rel="stylesheet" href="{{ base_path.join(meta.highlight.style.name) }}">
+    <link rel="icon" href="{{ base_path.join("favicon.png") }}" type="image/png">
     {% block head %}{% endblock %}
   </head>
   <body>
     <header>
-            <span id="nav-title"><a href="{{ meta.base_path }}"><button>home</button></a></span>
+            <span id="nav-title"><a href="{{ base_path.path() }}"><button>home</button></a></span>
       <nav>
         <ul>
           {% block nav %}{% endblock %}

@@ -18,3 +18,4 @@ jobs:
         components: clippy
     - run: cargo clippy -- -W clippy::pedantic
     - run: cargo test
+    - run: WASTEBIN_BASE_URL="http://127.0.0.1:8080/wastebin" cargo test  # port is not relevant

@@ -23,19 +23,18 @@ pub fn routes() -> Router<AppState> {
 #[cfg(test)]
 mod tests {
     use crate::db::write::Entry;
+    use crate::env::base_path;
     use crate::routes;
     use crate::test_helpers::{make_app, Client};
     use http::StatusCode;
     use reqwest::header;
     use serde::Serialize;
 
-    // TODO: Add tests for base path
-
     #[tokio::test]
     async fn unknown_paste() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new(make_app()?).await;
 
-        let res = client.get("/000000").send().await?;
+        let res = client.get(&base_path().join("000000")).send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
         Ok(())
@@ -52,7 +51,7 @@ mod tests {
             password: "".to_string(),
         };
 
-        let res = client.post("/").form(&data).send().await?;
+        let res = client.post(base_path().path()).form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
@@ -100,16 +99,16 @@ mod tests {
             password: "".to_string(),
         };
 
-        let res = client.post("/").form(&data).send().await?;
+        let res = client.post(base_path().path()).form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
 
-        // Location is the `/burn/foo` page not the paste itself, so ignore the prefix.
-        let location = location.split_at(5).1;
+        // Location is the `/burn/foo` page not the paste itself, so remove the prefix.
+        let location = location.replace("burn/", "");
 
         let res = client
-            .get(location)
+            .get(&location)
             .header(header::ACCEPT, "text/html; charset=utf-8")
             .send()
             .await?;
@@ -117,7 +116,7 @@ mod tests {
         assert_eq!(res.status(), StatusCode::OK);
 
         let res = client
-            .get(location)
+            .get(&location)
             .header(header::ACCEPT, "text/html; charset=utf-8")
             .send()
             .await?;
@@ -139,16 +138,16 @@ mod tests {
             password: password.to_string(),
         };
 
-        let res = client.post("/").form(&data).send().await?;
+        let res = client.post(base_path().path()).form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
 
-        // Location is the `/burn/foo` page not the paste itself, so ignore the prefix.
-        let location = location.split_at(5).1;
+        // Location is the `/burn/foo` page not the paste itself, so remove the prefix.
+        let location = location.replace("burn/", "");
 
         let res = client
-            .get(location)
+            .get(&location)
             .header(header::ACCEPT, "text/html; charset=utf-8")
             .send()
             .await?;
@@ -165,7 +164,7 @@ mod tests {
         };
 
         let res = client
-            .post(location)
+            .post(&location)
             .form(&data)
             .header(header::ACCEPT, "text/html; charset=utf-8")
             .send()
@@ -174,7 +173,7 @@ mod tests {
         assert_eq!(res.status(), StatusCode::OK);
 
         let res = client
-            .get(location)
+            .get(&location)
             .header(header::ACCEPT, "text/html; charset=utf-8")
             .send()
             .await?;
@@ -193,7 +192,7 @@ mod tests {
             ..Default::default()
         };
 
-        let res = client.post("/").json(&entry).send().await?;
+        let res = client.post(base_path().path()).json(&entry).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
 
         let payload = res.json::<routes::json::RedirectResponse>().await?;
@@ -216,7 +215,7 @@ mod tests {
             ..Default::default()
         };
 
-        let res = client.post("/").json(&entry).send().await?;
+        let res = client.post(base_path().path()).json(&entry).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
 
         let payload = res.json::<routes::json::RedirectResponse>().await?;
@@ -244,16 +243,21 @@ mod tests {
             password: "".to_string(),
         };
 
-        let res = client.post("/").form(&data).send().await?;
+        let res = client.post(base_path().path()).form(&data).send().await?;
         let uid_cookie = res.cookies().find(|cookie| cookie.name() == "uid");
         assert!(uid_cookie.is_some());
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
-        let res = client.get(&format!("/delete{location}")).send().await?;
+        let id = location.replace(base_path().path(), "");
+
+        let res = client
+            .get(&base_path().join(&format!("delete/{id}")))
+            .send()
+            .await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
-        let res = client.get(location).send().await?;
+        let res = client.get(&base_path().join(&id)).send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
         Ok(())
@@ -270,7 +274,7 @@ mod tests {
             password: "".to_string(),
         };
 
-        let res = client.post("/").form(&data).send().await?;
+        let res = client.post(base_path().path()).form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;

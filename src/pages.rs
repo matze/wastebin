@@ -12,7 +12,7 @@ use std::default::Default;
 pub struct Error<'a> {
     meta: &'a env::Metadata<'a>,
     base_path: &'static env::BasePath,
-    error: String,
+    description: String,
 }
 
 /// Error response carrying a status code and the page itself.
@@ -23,7 +23,7 @@ impl From<crate::Error> for ErrorResponse<'_> {
         let html = Error {
             meta: env::metadata(),
             base_path: env::base_path(),
-            error: err.to_string(),
+            description: err.to_string(),
         };
 
         (err.into(), html)

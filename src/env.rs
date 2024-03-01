@@ -148,7 +148,7 @@ pub fn base_path() -> &'static BasePath {
                 match err {
                     VarError::NotPresent => (),
                     VarError::NotUnicode(_) => {
-                        tracing::warn!("`VAR_BASE_URL` not Unicode, defaulting to '/'")
+                        tracing::warn!("`VAR_BASE_URL` not Unicode, defaulting to '/'");
                     }
                 };
                 BasePath::default()

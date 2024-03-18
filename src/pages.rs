@@ -4,7 +4,6 @@ use crate::highlight::Html;
 use crate::routes::paste::{Format, QueryData};
 use askama::Template;
 use axum::http::StatusCode;
-use std::default::Default;
 
 /// Error page showing a message.
 #[derive(Template)]

@@ -2,7 +2,6 @@ use crate::env;
 use crate::errors::Error;
 use chacha20poly1305::aead::{Aead, AeadCore, KeyInit, OsRng};
 use chacha20poly1305::{Key, XChaCha20Poly1305, XNonce};
-use std::convert::From;
 use std::sync::OnceLock;
 use tokio::task::spawn_blocking;
 

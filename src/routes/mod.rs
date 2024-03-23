@@ -26,8 +26,7 @@ mod tests {
     use crate::env::base_path;
     use crate::routes;
     use crate::test_helpers::{make_app, Client};
-    use http::StatusCode;
-    use reqwest::header;
+    use reqwest::{header, StatusCode};
     use serde::Serialize;
 
     #[tokio::test]

@@ -163,6 +163,19 @@ function waste-paste() {
 }
 ```
 
+### Paste from stdin
+
+To paste from stdin use the following function in your `.bashrc`:
+
+```bash
+paste() {
+	jq -Rns '{text: inputs}' | curl  -s -H 'Content-Type: application/json' \
+		--data-binary @- https://wastebin.tld | jq -r '. | "wastebin.tld\(.path)"'
+	}
+```
+
+It can be handy for creating pastes from logs or the output of commands, e.g.
+`cat file.log | paste`
 
 ## License
 

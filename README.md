@@ -74,7 +74,7 @@ For Nix users, a `flake.nix` is also provided. Build and execute it directly
 with:
 
 ```sh
-nix run 'github:matze/wastebin#wastebin' 
+nix run 'github:matze/wastebin#wastebin'
 ```
 
 Or install the provided `wastebin` package like you normally would.
@@ -164,11 +164,11 @@ line using `xclip`, `curl` and `jq`. Define the following function in your
 `.bashrc` and you are good to go:
 
 ```bash
-function waste-paste() {
+function paste_from_clipboard() {
     local URL=$(\
         jq -n --arg t "$(xclip -selection clipboard -o)" '{text: $t}' | \
-        curl -s -H 'Content-Type: application/json' --data-binary @- http://0.0.0.0:8088 | \
-        jq -r '. | "http://0.0.0.0:8088\(.path)"')
+            curl -s -H 'Content-Type: application/json' --data-binary @- https://wastebin.tld | \
+            jq -r '. | "https://wastebin.tld\(.path)"')
 
     xdg-open $URL
 }
@@ -179,14 +179,16 @@ function waste-paste() {
 To paste from stdin use the following function in your `.bashrc`:
 
 ```bash
-paste() {
-	jq -Rns '{text: inputs}' | curl  -s -H 'Content-Type: application/json' \
-		--data-binary @- https://wastebin.tld | jq -r '. | "wastebin.tld\(.path)"'
-	}
+function paste_from_stdin() {
+    jq -Rns '{text: inputs}' | \
+        curl  -s -H 'Content-Type: application/json' --data-binary @- https://wastebin.tld | \
+        jq -r '. | "wastebin.tld\(.path)"'
+}
 ```
 
 It can be handy for creating pastes from logs or the output of commands, e.g.
-`cat file.log | paste`
+`cat file.log | paste_from_stdin`.
+
 
 ## License
 

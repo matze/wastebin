@@ -16,6 +16,8 @@ jobs:
       uses: dtolnay/rust-toolchain@1.70.0
       with:
         components: clippy
+    - name: Run cargo-deny
+      uses: EmbarkStudios/cargo-deny-action@v1
     - run: cargo clippy -- -W clippy::pedantic
     - run: cargo test
     - run: WASTEBIN_BASE_URL="http://127.0.0.1:8080/wastebin" cargo test  # port is not relevant

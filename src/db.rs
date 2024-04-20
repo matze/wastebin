@@ -1,12 +1,12 @@
 use crate::crypto::Password;
 use crate::errors::Error;
 use crate::id::Id;
+use parking_lot::Mutex;
 use rusqlite::{params, Connection, Transaction};
 use rusqlite_migration::{HookError, Migrations, M};
 use std::io::Cursor;
 use std::path::PathBuf;
-use std::sync::OnceLock;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, OnceLock};
 use tokio::task::spawn_blocking;
 
 fn migrations() -> &'static Migrations<'static> {
@@ -258,11 +258,11 @@ impl Database {
         let write::DatabaseEntry { entry, data, nonce } = entry.compress().await?.encrypt().await?;
 
         spawn_blocking(move || match entry.expires {
-            None => conn.lock().unwrap().execute(
+            None => conn.lock().execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading, nonce) VALUES (?1, ?2, ?3, ?4, ?5)",
                 params![id, entry.uid, data, entry.burn_after_reading, nonce],
             ),
-            Some(expires) => conn.lock().unwrap().execute(
+            Some(expires) => conn.lock().execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, expires) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now', ?6))",
                 params![
                     id,
@@ -285,7 +285,7 @@ impl Database {
         let id_as_u32 = id.as_u32();
 
         let entry = spawn_blocking(move || {
-            conn.lock().unwrap().query_row(
+            conn.lock().query_row(
                 "SELECT data, burn_after_reading, uid, nonce, expires < datetime('now') FROM entries WHERE id=?1",
                 params![id_as_u32],
                 |row| {
@@ -316,7 +316,7 @@ impl Database {
         let id_as_u32 = id.as_u32();
 
         let (uid, expired) = spawn_blocking(move || {
-            conn.lock().unwrap().query_row(
+            conn.lock().query_row(
                 "SELECT uid, expires < datetime('now') FROM entries WHERE id=?1",
                 params![id_as_u32],
                 |row| {
@@ -343,7 +343,6 @@ impl Database {
 
         spawn_blocking(move || {
             conn.lock()
-                .unwrap()
                 .execute("DELETE FROM entries WHERE id=?1", params![id])
         })
         .await??;
@@ -356,9 +355,7 @@ impl Database {
         let conn = self.conn.clone();
 
         let uid = spawn_blocking(move || {
-            let conn = conn.lock().unwrap();
-
-            conn.query_row(
+            conn.lock().query_row(
                 "UPDATE uids SET n = n + 1 WHERE id = 0 RETURNING n",
                 [],
                 |row| row.get(0),

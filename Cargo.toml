@@ -32,6 +32,7 @@ tracing = "0"
 tracing-subscriber = "0"
 url = "2"
 zstd = "0.13"
+parking_lot = "0.12.1"
 
 [dev-dependencies]
 hyper = { version = "1", features = ["server"] }

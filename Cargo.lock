@@ -1955,6 +1955,7 @@ dependencies = [
  "hyper",
  "lru",
  "mime",
+ "parking_lot",
  "qrcodegen",
  "rand",
  "reqwest",

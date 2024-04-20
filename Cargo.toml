@@ -39,6 +39,9 @@ reqwest = { version = "0", default-features = false, features = ["cookies", "jso
 tower = { version = "0", default-features = false, features = ["util", "make"] }
 tower-service = "0"
 
+[lints.rust]
+unsafe_code = "forbid"
+
 [profile.release]
 strip = "debuginfo"
 lto = "fat"

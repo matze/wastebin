@@ -1,5 +1,3 @@
-#![forbid(unsafe_code)]
-
 use crate::cache::Cache;
 use crate::db::Database;
 use crate::errors::Error;

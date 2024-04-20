@@ -43,6 +43,9 @@ tower-service = "0"
 [lints.rust]
 unsafe_code = "forbid"
 
+[lints.clippy]
+unwrap_used = "deny"
+
 [profile.release]
 strip = "debuginfo"
 lto = "fat"

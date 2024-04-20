@@ -1,6 +1,7 @@
 use crate::db::read::Entry;
 use crate::errors::Error;
 use sha2::{Digest, Sha256};
+use std::cmp::Ordering;
 use std::io::Cursor;
 use std::sync::OnceLock;
 use syntect::highlighting::ThemeSet;
@@ -44,7 +45,7 @@ pub fn data() -> &'static Data<'static> {
         let syntax_set: SyntaxSet =
             syntect::dumps::from_binary(include_bytes!("../assets/newlines.packdump"));
         let mut syntaxes = syntax_set.syntaxes().to_vec();
-        syntaxes.sort_by(|a, b| a.name.partial_cmp(&b.name).unwrap());
+        syntaxes.sort_by(|a, b| a.name.partial_cmp(&b.name).unwrap_or(Ordering::Less));
 
         Data {
             style,
@@ -87,7 +88,12 @@ fn highlight(source: &str, ext: &str) -> Result<String, Error> {
     let syntax_ref = data()
         .syntax_set
         .find_syntax_by_extension(ext)
-        .unwrap_or_else(|| data().syntax_set.find_syntax_by_extension("txt").unwrap());
+        .unwrap_or_else(|| {
+            data()
+                .syntax_set
+                .find_syntax_by_extension("txt")
+                .expect("finding txt syntax")
+        });
 
     let mut parse_state = ParseState::new(syntax_ref);
     let mut html = String::from("<table><tbody>");

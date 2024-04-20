@@ -85,7 +85,7 @@ pub fn metadata() -> &'static Metadata<'static> {
 pub fn cache_size() -> Result<NonZeroUsize, Error> {
     std::env::var(VAR_CACHE_SIZE)
         .map_or_else(
-            |_| Ok(NonZeroUsize::new(128).unwrap()),
+            |_| Ok(NonZeroUsize::new(128).expect("128 is non-zero")),
             |s| s.parse::<NonZeroUsize>(),
         )
         .map_err(Error::CacheSize)

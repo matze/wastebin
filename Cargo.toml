@@ -35,7 +35,6 @@ zstd = "0.13"
 parking_lot = "0.12.1"
 
 [dev-dependencies]
-hyper = { version = "1", features = ["server"] }
 reqwest = { version = "0", default-features = false, features = ["cookies", "json"] }
 tower = { version = "0", default-features = false, features = ["util", "make"] }
 tower-service = "0"

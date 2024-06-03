@@ -40,7 +40,7 @@
 </script>
 {% endblock %}
 
-{%- block content -%}
+{% block content %}
     <form action="{{ base_path.path() }}" method="post">
       <div class="container">
         <div class="content">
@@ -48,11 +48,11 @@
         </div>
         <div class="extensions-list">
           <select name="extension" id="langs" size="23">
-          {%- for syntax in meta.highlight.syntaxes -%}
-            {%- if syntax.file_extensions.len() > 0 %}
-            <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
-            {%- endif -%}
-          {%- endfor %}
+            {%- for syntax in meta.highlight.syntaxes -%}
+              {%- if syntax.file_extensions.len() > 0 %}
+              <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
+              {%- endif -%}
+            {%- endfor %}
           </select>
         </div>
         <div class="extension-filter">
@@ -60,13 +60,28 @@
         </div>
         <div class="expiration-list">
           <select name="expires" size="7">
+            {%- if max_expiration == -1 %}
             <option selected="" value="">never</option>
+            {%- endif %}
+            {%- if max_expiration >= 600 or max_expiration == -1 %}
             <option value="600">10 minutes</option>
+            {%- endif %}
+            {%- if max_expiration >= 3600 or max_expiration == -1 %}
             <option value="3600">1 hour</option>
+            {%- endif %}
+            {%- if max_expiration >= 86400 or max_expiration == -1 %}
             <option value="86400">1 day</option>
+            {%- endif %}
+            {%- if max_expiration >= 604800 or max_expiration == -1 %}
             <option value="604800">1 week</option>
+            {%- endif %}
+            {%- if max_expiration >= 215308800 or max_expiration == -1 %}
             <option value="215308800">1 year</option>
+            {%- endif %}
             <option value="burn">🔥 after reading</option>
+            {%- if max_expiration not in [600, 3600, 86400, 604800, 215308800, -1] %}
+            <option value="{{ max_expiration }}" selected>{{ max_expiration // 86400 }} days</option>
+            {%- endif %}
           </select>
         </div>
         <div class="password">
@@ -77,4 +92,4 @@
         </div>
       </div>
     </form>
-{%- endblock -%}
+{% endblock %}

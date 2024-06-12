@@ -137,9 +137,7 @@ a, a:visited, a:hover {
 .container {
   display: grid;
   grid-template-columns: 4fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr 1fr 20fr;
   grid-gap: 2em;
-  height: 96vh;
   align-items: stretch;
   justify-items: stretch;
   margin: 1em 2em 0em 2em;

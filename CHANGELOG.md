@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Open button to read local file into input.
+
 
 ## 2.4.3
 

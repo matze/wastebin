@@ -23,6 +23,19 @@
     ev.preventDefault();
   }
 
+  function openFile() {
+    let input = document.createElement("input");
+    input.type = "file";
+    input.onchange = ev => {
+      const item = ev.target.files[0];
+
+      let textarea = document.getElementById('text');
+      item.text().then((value) => textarea.value = value);
+    };
+
+    input.click();
+  }
+
   function filterLangs(ev) {
     ev.preventDefault();
     let langs = document.getElementById("langs");
@@ -38,6 +51,10 @@
     }
   }
 </script>
+{% endblock %}
+
+{% block nav %}
+    <li><button onclick="openFile()">open</button></li>
 {% endblock %}
 
 {% block content %}

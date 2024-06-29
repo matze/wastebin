@@ -38,6 +38,7 @@ body {
   font-family: "JetBrains Mono", monospace;
   padding: 0;
   margin: 0;
+  height: calc(100vh - 55px);
 }
 
 header {
@@ -139,10 +140,10 @@ a, a:visited, a:hover {
   grid-template-columns: 4fr 1fr;
   grid-template-rows: 1fr 1fr 1fr 1fr 20fr;
   grid-gap: 2em;
-  height: 96vh;
+  height: 100%;
   align-items: stretch;
   justify-items: stretch;
-  margin: 1em 2em 0em 2em;
+  margin: 0em 2em;
 }
 
 .content {
@@ -158,6 +159,8 @@ a, a:visited, a:hover {
   line-height: 1.6rem;
   font-size: 1rem;
   resize: none;
+  padding: 0;
+  margin: 0;
 }
 
 .content > textarea:focus {
@@ -165,6 +168,7 @@ a, a:visited, a:hover {
 }
 
 .extensions-list {
+  padding-top: 1em;
   grid-row: 1/2;
 }
 

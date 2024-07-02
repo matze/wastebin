@@ -57,19 +57,19 @@
     <li><button onclick="openFile()">open</button></li>
 {% endblock %}
 
-{% block content %}
-    <form action="{{ base_path.path() }}" method="post">
+{%- block content -%}
+    <form action="{{ base_path.path() }}" method="post" style="height: 100%;">
       <div class="container">
         <div class="content">
           <textarea id="text" name="text" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text or drop file here>" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);" autofocus></textarea>
         </div>
         <div class="extensions-list">
-          <select name="extension" id="langs" size="23">
-            {%- for syntax in meta.highlight.syntaxes -%}
-              {%- if syntax.file_extensions.len() > 0 %}
-              <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
-              {%- endif -%}
-            {%- endfor %}
+          <select name="extension" id="langs" size="17">
+          {%- for syntax in meta.highlight.syntaxes -%}
+            {%- if syntax.file_extensions.len() > 0 %}
+            <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
+            {%- endif -%}
+          {%- endfor %}
           </select>
         </div>
         <div class="extension-filter">

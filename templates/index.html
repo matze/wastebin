@@ -80,25 +80,25 @@
             {%- if max_expiration == -1 %}
             <option selected="" value="">never</option>
             {%- endif %}
-            {%- if max_expiration >= 600 or max_expiration == -1 %}
+            {%- if max_expiration >= 600 || max_expiration == -1 %}
             <option value="600">10 minutes</option>
             {%- endif %}
-            {%- if max_expiration >= 3600 or max_expiration == -1 %}
+            {%- if max_expiration >= 3600 || max_expiration == -1 %}
             <option value="3600">1 hour</option>
             {%- endif %}
-            {%- if max_expiration >= 86400 or max_expiration == -1 %}
+            {%- if max_expiration >= 86400 || max_expiration == -1 %}
             <option value="86400">1 day</option>
             {%- endif %}
-            {%- if max_expiration >= 604800 or max_expiration == -1 %}
+            {%- if max_expiration >= 604800 || max_expiration == -1 %}
             <option value="604800">1 week</option>
             {%- endif %}
-            {%- if max_expiration >= 215308800 or max_expiration == -1 %}
+            {%- if max_expiration >= 215308800 || max_expiration == -1 %}
             <option value="215308800">1 year</option>
             {%- endif %}
-            <option value="burn">🔥 after reading</option>
-            {%- if max_expiration not in [600, 3600, 86400, 604800, 215308800, -1] %}
-            <option value="{{ max_expiration }}" selected>{{ max_expiration // 86400 }} days</option>
+            {%- if max_expiration > 86400 && max_expiration != 604800 && max_expiration != 215308800 && max_expiration != -1 %}
+            <option value="{{ max_expiration }}" selected>{{ max_expiration / 86400 }} days</option>
             {%- endif %}
+            <option value="burn">🔥 after reading</option>
           </select>
         </div>
         <div class="password">

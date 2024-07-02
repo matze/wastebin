@@ -35,13 +35,16 @@ impl From<crate::Error> for ErrorResponse<'_> {
 pub struct Index<'a> {
     meta: &'a env::Metadata<'a>,
     base_path: &'static env::BasePath,
+    max_expiration: i64,
 }
 
 impl<'a> Default for Index<'a> {
     fn default() -> Self {
+        let max_expiration = env::max_expiration().unwrap_or(-1);
         Self {
             meta: env::metadata(),
             base_path: env::base_path(),
+            max_expiration,
         }
     }
 }

@@ -77,12 +77,27 @@
         </div>
         <div class="expiration-list">
           <select name="expires" size="7">
+            {%- if max_expiration == -1 %}
             <option selected="" value="">never</option>
+            {%- endif %}
+            {%- if max_expiration >= 600 || max_expiration == -1 %}
             <option value="600">10 minutes</option>
+            {%- endif %}
+            {%- if max_expiration >= 3600 || max_expiration == -1 %}
             <option value="3600">1 hour</option>
+            {%- endif %}
+            {%- if max_expiration >= 86400 || max_expiration == -1 %}
             <option value="86400">1 day</option>
+            {%- endif %}
+            {%- if max_expiration >= 604800 || max_expiration == -1 %}
             <option value="604800">1 week</option>
+            {%- endif %}
+            {%- if max_expiration >= 215308800 || max_expiration == -1 %}
             <option value="215308800">1 year</option>
+            {%- endif %}
+            {%- if max_expiration > 86400 && max_expiration != 604800 && max_expiration != 215308800 && max_expiration != -1 %}
+            <option value="{{ max_expiration }}" selected>{{ max_expiration / 86400 }} days</option>
+            {%- endif %}
             <option value="burn">🔥 after reading</option>
           </select>
         </div>
@@ -94,4 +109,4 @@
         </div>
       </div>
     </form>
-{%- endblock -%}
+{% endblock %}

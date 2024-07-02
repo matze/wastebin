@@ -27,6 +27,7 @@ const VAR_SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
 const VAR_BASE_URL: &str = "WASTEBIN_BASE_URL";
 const VAR_PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
 const VAR_HTTP_TIMEOUT: &str = "WASTEBIN_HTTP_TIMEOUT";
+const VAR_MAX_EXPIRATION: &str = "WASTEBIN_MAX_EXPIRATION";
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -80,6 +81,14 @@ pub fn metadata() -> &'static Metadata<'static> {
             highlight,
         }
     })
+}
+
+pub fn max_expiration() -> Result<i64, Error> {
+    std::env::var(VAR_MAX_EXPIRATION)
+        .map_or_else(
+            |_| Ok(-1), // Default to -1 if not set
+            |s| s.parse::<i64>().map_err(|err| Error::BaseUrl(err.to_string())),
+        )
 }
 
 pub fn cache_size() -> Result<NonZeroUsize, Error> {

@@ -83,12 +83,19 @@ pub fn metadata() -> &'static Metadata<'static> {
     })
 }
 
-pub fn max_expiration() -> Result<i64, Error> {
+pub fn max_expiration() -> Option<i64> {
     std::env::var(VAR_MAX_EXPIRATION)
-        .map_or_else(
-            |_| Ok(-1), // Default to -1 if not set
-            |s| s.parse::<i64>().map_err(|err| Error::BaseUrl(err.to_string())),
-        )
+        .ok()
+        .and_then(|s| match s.parse::<i64>() {
+            Ok(val) => Some(val),
+            Err(err) => {
+                tracing::warn!(
+                    "Value `{}` could not be cast into an integer for max expiration. Defaulting to no maximum",
+                    VAR_MAX_EXPIRATION
+                );
+                None
+            }
+        })
 }
 
 pub fn cache_size() -> Result<NonZeroUsize, Error> {

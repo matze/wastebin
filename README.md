@@ -111,6 +111,7 @@ run-time behavior:
   until wastebin responds with 408, by default it is set to 5 seconds.
 * `WASTEBIN_MAX_BODY_SIZE` number of bytes to accept for POST requests. Defaults
   to 1 MB.
+* `WASTEBIN_MAX_PASTE_EXPIRY` maximum allowed lifetime of a paste. Leave empty or set to -1 for no limit. Defaults to no limit.
 * `WASTEBIN_PASSWORD_SALT` salt used to hash user passwords used for encrypting
   pastes.
 * `WASTEBIN_SIGNING_KEY` sets the key to sign cookies. If not set, a random key

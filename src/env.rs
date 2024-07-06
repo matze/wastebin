@@ -27,6 +27,7 @@ const VAR_SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
 const VAR_BASE_URL: &str = "WASTEBIN_BASE_URL";
 const VAR_PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
 const VAR_HTTP_TIMEOUT: &str = "WASTEBIN_HTTP_TIMEOUT";
+const VAR_MAX_PASTE_EXPIRY: &str = "WASTEBIN_MAX_PASTE_EXPIRY";
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -182,4 +183,23 @@ pub fn http_timeout() -> Result<Duration, Error> {
             |s| s.parse::<u64>().map(|v| Duration::new(v, 0)),
         )
         .map_err(Error::HttpTimeout)
+}
+
+pub fn max_paste_expiry() -> Option<u32> {
+    std::env::var(VAR_MAX_PASTE_EXPIRY)
+        .ok()
+        .and_then(|raw_max_exp| {
+            match raw_max_exp.parse::<i64>() {
+                Ok(max_exp) if max_exp == -1 => None,
+                Ok(max_exp) if max_exp >= u32::MAX as i64 => {
+                    tracing::warn!("the expiry is larger than an u32 ({} seconds, ~136 Years), assuming you mean no timeout", u32::MAX);
+                    None
+                }
+                Ok(max_exp) => Some(max_exp as u32),
+                Err(why) => {
+                    tracing::warn!("unable to parse VAR_MAX_PASTE_EXPIRY `{raw_max_exp}`, defaulting to no expiry: {why}");
+                    None
+                }
+            }
+        })
 }

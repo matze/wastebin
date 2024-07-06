@@ -47,7 +47,13 @@ pub async fn insert(
     .map_err(Error::from)?
     .into();
 
-    let entry: write::Entry = entry.into();
+    let mut entry: write::Entry = entry.into();
+
+    if let Some(max_exp) = state.max_expiry {
+        entry.expires = entry
+            .expires
+            .map_or_else(|| Some(max_exp), |value| Some(value.min(max_exp)));
+    }
 
     let url = id.to_url_path(&entry);
     let path = base_path().join(&url);

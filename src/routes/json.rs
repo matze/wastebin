@@ -49,7 +49,7 @@ pub async fn insert(
 
     let mut entry: write::Entry = entry.into();
 
-    if let Some(max_exp) = state.max_expiry {
+    if let Some(max_exp) = state.max_expiration {
         entry.expires = entry
             .expires
             .map_or_else(|| Some(max_exp), |value| Some(value.min(max_exp)));

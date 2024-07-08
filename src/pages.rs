@@ -1,5 +1,3 @@
-use std::cell::Cell;
-
 use crate::cache::Key as CacheKey;
 use crate::env;
 use crate::highlight::Html;
@@ -37,10 +35,7 @@ impl From<crate::Error> for ErrorResponse<'_> {
 pub struct Index<'a> {
     meta: &'a env::Metadata<'a>,
     base_path: &'static env::BasePath,
-    max_expiry: Option<u32>,
-
-    /// SAFETY: calls in the template are always sequential
-    default_has_been_written: Cell<bool>,
+    max_expiration: Option<u32>,
 }
 
 impl<'a> Default for Index<'a> {
@@ -48,60 +43,66 @@ impl<'a> Default for Index<'a> {
         Self {
             meta: env::metadata(),
             base_path: env::base_path(),
-            max_expiry: env::max_paste_expiry(),
-            default_has_been_written: Cell::new(false),
+            // exception should already have been handled in main
+            max_expiration: env::max_paste_expiration().unwrap(),
         }
     }
 }
 
-#[derive(Debug)]
-enum Expiry<'a> {
-    Special(&'a str),
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+enum Expiration {
+    None,
+    Burn,
     Time(u32),
 }
 
-impl<'a> Expiry<'a> {
-    fn as_str(&self) -> String {
+impl std::fmt::Display for Expiration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Expiry::Special(s) => s.to_string(),
-            Expiry::Time(u) => u.to_string(),
+            Expiration::None => write!(f, ""),
+            Expiration::Burn => write!(f, "burn"),
+            Expiration::Time(t) => write!(f, "{}", t),
         }
     }
 }
 
-impl<'a> Index<'a> {
-    fn expiry(&self, name: &str, time: Expiry<'a>) -> String {
-        let sel_string = if self.default_has_been_written.get() {
-            ""
-        } else {
-            r#" selected"#
-        };
+const EXPIRATION_OPTIONS: [(&'static str, Expiration); 8] = [
+    ("never", Expiration::None),
+    ("10 minutes", Expiration::Time(600)),
+    ("1 hour", Expiration::Time(3600)),
+    ("1 day", Expiration::Time(86400)),
+    ("1 week", Expiration::Time(604800)),
+    ("1 month", Expiration::Time(2592000)),
+    ("1 year", Expiration::Time(31536000)),
+    ("🔥 after reading", Expiration::Burn),
+];
 
-        match self.max_expiry {
-            Some(exp) => {
-                match time {
-                    // never emit an never expire with a limit
-                    Expiry::Special("") => String::new(),
-                    Expiry::Special("burn") => {
-                        self.default_has_been_written.set(true);
-                        format!(r#"<option{} value="burn">{}</option>"#, sel_string, name)
-                    }
-                    Expiry::Special(_) => String::new(),
-                    Expiry::Time(t) if t > exp => String::new(),
-                    Expiry::Time(t) => {
-                        self.default_has_been_written.set(true);
-                        format!(r#"<option{} value="{}">{}</option>"#, sel_string, t, name)
-                    }
+impl<'a> Index<'a> {
+    fn expiry_options(&self) -> String {
+        let mut option_set = String::new();
+        let mut wrote_first = false;
+
+        option_set.push('\n');
+
+        for (opt_name, opt_val) in EXPIRATION_OPTIONS {
+            if self.max_expiration.is_none()
+                || opt_val == Expiration::Burn
+                || matches!((self.max_expiration, opt_val), (Some(exp), Expiration::Time(time)) if time <= exp)
+            {
+                option_set.push_str("<option");
+                if !wrote_first {
+                    option_set.push_str(" selected");
+                    wrote_first = true;
                 }
-            }
-            None => {
-                self.default_has_been_written.set(true);
-                format!(
-                    r#"<option{} value="{}">{}</option>"#,
-                    sel_string, time, name
-                )
+                option_set.push_str(" value=\"");
+                option_set.push_str(opt_val.to_string().as_ref());
+                option_set.push_str("\">");
+                option_set.push_str(opt_name);
+                option_set.push_str("</option>\n");
             }
         }
+
+        option_set
     }
 }
 

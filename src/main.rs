@@ -33,7 +33,7 @@ pub struct AppState {
     cache: Cache,
     key: Key,
     base_url: Option<Url>,
-    max_expiry: Option<u32>,
+    max_expiration: Option<u32>,
 }
 
 impl FromRef<AppState> for Key {
@@ -92,7 +92,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let max_body_size = env::max_body_size()?;
     let base_url = env::base_url()?;
     let timeout = env::http_timeout()?;
-    let max_expiry = env::max_paste_expiry();
+    let max_expiration = env::max_paste_expiration()?;
 
     let cache = Cache::new(cache_size);
     let db = Database::new(method)?;
@@ -101,7 +101,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
         cache,
         key,
         base_url,
-        max_expiry,
+        max_expiration,
     };
 
     tracing::debug!("serving on {addr}");

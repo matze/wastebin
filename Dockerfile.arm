@@ -1,0 +1,37 @@
+# --- build image
+FROM rust:1.75 AS builder
+
+RUN rustup target add aarch64-unknown-linux-musl && \
+    apt-get update && \
+    apt-get install -y musl-tools musl-dev && \
+    update-ca-certificates
+
+ENV USER=app
+ENV UID=10001
+
+RUN adduser \
+    --disabled-password \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    "${USER}"
+
+WORKDIR /app
+COPY . .
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/app/target \
+    cargo build --release && mv /app/target/release/wastebin /app
+
+FROM scratch
+
+COPY --from=builder /lib/aarch64-linux-gnu/libgcc_s.so.1 /lib/aarch64-linux-gnu/libgcc_s.so.1
+COPY --from=builder /lib/aarch64-linux-gnu/libm.so.6 /lib/aarch64-linux-gnu/libm.so.6 
+COPY --from=builder /lib/aarch64-linux-gnu/libc.so.6 /lib/aarch64-linux-gnu/libc.so.6
+COPY --from=builder /lib/ld-linux-aarch64.so.1 /lib/ld-linux-aarch64.so.1
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /etc/group /etc/group
+
+WORKDIR /app
+COPY --from=builder /app/wastebin .
+USER app:app
+CMD ["/app/wastebin"]

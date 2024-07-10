@@ -38,6 +38,46 @@ You can also download pre-built, statically compiled [Linux
 binaries](https://github.com/matze/wastebin/releases). After extraction run the
 contained `wastebin` binary.
 
+### Build a container image
+
+It's possible to build container image using Docker or Podman.
+
+Assuming you're in the root directory of repository:
+* Docker
+```bash
+$ sudo docker build \
+    -t wastebin:v2.4.3 \
+    -f Dockerfile .
+```
+* Podman
+```bash
+$ podman build \
+    -t wastebin:v2.4.3 \
+    -f Dockerfile
+```
+
+To cross-compile, make sure that your container engine of choice supports it,
+e.g. Docker:
+```bash
+$ sudo docker buildx ls
+NAME/NODE     DRIVER/ENDPOINT   STATUS    BUILDKIT   PLATFORMS
+default*      docker
+ \_ default    \_ default       running   v0.14.1    linux/amd64, linux/amd64/v2, linux/386, linux/arm64, linux/riscv64, linux/ppc64, linux/ppc64le, linux/s390x, linux/mips64le, linux/mips64, linux/loong64, linux/arm/v7, linux/arm/v6
+```
+
+To compile arm64 image on x86_64(amd64) host:
+* Docker
+```bash
+$ sudo docker build --platform linux/arm64 \
+    -t wastebin:v2.4.3-arm64 \
+    -f Dockerfile.arm .
+```
+* Podman
+```bash
+$ podman build --arch=arm64 \
+    -t wastebin:v2.4.3-arm64 \
+    -f Dockerfile.arm
+```
 
 ### Run a Docker image
 

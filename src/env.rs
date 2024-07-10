@@ -27,6 +27,7 @@ const VAR_SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
 const VAR_BASE_URL: &str = "WASTEBIN_BASE_URL";
 const VAR_PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
 const VAR_HTTP_TIMEOUT: &str = "WASTEBIN_HTTP_TIMEOUT";
+const VAR_MAX_PASTE_EXPIRATION: &str = "WASTEBIN_MAX_PASTE_EXPIRATION";
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -44,6 +45,13 @@ pub enum Error {
     SigningKey(String),
     #[error("failed to parse {VAR_HTTP_TIMEOUT}: {0}")]
     HttpTimeout(ParseIntError),
+    #[error("failed to parse {VAR_MAX_PASTE_EXPIRATION}: {0}")]
+    MaxPasteExpiration(ParseIntError),
+    #[error(
+        "{VAR_MAX_PASTE_EXPIRATION} is too large (max {}), pass -1 if you mean no expiry",
+        u32::MAX
+    )]
+    ExpirationTooLarge,
 }
 
 pub struct BasePath(String);
@@ -182,4 +190,18 @@ pub fn http_timeout() -> Result<Duration, Error> {
             |s| s.parse::<u64>().map(|v| Duration::new(v, 0)),
         )
         .map_err(Error::HttpTimeout)
+}
+
+pub fn max_paste_expiration() -> Result<Option<u32>, Error> {
+    std::env::var(VAR_MAX_PASTE_EXPIRATION)
+        .ok()
+        .and_then(|raw_max_exp| -> Option<Result<u32, Error>> {
+            match raw_max_exp.parse::<i64>() {
+                Ok(max_exp) if max_exp == -1 => None,
+                Ok(max_exp) if max_exp >= u32::MAX as i64 => Some(Err(Error::ExpirationTooLarge)),
+                Ok(max_exp) => Some(Ok(max_exp as u32)),
+                Err(why) => Some(Err(Error::MaxPasteExpiration(why))),
+            }
+        })
+        .transpose()
 }

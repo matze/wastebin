@@ -76,14 +76,8 @@
           <input type="search" id="filter" placeholder="Filter ..." onchange="filterLangs(event);" onkeyup="filterLangs(event)"></input>
         </div>
         <div class="expiration-list">
-          <select name="expires" size="7">
-            <option selected="" value="">never</option>
-            <option value="600">10 minutes</option>
-            <option value="3600">1 hour</option>
-            <option value="86400">1 day</option>
-            <option value="604800">1 week</option>
-            <option value="215308800">1 year</option>
-            <option value="burn">🔥 after reading</option>
+          <select name="expires" size="8">
+            {{- Self::expiry_options(self)|safe }}
           </select>
         </div>
         <div class="password">

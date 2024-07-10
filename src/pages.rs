@@ -35,6 +35,7 @@ impl From<crate::Error> for ErrorResponse<'_> {
 pub struct Index<'a> {
     meta: &'a env::Metadata<'a>,
     base_path: &'static env::BasePath,
+    max_expiration: Option<u32>,
 }
 
 impl<'a> Default for Index<'a> {
@@ -42,7 +43,66 @@ impl<'a> Default for Index<'a> {
         Self {
             meta: env::metadata(),
             base_path: env::base_path(),
+            // exception should already have been handled in main
+            max_expiration: env::max_paste_expiration().unwrap(),
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+enum Expiration {
+    None,
+    Burn,
+    Time(u32),
+}
+
+impl std::fmt::Display for Expiration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expiration::None => write!(f, ""),
+            Expiration::Burn => write!(f, "burn"),
+            Expiration::Time(t) => write!(f, "{}", t),
+        }
+    }
+}
+
+const EXPIRATION_OPTIONS: [(&'static str, Expiration); 8] = [
+    ("never", Expiration::None),
+    ("10 minutes", Expiration::Time(600)),
+    ("1 hour", Expiration::Time(3600)),
+    ("1 day", Expiration::Time(86400)),
+    ("1 week", Expiration::Time(604800)),
+    ("1 month", Expiration::Time(2592000)),
+    ("1 year", Expiration::Time(31536000)),
+    ("🔥 after reading", Expiration::Burn),
+];
+
+impl<'a> Index<'a> {
+    fn expiry_options(&self) -> String {
+        let mut option_set = String::new();
+        let mut wrote_first = false;
+
+        option_set.push('\n');
+
+        for (opt_name, opt_val) in EXPIRATION_OPTIONS {
+            if self.max_expiration.is_none()
+                || opt_val == Expiration::Burn
+                || matches!((self.max_expiration, opt_val), (Some(exp), Expiration::Time(time)) if time <= exp)
+            {
+                option_set.push_str("<option");
+                if !wrote_first {
+                    option_set.push_str(" selected");
+                    wrote_first = true;
+                }
+                option_set.push_str(" value=\"");
+                option_set.push_str(opt_val.to_string().as_ref());
+                option_set.push_str("\">");
+                option_set.push_str(opt_name);
+                option_set.push_str("</option>\n");
+            }
+        }
+
+        option_set
     }
 }
 

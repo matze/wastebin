@@ -20,8 +20,8 @@ pub type ErrorResponse<'a> = (StatusCode, Error<'a>);
 impl From<crate::Error> for ErrorResponse<'_> {
     fn from(err: crate::Error) -> Self {
         let html = Error {
-            meta: env::metadata(),
-            base_path: env::base_path(),
+            meta: &env::METADATA,
+            base_path: &env::BASE_PATH,
             description: err.to_string(),
         };
 
@@ -41,8 +41,8 @@ pub struct Index<'a> {
 impl<'a> Default for Index<'a> {
     fn default() -> Self {
         Self {
-            meta: env::metadata(),
-            base_path: env::base_path(),
+            meta: &env::METADATA,
+            base_path: &env::BASE_PATH,
             // exception should already have been handled in main
             max_expiration: env::max_paste_expiration().unwrap(),
         }
@@ -124,8 +124,8 @@ impl<'a> Paste<'a> {
         let html = html.into_inner();
 
         Self {
-            meta: env::metadata(),
-            base_path: env::base_path(),
+            meta: &env::METADATA,
+            base_path: &env::BASE_PATH,
             id: key.id(),
             ext: key.ext,
             can_delete,
@@ -156,8 +156,8 @@ impl<'a> Encrypted<'a> {
         };
 
         Self {
-            meta: env::metadata(),
-            base_path: env::base_path(),
+            meta: &env::METADATA,
+            base_path: &env::BASE_PATH,
             id: key.id(),
             ext: key.ext,
             query,
@@ -181,8 +181,8 @@ impl<'a> Qr<'a> {
     /// Construct new QR code view from `code`.
     pub fn new(code: qrcodegen::QrCode, key: CacheKey) -> Self {
         Self {
-            meta: env::metadata(),
-            base_path: env::base_path(),
+            meta: &env::METADATA,
+            base_path: &env::BASE_PATH,
             id: key.id(),
             ext: key.ext,
             code,
@@ -213,8 +213,8 @@ impl<'a> Burn<'a> {
     /// Construct new burn page linking to `id`.
     pub fn new(id: String) -> Self {
         Self {
-            meta: env::metadata(),
-            base_path: env::base_path(),
+            meta: &env::METADATA,
+            base_path: &env::BASE_PATH,
             id,
         }
     }

@@ -1,5 +1,5 @@
 use crate::db::write;
-use crate::env::base_path;
+use crate::env::BASE_PATH;
 use crate::errors::{Error, JsonErrorResponse};
 use crate::id::Id;
 use crate::AppState;
@@ -56,7 +56,7 @@ pub async fn insert(
     }
 
     let url = id.to_url_path(&entry);
-    let path = base_path().join(&url);
+    let path = BASE_PATH.join(&url);
     state.db.insert(id, entry).await?;
 
     Ok(Json::from(RedirectResponse { path }))

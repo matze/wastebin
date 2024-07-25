@@ -1,7 +1,7 @@
 use crate::cache::Key as CacheKey;
 use crate::crypto::Password;
 use crate::db::read::Entry;
-use crate::env::base_path;
+use crate::env::BASE_PATH;
 use crate::highlight::Html;
 use crate::routes::{form, json};
 use crate::{pages, AppState, Error};
@@ -233,5 +233,5 @@ pub async fn delete(
 
     state.db.delete(id).await?;
 
-    Ok(Redirect::to(base_path().path()))
+    Ok(Redirect::to(BASE_PATH.path()))
 }

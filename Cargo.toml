@@ -2,7 +2,7 @@
 name = "wastebin"
 version = "2.4.3"
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.80"
 
 [dependencies]
 askama = { version = "0.12", default-features = false, features = ["with-axum"] }

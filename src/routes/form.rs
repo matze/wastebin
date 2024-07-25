@@ -1,5 +1,5 @@
 use crate::db::write;
-use crate::env::base_path;
+use crate::env::BASE_PATH;
 use crate::id::Id;
 use crate::{pages, AppState, Error};
 use axum::extract::{Form, State};
@@ -70,7 +70,7 @@ pub async fn insert(
         url = format!("burn/{url}");
     }
 
-    let url_with_base = base_path().join(&url);
+    let url_with_base = BASE_PATH.join(&url);
 
     if let Some(max_exp) = state.max_expiration {
         entry.expires = entry

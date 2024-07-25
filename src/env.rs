@@ -4,7 +4,7 @@ use std::env::VarError;
 use std::net::SocketAddr;
 use std::num::{NonZeroUsize, ParseIntError};
 use std::path::PathBuf;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 use std::time::Duration;
 
 pub struct Metadata<'a> {
@@ -73,22 +73,47 @@ impl Default for BasePath {
     }
 }
 
-/// Retrieve reference to initialized metadata.
-pub fn metadata() -> &'static Metadata<'static> {
-    static DATA: OnceLock<Metadata> = OnceLock::new();
+pub static METADATA: LazyLock<Metadata> = LazyLock::new(|| {
+    let title = std::env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string());
+    let version = env!("CARGO_PKG_VERSION");
+    let highlight = &highlight::DATA;
 
-    DATA.get_or_init(|| {
-        let title = std::env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string());
-        let version = env!("CARGO_PKG_VERSION");
-        let highlight = &highlight::data();
+    Metadata {
+        title,
+        version,
+        highlight,
+    }
+});
 
-        Metadata {
-            title,
-            version,
-            highlight,
-        }
-    })
-}
+// NOTE: This relies on `VAR_BASE_URL` but repeates parsing to handle errors.
+pub static BASE_PATH: LazyLock<BasePath> = LazyLock::new(|| {
+    std::env::var(VAR_BASE_URL).map_or_else(
+        |err| {
+            match err {
+                VarError::NotPresent => (),
+                VarError::NotUnicode(_) => {
+                    tracing::warn!("`VAR_BASE_URL` not Unicode, defaulting to '/'");
+                }
+            };
+            BasePath::default()
+        },
+        |var| match url::Url::parse(&var) {
+            Ok(url) => {
+                let path = url.path();
+
+                if path.ends_with('/') {
+                    BasePath(path.to_string())
+                } else {
+                    BasePath(format!("{path}/"))
+                }
+            }
+            Err(err) => {
+                tracing::error!("error parsing `VAR_BASE_URL`, defaulting to '/': {err}");
+                BasePath::default()
+            }
+        },
+    )
+});
 
 pub fn cache_size() -> Result<NonZeroUsize, Error> {
     std::env::var(VAR_CACHE_SIZE)
@@ -143,40 +168,6 @@ pub fn base_url() -> Result<Option<url::Url>, Error> {
     )?;
 
     Ok(result)
-}
-
-pub fn base_path() -> &'static BasePath {
-    // NOTE: This relies on `VAR_BASE_URL` but repeates parsing to handle errors.
-    static BASE_PATH: OnceLock<BasePath> = OnceLock::new();
-
-    BASE_PATH.get_or_init(|| {
-        std::env::var(VAR_BASE_URL).map_or_else(
-            |err| {
-                match err {
-                    VarError::NotPresent => (),
-                    VarError::NotUnicode(_) => {
-                        tracing::warn!("`VAR_BASE_URL` not Unicode, defaulting to '/'");
-                    }
-                };
-                BasePath::default()
-            },
-            |var| match url::Url::parse(&var) {
-                Ok(url) => {
-                    let path = url.path();
-
-                    if path.ends_with('/') {
-                        BasePath(path.to_string())
-                    } else {
-                        BasePath(format!("{path}/"))
-                    }
-                }
-                Err(err) => {
-                    tracing::error!("error parsing `VAR_BASE_URL`, defaulting to '/': {err}");
-                    BasePath::default()
-                }
-            },
-        )
-    })
 }
 
 pub fn password_hash_salt() -> String {

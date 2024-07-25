@@ -23,7 +23,7 @@ pub fn routes() -> Router<AppState> {
 #[cfg(test)]
 mod tests {
     use crate::db::write::Entry;
-    use crate::env::base_path;
+    use crate::env::BASE_PATH;
     use crate::routes;
     use crate::test_helpers::{make_app, Client};
     use reqwest::{header, StatusCode};
@@ -33,7 +33,7 @@ mod tests {
     async fn unknown_paste() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new(make_app()?).await;
 
-        let res = client.get(&base_path().join("000000")).send().await?;
+        let res = client.get(&BASE_PATH.join("000000")).send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
         Ok(())
@@ -50,7 +50,7 @@ mod tests {
             password: "".to_string(),
         };
 
-        let res = client.post(base_path().path()).form(&data).send().await?;
+        let res = client.post(BASE_PATH.path()).form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
@@ -98,7 +98,7 @@ mod tests {
             password: "".to_string(),
         };
 
-        let res = client.post(base_path().path()).form(&data).send().await?;
+        let res = client.post(BASE_PATH.path()).form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
@@ -137,7 +137,7 @@ mod tests {
             password: password.to_string(),
         };
 
-        let res = client.post(base_path().path()).form(&data).send().await?;
+        let res = client.post(BASE_PATH.path()).form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
@@ -191,7 +191,7 @@ mod tests {
             ..Default::default()
         };
 
-        let res = client.post(base_path().path()).json(&entry).send().await?;
+        let res = client.post(BASE_PATH.path()).json(&entry).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
 
         let payload = res.json::<routes::json::RedirectResponse>().await?;
@@ -214,7 +214,7 @@ mod tests {
             ..Default::default()
         };
 
-        let res = client.post(base_path().path()).json(&entry).send().await?;
+        let res = client.post(BASE_PATH.path()).json(&entry).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
 
         let payload = res.json::<routes::json::RedirectResponse>().await?;
@@ -242,21 +242,21 @@ mod tests {
             password: "".to_string(),
         };
 
-        let res = client.post(base_path().path()).form(&data).send().await?;
+        let res = client.post(BASE_PATH.path()).form(&data).send().await?;
         let uid_cookie = res.cookies().find(|cookie| cookie.name() == "uid");
         assert!(uid_cookie.is_some());
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
-        let id = location.replace(base_path().path(), "");
+        let id = location.replace(BASE_PATH.path(), "");
 
         let res = client
-            .get(&base_path().join(&format!("delete/{id}")))
+            .get(&BASE_PATH.join(&format!("delete/{id}")))
             .send()
             .await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
-        let res = client.get(&base_path().join(&id)).send().await?;
+        let res = client.get(&BASE_PATH.join(&id)).send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
         Ok(())
@@ -273,7 +273,7 @@ mod tests {
             password: "".to_string(),
         };
 
-        let res = client.post(base_path().path()).form(&data).send().await?;
+        let res = client.post(BASE_PATH.path()).form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;

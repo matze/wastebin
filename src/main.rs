@@ -1,5 +1,6 @@
 use crate::cache::Cache;
 use crate::db::Database;
+use crate::env::BASE_PATH;
 use crate::errors::Error;
 use axum::extract::{DefaultBodyLimit, FromRef};
 use axum::Router;
@@ -12,8 +13,6 @@ use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 use url::Url;
-
-use self::env::base_path;
 
 mod cache;
 mod crypto;
@@ -43,9 +42,8 @@ impl FromRef<AppState> for Key {
 }
 
 pub(crate) fn make_app(max_body_size: usize, timeout: Duration) -> Router<AppState> {
-    let base_path = base_path();
     Router::new()
-        .nest(base_path.path(), routes::routes())
+        .nest(BASE_PATH.path(), routes::routes())
         .layer(
             ServiceBuilder::new()
                 .layer(DefaultBodyLimit::max(max_body_size))

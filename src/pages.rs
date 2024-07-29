@@ -38,13 +38,12 @@ pub struct Index<'a> {
     max_expiration: Option<u32>,
 }
 
-impl<'a> Default for Index<'a> {
-    fn default() -> Self {
+impl<'a> Index<'a> {
+    pub fn new(max_expiration: Option<u32>) -> Self {
         Self {
             meta: &env::METADATA,
             base_path: &env::BASE_PATH,
-            // exception should already have been handled in main
-            max_expiration: env::max_paste_expiration().expect("parsing max paste expiration"),
+            max_expiration,
         }
     }
 }

@@ -1,6 +1,6 @@
 use crate::pages::{Burn, Index};
 use crate::AppState;
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::routing::{get, Router};
 
 mod assets;
@@ -8,9 +8,13 @@ mod form;
 mod json;
 pub(crate) mod paste;
 
+async fn index<'a>(state: State<AppState>) -> Index<'a> {
+    Index::new(state.max_expiration.clone())
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/", get(|| async { Index::default() }).post(paste::insert))
+        .route("/", get(index).post(paste::insert))
         .route(
             "/:id",
             get(paste::get).post(paste::get).delete(paste::delete),

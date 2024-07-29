@@ -44,7 +44,7 @@ impl<'a> Default for Index<'a> {
             meta: &env::METADATA,
             base_path: &env::BASE_PATH,
             // exception should already have been handled in main
-            max_expiration: env::max_paste_expiration().unwrap(),
+            max_expiration: env::max_paste_expiration().expect("parsing max paste expiration"),
         }
     }
 }
@@ -61,19 +61,19 @@ impl std::fmt::Display for Expiration {
         match self {
             Expiration::None => write!(f, ""),
             Expiration::Burn => write!(f, "burn"),
-            Expiration::Time(t) => write!(f, "{}", t),
+            Expiration::Time(t) => write!(f, "{t}"),
         }
     }
 }
 
-const EXPIRATION_OPTIONS: [(&'static str, Expiration); 8] = [
+const EXPIRATION_OPTIONS: [(&str, Expiration); 8] = [
     ("never", Expiration::None),
     ("10 minutes", Expiration::Time(600)),
     ("1 hour", Expiration::Time(3600)),
     ("1 day", Expiration::Time(86400)),
-    ("1 week", Expiration::Time(604800)),
-    ("1 month", Expiration::Time(2592000)),
-    ("1 year", Expiration::Time(31536000)),
+    ("1 week", Expiration::Time(604_800)),
+    ("1 month", Expiration::Time(2_592_000)),
+    ("1 year", Expiration::Time(31_536_000)),
     ("🔥 after reading", Expiration::Burn),
 ];
 

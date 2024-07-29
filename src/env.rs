@@ -188,9 +188,11 @@ pub fn max_paste_expiration() -> Result<Option<u32>, Error> {
         .ok()
         .and_then(|raw_max_exp| -> Option<Result<u32, Error>> {
             match raw_max_exp.parse::<i64>() {
-                Ok(max_exp) if max_exp == -1 => None,
-                Ok(max_exp) if max_exp >= u32::MAX as i64 => Some(Err(Error::ExpirationTooLarge)),
-                Ok(max_exp) => Some(Ok(max_exp as u32)),
+                Ok(-1) => None,
+                Ok(max_exp) if max_exp >= i64::from(u32::MAX) => {
+                    Some(Err(Error::ExpirationTooLarge))
+                }
+                Ok(max_exp) => Some(Ok(u32::try_from(max_exp).expect("fitting value"))),
                 Err(why) => Some(Err(Error::MaxPasteExpiration(why))),
             }
         })

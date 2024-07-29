@@ -47,11 +47,6 @@ pub enum Error {
     HttpTimeout(ParseIntError),
     #[error("failed to parse {VAR_MAX_PASTE_EXPIRATION}: {0}")]
     MaxPasteExpiration(ParseIntError),
-    #[error(
-        "{VAR_MAX_PASTE_EXPIRATION} is too large (max {}), pass -1 if you mean no expiry",
-        u32::MAX
-    )]
-    ExpirationTooLarge,
 }
 
 pub struct BasePath(String);
@@ -186,15 +181,6 @@ pub fn http_timeout() -> Result<Duration, Error> {
 pub fn max_paste_expiration() -> Result<Option<u32>, Error> {
     std::env::var(VAR_MAX_PASTE_EXPIRATION)
         .ok()
-        .and_then(|raw_max_exp| -> Option<Result<u32, Error>> {
-            match raw_max_exp.parse::<i64>() {
-                Ok(-1) => None,
-                Ok(max_exp) if max_exp >= i64::from(u32::MAX) => {
-                    Some(Err(Error::ExpirationTooLarge))
-                }
-                Ok(max_exp) => Some(Ok(u32::try_from(max_exp).expect("fitting value"))),
-                Err(why) => Some(Err(Error::MaxPasteExpiration(why))),
-            }
-        })
+        .map(|value| value.parse::<u32>().map_err(Error::MaxPasteExpiration))
         .transpose()
 }

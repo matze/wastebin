@@ -10,14 +10,18 @@
     {% block head %}{% endblock %}
   </head>
   <body>
-    <header>
-      <span id="nav-title"><a href="{{ base_path.path() }}"><button>home</button></a></span>
-      <nav>
-        <ul>
-          {% block nav %}{% endblock %}
-        </ul>
-      </nav>
-    </header>
-    {% block content %}{% endblock %}
+    <div id="main-container">
+      <header>
+        <span id="nav-title"><a href="{{ base_path.path() }}"><button>home</button></a></span>
+        <nav>
+          <ul>
+            {% block nav %}{% endblock %}
+          </ul>
+        </nav>
+      </header>
+      <content>
+        {% block content %}{% endblock %}
+      </content>
+    </div>
   </body>
 </html>

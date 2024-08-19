@@ -40,24 +40,19 @@ contained `wastebin` binary.
 
 ### Build a container image
 
-It's possible to build container image using Docker or Podman.
-
-Assuming you're in the root directory of repository:
-* Docker
+It's possible to build a container image using Docker or Podman. Assuming you're in the root directory of repository run
 ```bash
-$ sudo docker build \
-    -t wastebin:v2.4.3 \
-    -f Dockerfile .
+$ sudo docker build -t wastebin:v2.4.3 -f Dockerfile .
 ```
-* Podman
+for Docker or
 ```bash
-$ podman build \
-    -t wastebin:v2.4.3 \
-    -f Dockerfile
+$ podman build -t wastebin:v2.4.3 -f Dockerfile
 ```
+for Podman.
 
 To cross-compile, make sure that your container engine of choice supports it,
 e.g. Docker:
+
 ```bash
 $ sudo docker buildx ls
 NAME/NODE     DRIVER/ENDPOINT   STATUS    BUILDKIT   PLATFORMS
@@ -65,18 +60,13 @@ default*      docker
  \_ default    \_ default       running   v0.14.1    linux/amd64, linux/amd64/v2, linux/386, linux/arm64, linux/riscv64, linux/ppc64, linux/ppc64le, linux/s390x, linux/mips64le, linux/mips64, linux/loong64, linux/arm/v7, linux/arm/v6
 ```
 
-To compile arm64 image on x86_64(amd64) host:
-* Docker
+To build an arm64 image on an x86_64 host run
 ```bash
-$ sudo docker build --platform linux/arm64 \
-    -t wastebin:v2.4.3-arm64 \
-    -f Dockerfile.arm .
+$ sudo docker build --platform linux/arm64 -t wastebin:v2.4.3-arm64 -f Dockerfile.arm .
 ```
-* Podman
+or 
 ```bash
-$ podman build --arch=arm64 \
-    -t wastebin:v2.4.3-arm64 \
-    -f Dockerfile.arm
+$ podman build --arch=arm64 -t wastebin:v2.4.3-arm64 -f Dockerfile.arm
 ```
 
 ### Run a Docker image
@@ -93,6 +83,7 @@ shell nor with `TMPDIR` being set. If database migrations fail with an extended
 sqlite error code 6410, pass `TMPDIR` pointing to a location, sqlite can write
 to.
 
+
 ### Run with docker-compose
 ```
 version: '3.3'
@@ -108,16 +99,18 @@ services:
 ```
 Make sure the `./data` folder is writable by the user 10001.
 
+
 ### Run with Nix
 
 For Nix users, a `flake.nix` is also provided. Build and execute it directly
 with:
 
-```sh
+```bash
 nix run 'github:matze/wastebin#wastebin'
 ```
 
 Or install the provided `wastebin` package like you normally would.
+
 
 ## Usage
 

@@ -2,9 +2,22 @@
 
 ## Unreleased
 
+
+## 2.5.0
+
+**2024-08-19**
+
 ### Added
 
+- Possibility to serve from some subdomain via the `WASTEBIN_BASE_URL`
+  environment variable.
+- Possibility to limit maximum paste expiration with the
+  `WASTEBIN_MAX_PASTE_EXPIRATION` environment variable.
 - Open button to read local file into input.
+
+### Changed
+
+- Improve container layout and CSS.
 
 
 ## 2.4.3

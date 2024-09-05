@@ -9,7 +9,7 @@ mod json;
 pub(crate) mod paste;
 
 async fn index<'a>(state: State<AppState>) -> Index<'a> {
-    Index::new(state.max_expiration.clone())
+    Index::new(state.max_expiration)
 }
 
 pub fn routes() -> Router<AppState> {

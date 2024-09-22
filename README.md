@@ -64,7 +64,7 @@ To build an arm64 image on an x86_64 host run
 ```bash
 $ sudo docker build --platform linux/arm64 -t wastebin:v2.4.3-arm64 -f Dockerfile.arm .
 ```
-or 
+or
 ```bash
 $ podman build --arch=arm64 -t wastebin:v2.4.3-arm64 -f Dockerfile.arm
 ```

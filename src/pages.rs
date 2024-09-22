@@ -164,6 +164,15 @@ impl<'a> Encrypted<'a> {
     }
 }
 
+/// Return module coordinates that are dark.
+fn dark_modules(code: &qrcodegen::QrCode) -> Vec<(i32, i32)> {
+    let size = code.size();
+    (0..size)
+        .flat_map(|x| (0..size).map(move |y| (x, y)))
+        .filter(|(x, y)| code.get_module(*x, *y))
+        .collect()
+}
+
 /// Paste view showing the formatted paste as well as a bunch of links.
 #[derive(Template)]
 #[template(path = "qr.html", escape = "none")]
@@ -189,32 +198,33 @@ impl<'a> Qr<'a> {
         }
     }
 
-    // Return module coordinates that are dark.
     fn dark_modules(&self) -> Vec<(i32, i32)> {
-        let size = self.code.size();
-        (0..size)
-            .flat_map(|x| (0..size).map(move |y| (x, y)))
-            .filter(|(x, y)| self.code.get_module(*x, *y))
-            .collect()
+        dark_modules(&self.code)
     }
 }
 
 /// Burn page shown if "burn-after-reading" was selected during insertion.
 #[derive(Template)]
-#[template(path = "burn.html")]
+#[template(path = "burn.html", escape = "none")]
 pub struct Burn<'a> {
     meta: &'a env::Metadata<'a>,
     base_path: &'static env::BasePath,
     id: String,
+    code: qrcodegen::QrCode,
 }
 
 impl<'a> Burn<'a> {
     /// Construct new burn page linking to `id`.
-    pub fn new(id: String) -> Self {
+    pub fn new(code: qrcodegen::QrCode, id: String) -> Self {
         Self {
             meta: &env::METADATA,
             base_path: &env::BASE_PATH,
             id,
+            code,
         }
+    }
+
+    fn dark_modules(&self) -> Vec<(i32, i32)> {
+        dark_modules(&self.code)
     }
 }

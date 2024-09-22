@@ -3,6 +3,7 @@ use crate::crypto::Password;
 use crate::db::read::Entry;
 use crate::env::BASE_PATH;
 use crate::highlight::Html;
+use crate::pages::Burn;
 use crate::routes::{form, json};
 use crate::{pages, AppState, Error};
 use axum::body::Body;
@@ -234,4 +235,17 @@ pub async fn delete(
     state.db.delete(id).await?;
 
     Ok(Redirect::to(BASE_PATH.path()))
+}
+
+pub async fn burn_created(
+    Path(id): Path<String>,
+    headers: HeaderMap,
+    state: State<AppState>,
+) -> Result<impl IntoResponse, pages::ErrorResponse<'static>> {
+    let id_clone = id.clone();
+    let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state.0, &headers, &id))
+        .await
+        .map_err(Error::from)??;
+
+    Ok(Burn::new(qr_code, id_clone))
 }

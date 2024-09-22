@@ -1,6 +1,6 @@
-use crate::pages::{Burn, Index};
+use crate::pages::Index;
 use crate::AppState;
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::routing::{get, Router};
 
 mod assets;
@@ -19,7 +19,7 @@ pub fn routes() -> Router<AppState> {
             "/:id",
             get(paste::get).post(paste::get).delete(paste::delete),
         )
-        .route("/burn/:id", get(|Path(id)| async { Burn::new(id) }))
+        .route("/burn/:id", get(paste::burn_created))
         .route("/delete/:id", get(paste::delete))
         .merge(assets::routes())
 }

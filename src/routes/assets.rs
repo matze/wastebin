@@ -13,15 +13,15 @@ fn css_headers() -> impl IntoResponseParts {
 }
 
 fn style_css() -> impl IntoResponse {
-    (css_headers(), DATA.style.content.to_string())
+    (css_headers(), DATA.style.content)
 }
 
 fn dark_css() -> impl IntoResponse {
-    (css_headers(), DATA.dark.content.to_string())
+    (css_headers(), DATA.dark.content)
 }
 
 fn light_css() -> impl IntoResponse {
-    (css_headers(), DATA.light.content.to_string())
+    (css_headers(), DATA.light.content)
 }
 
 fn favicon() -> impl IntoResponse {

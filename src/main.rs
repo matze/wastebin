@@ -106,6 +106,8 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("serving on {addr}");
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
+    tracing::debug!("enforcing a http timeout of {timeout:#?}");
+    tracing::debug!("maximum expiration time of {max_expiration:?} seconds");
 
     let service = make_app(max_body_size, timeout).with_state(state);
     let listener = TcpListener::bind(&addr).await?;

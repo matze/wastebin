@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Use NonZero internally for data where 0 is not a valid value and
+  any special meaning in expressed via an outer Option.
+
 
 ## 2.5.0
 

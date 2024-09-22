@@ -68,6 +68,7 @@ pub mod write {
     use async_compression::tokio::bufread::ZstdEncoder;
     use serde::{Deserialize, Serialize};
     use std::io::Cursor;
+    use std::num::NonZeroU32;
     use tokio::io::{AsyncReadExt, BufReader};
 
     /// An uncompressed entry to be inserted into the database.
@@ -78,7 +79,7 @@ pub mod write {
         /// File extension
         pub extension: Option<String>,
         /// Expiration in seconds from now
-        pub expires: Option<u32>,
+        pub expires: Option<NonZeroU32>,
         /// Delete if read
         pub burn_after_reading: Option<bool>,
         /// User identifier that inserted the entry
@@ -364,6 +365,8 @@ impl Database {
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZero;
+
     use super::*;
 
     fn new_db() -> Result<Database, Box<dyn std::error::Error>> {
@@ -399,7 +402,7 @@ mod tests {
         let db = new_db()?;
 
         let entry = write::Entry {
-            expires: Some(1),
+            expires: Some(NonZero::new(1).unwrap()),
             ..Default::default()
         };
 

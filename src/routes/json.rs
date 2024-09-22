@@ -1,3 +1,5 @@
+use std::num::NonZeroU32;
+
 use crate::db::write;
 use crate::env::BASE_PATH;
 use crate::errors::{Error, JsonErrorResponse};
@@ -12,7 +14,7 @@ use serde::{Deserialize, Serialize};
 pub struct Entry {
     pub text: String,
     pub extension: Option<String>,
-    pub expires: Option<u32>,
+    pub expires: Option<NonZeroU32>,
     pub burn_after_reading: Option<bool>,
     pub password: Option<String>,
 }

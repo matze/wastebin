@@ -5,6 +5,7 @@ use crate::errors::Error;
 use axum::extract::{DefaultBodyLimit, FromRef};
 use axum::Router;
 use axum_extra::extract::cookie::Key;
+use std::num::NonZeroU32;
 use std::process::ExitCode;
 use std::time::Duration;
 use tokio::net::TcpListener;
@@ -32,7 +33,7 @@ pub struct AppState {
     cache: Cache,
     key: Key,
     base_url: Option<Url>,
-    max_expiration: Option<u32>,
+    max_expiration: Option<NonZeroU32>,
 }
 
 impl FromRef<AppState> for Key {

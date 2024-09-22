@@ -43,7 +43,19 @@ tower-service = "0"
 unsafe_code = "forbid"
 
 [lints.clippy]
+cast_possible_truncation = "deny"
+cast_possible_wrap = "deny"
+cast_sign_loss = "deny"
+enum_glob_use = "deny"
+if_not_else = "deny"
+items_after_statements = "deny"
+mut_mut = "deny"
+panic = "deny"
+print_stdout = "deny"
+similar_names = "deny"
+unicode_not_nfc = "deny"
 unwrap_used = "deny"
+used_underscore_binding = "deny"
 
 [profile.release]
 strip = "debuginfo"

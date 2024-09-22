@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Breaking**: Expand the domain for IDs from 2^32 to 2^64,
+  resulting in keys of length 11 instead of 6.
+  Old 6 character keys are still accepted for existing links.
+  Existing Database entries are not affected.
+
 
 ## 2.7.0
 

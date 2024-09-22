@@ -1,3 +1,5 @@
+use std::num::NonZeroU32;
+
 use crate::db::write;
 use crate::env::BASE_PATH;
 use crate::id::Id;
@@ -21,8 +23,8 @@ impl From<Entry> for write::Entry {
         let burn_after_reading = Some(entry.expires == "burn");
         let password = (!entry.password.is_empty()).then_some(entry.password);
 
-        let expires = match entry.expires.parse::<u32>() {
-            Ok(0) | Err(_) => None,
+        let expires = match entry.expires.parse::<NonZeroU32>() {
+            Err(_) => None,
             Ok(secs) => Some(secs),
         };
 

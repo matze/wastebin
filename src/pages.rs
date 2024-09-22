@@ -1,3 +1,6 @@
+use std::num::NonZero;
+use std::num::NonZeroU32;
+
 use crate::cache::Key as CacheKey;
 use crate::env;
 use crate::highlight::Html;
@@ -35,11 +38,11 @@ impl From<crate::Error> for ErrorResponse<'_> {
 pub struct Index<'a> {
     meta: &'a env::Metadata<'a>,
     base_path: &'static env::BasePath,
-    max_expiration: Option<u32>,
+    max_expiration: Option<NonZeroU32>,
 }
 
 impl<'a> Index<'a> {
-    pub fn new(max_expiration: Option<u32>) -> Self {
+    pub fn new(max_expiration: Option<NonZeroU32>) -> Self {
         Self {
             meta: &env::METADATA,
             base_path: &env::BASE_PATH,
@@ -52,7 +55,7 @@ impl<'a> Index<'a> {
 enum Expiration {
     None,
     Burn,
-    Time(u32),
+    Time(NonZeroU32),
 }
 
 impl std::fmt::Display for Expiration {
@@ -65,14 +68,24 @@ impl std::fmt::Display for Expiration {
     }
 }
 
+// TODO: replace once Option::expect is const (https://github.com/rust-lang/rust/issues/67441) to construct EXPIRATION_OPTIONS
+macro_rules! nonzero {
+    ($value:literal) => {
+        match NonZero::new($value) {
+            Some(v) => v,
+            None => unreachable!(),
+        }
+    };
+}
+
 const EXPIRATION_OPTIONS: [(&str, Expiration); 8] = [
     ("never", Expiration::None),
-    ("10 minutes", Expiration::Time(600)),
-    ("1 hour", Expiration::Time(3600)),
-    ("1 day", Expiration::Time(86400)),
-    ("1 week", Expiration::Time(604_800)),
-    ("1 month", Expiration::Time(2_592_000)),
-    ("1 year", Expiration::Time(31_536_000)),
+    ("10 minutes", Expiration::Time(nonzero!(600))),
+    ("1 hour", Expiration::Time(nonzero!(3600))),
+    ("1 day", Expiration::Time(nonzero!(86400))),
+    ("1 week", Expiration::Time(nonzero!(604_800))),
+    ("1 month", Expiration::Time(nonzero!(2_592_000))),
+    ("1 year", Expiration::Time(nonzero!(31_536_000))),
     ("🔥 after reading", Expiration::Burn),
 ];
 

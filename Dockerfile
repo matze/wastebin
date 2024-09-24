@@ -1,10 +1,12 @@
 # --- build stage ---
 FROM rust:1.80 AS builder
 
+# Install the necessary build tools including musl-cross for cross-compilation
+RUN apt-get update && \
+    apt-get install -y musl-tools musl-dev gcc-aarch64-linux-gnu gcc-x86-64-linux-gnu musl-cross
+
 # Add targets for both aarch64 and x86_64
 RUN rustup target add aarch64-unknown-linux-musl x86_64-unknown-linux-musl && \
-    apt-get update && \
-    apt-get install -y musl-tools musl-dev && \
     update-ca-certificates
 
 ENV USER=app
@@ -24,6 +26,7 @@ COPY . .
 # Build both binaries for both architectures
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
+    CC_aarch64_unknown_linux_musl=aarch64-linux-musl-gcc \
     cargo build --target aarch64-unknown-linux-musl --release && \
     cargo build --target x86_64-unknown-linux-musl --release
 

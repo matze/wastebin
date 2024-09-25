@@ -80,7 +80,7 @@ pub static METADATA: LazyLock<Metadata> = LazyLock::new(|| {
     }
 });
 
-// NOTE: This relies on `VAR_BASE_URL` but repeates parsing to handle errors.
+// NOTE: This relies on `VAR_BASE_URL` but repeats parsing to handle errors.
 pub static BASE_PATH: LazyLock<BasePath> = LazyLock::new(|| {
     std::env::var(VAR_BASE_URL).map_or_else(
         |err| {

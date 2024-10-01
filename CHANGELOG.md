@@ -4,6 +4,10 @@
 
 ### Changed
 
+- **Breaking**: Expand the domain for IDs from 2^32 to 2^64,
+  resulting in keys of length 11 instead of 6.
+  Old 6 character keys are still accepted for existing links.
+  Existing Database entries are not affected.
 - Use NonZero internally for data where 0 is not a valid value and
   any special meaning in expressed via an outer Option.
 

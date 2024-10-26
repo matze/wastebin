@@ -125,6 +125,9 @@ When viewing a paste, you can use
 * <kbd>p</kbd> to view the formatted paste,
 * <kbd>?</kbd> to view the list of keybindings.
 
+To paste some text you can also use the <kbd>ctrl</kbd>+<kbd>s</kbd> key
+combination.
+
 
 ### Configuration
 

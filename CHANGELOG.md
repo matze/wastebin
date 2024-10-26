@@ -2,10 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+- <kbd>ctrl</kbd>+<kbd>s</kbd> binding to store a paste.
+
 ### Changed
 
 - Use NonZero internally for data where 0 is not a valid value and
   any special meaning in expressed via an outer Option.
+- Show QR code on the page after submitting a burn-after-reading paste.
 
 
 ## 2.5.0

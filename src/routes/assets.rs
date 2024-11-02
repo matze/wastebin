@@ -35,7 +35,7 @@ fn favicon() -> impl IntoResponse {
 pub fn routes() -> Router<AppState> {
     let style_name = &DATA.style.name;
     Router::new()
-        .route("/favicon.png", get(|| async { favicon() }))
+        .route("/favicon.ico", get(|| async { favicon() }))
         .route(&format!("/{style_name}"), get(|| async { style_css() }))
         .route("/dark.css", get(|| async { dark_css() }))
         .route("/light.css", get(|| async { light_css() }))

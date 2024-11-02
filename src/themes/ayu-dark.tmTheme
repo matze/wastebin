@@ -269,7 +269,7 @@ a {
 			<key>name</key>
 			<string>Entity name</string>
 			<key>scope</key>
-			<string>entity.name - (entity.name.section | entity.name.tag | entity.name.label)</string>
+			<string>entity.name.section | entity.name.tag | entity.name.label</string>
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>

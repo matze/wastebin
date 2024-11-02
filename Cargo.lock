@@ -1937,6 +1937,7 @@ dependencies = [
  "bytes",
  "chacha20poly1305",
  "hex",
+ "http",
  "lru",
  "mime",
  "parking_lot",

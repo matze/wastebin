@@ -5,6 +5,8 @@
     <meta name="generator" content="wastebin {{ meta.version }}"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <title>{{ meta.title }}</title>
+    <link rel="preload" as="style" href="dark.css" />
+    <link rel="preload" as="style" href="light.css" />
     <link rel="stylesheet" href="{{ base_path.join(meta.highlight.style.name) }}">
     <link rel="icon" href="{{ base_path.join("favicon.png") }}" type="image/png">
     {% block head %}{% endblock %}

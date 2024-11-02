@@ -54,7 +54,7 @@ header {
   padding: 0 1em 0 1em;
 }
 
-content {
+main {
   flex-grow: 1;
   padding: 1em 2em 1em 2em;
 }

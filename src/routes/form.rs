@@ -6,7 +6,7 @@ use crate::id::Id;
 use crate::{pages, AppState, Error};
 use axum::extract::{Form, State};
 use axum::response::Redirect;
-use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
+use axum_extra::extract::cookie::{Cookie, SameSite, SignedCookieJar};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
@@ -43,6 +43,7 @@ pub async fn insert(
     state: State<AppState>,
     jar: SignedCookieJar,
     Form(entry): Form<Entry>,
+    is_https: bool,
 ) -> Result<(SignedCookieJar, Redirect), pages::ErrorResponse<'static>> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
@@ -82,6 +83,12 @@ pub async fn insert(
 
     state.db.insert(id, entry).await?;
 
-    let jar = jar.add(Cookie::new("uid", uid.to_string()));
+    let cookie = Cookie::build(("uid", uid.to_string()))
+        .http_only(true)
+        .secure(is_https)
+        .same_site(SameSite::Strict)
+        .build();
+
+    let jar = jar.add(cookie);
     Ok((jar, Redirect::to(&url_with_base)))
 }

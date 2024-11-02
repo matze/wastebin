@@ -33,6 +33,7 @@ tracing-subscriber = "0"
 url = "2"
 zstd = "0.13"
 parking_lot = "0.12.1"
+http = "1.1.0"
 
 [dev-dependencies]
 reqwest = { version = "0", default-features = false, features = ["cookies", "json"] }

@@ -218,6 +218,7 @@ td.line-number {
 
 .line-number {
   padding-right: 1em;
+  text-align: right;
 }
 
 .line-number > a, .line-number > a:visited {
@@ -231,6 +232,8 @@ td.line-number {
 .line {
   word-wrap: normal;
   white-space: pre;
+  margin-top: 0px;
+  margin-bottom: 0px;
 }
 
 .center {

@@ -39,8 +39,10 @@ pub enum Error {
     UrlParsing(#[from] url::ParseError),
     #[error("argon2 error: {0}")]
     Argon2(#[from] argon2::Error),
+    #[error("encryption failed")]
+    ChaCha20Poly1305Encrypt,
     #[error("decryption failed")]
-    ChaCha20Poly1305,
+    ChaCha20Poly1305Decrypt,
     #[error("password not given")]
     NoPassword,
 }
@@ -72,9 +74,9 @@ impl From<Error> for StatusCode {
             | Error::SyntaxHighlighting(_)
             | Error::SyntaxParsing(_)
             | Error::Argon2(_)
-            | Error::ChaCha20Poly1305
+            | Error::ChaCha20Poly1305Encrypt
             | Error::Axum(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Error::Delete => StatusCode::FORBIDDEN,
+            Error::Delete | Error::ChaCha20Poly1305Decrypt => StatusCode::FORBIDDEN,
         }
     }
 }

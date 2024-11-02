@@ -1,5 +1,6 @@
 use std::num::NonZero;
 use std::num::NonZeroU32;
+use std::sync::OnceLock;
 
 use crate::cache::Key as CacheKey;
 use crate::env;
@@ -90,31 +91,36 @@ const EXPIRATION_OPTIONS: [(&str, Expiration); 8] = [
 ];
 
 impl<'a> Index<'a> {
-    fn expiry_options(&self) -> String {
-        let mut option_set = String::new();
-        let mut wrote_first = false;
+    fn expiry_options(&self) -> &str {
+        static EXPIRATION_OPTIONS_HTML: OnceLock<String> = OnceLock::new();
 
-        option_set.push('\n');
+        EXPIRATION_OPTIONS_HTML.get_or_init(|| {
 
-        for (opt_name, opt_val) in EXPIRATION_OPTIONS {
-            if self.max_expiration.is_none()
-                || opt_val == Expiration::Burn
-                || matches!((self.max_expiration, opt_val), (Some(exp), Expiration::Time(time)) if time <= exp)
-            {
-                option_set.push_str("<option");
-                if !wrote_first {
-                    option_set.push_str(" selected");
-                    wrote_first = true;
+            let mut option_set = String::new();
+            let mut wrote_first = false;
+
+            option_set.push('\n');
+
+            for (opt_name, opt_val) in EXPIRATION_OPTIONS {
+                if self.max_expiration.is_none()
+                    || opt_val == Expiration::Burn
+                    || matches!((self.max_expiration, opt_val), (Some(exp), Expiration::Time(time)) if time <= exp)
+                {
+                    option_set.push_str("<option");
+                    if !wrote_first {
+                        option_set.push_str(" selected");
+                        wrote_first = true;
+                    }
+                    option_set.push_str(" value=\"");
+                    option_set.push_str(opt_val.to_string().as_ref());
+                    option_set.push_str("\">");
+                    option_set.push_str(opt_name);
+                    option_set.push_str("</option>\n");
                 }
-                option_set.push_str(" value=\"");
-                option_set.push_str(opt_val.to_string().as_ref());
-                option_set.push_str("\">");
-                option_set.push_str(opt_name);
-                option_set.push_str("</option>\n");
             }
-        }
 
-        option_set
+            option_set
+        })
     }
 }
 

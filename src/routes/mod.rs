@@ -26,6 +26,8 @@ pub fn routes() -> Router<AppState> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use crate::db::write::Entry;
     use crate::env::BASE_PATH;
     use crate::routes;
@@ -87,6 +89,19 @@ mod tests {
 
         let content = res.text().await?;
         assert_eq!(content, "FooBarBaz");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn insert_via_form_fail() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(make_app()?).await;
+
+        let mut data = HashMap::new();
+        data.insert("Hello", "World");
+
+        let res = client.post(BASE_PATH.path()).form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
 
         Ok(())
     }
@@ -203,6 +218,18 @@ mod tests {
         let res = client.get(&payload.path).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(res.text().await?, "FooBarBaz");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn insert_via_json_fail() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(make_app()?).await;
+
+        let entry = "Hello World";
+
+        let res = client.post(BASE_PATH.path()).json(&entry).send().await?;
+        assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
 
         Ok(())
     }

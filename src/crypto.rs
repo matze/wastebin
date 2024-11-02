@@ -57,7 +57,7 @@ impl Encrypted {
             let nonce = XChaCha20Poly1305::generate_nonce(&mut OsRng);
             let ciphertext = cipher
                 .encrypt(&nonce, plaintext.0.as_ref())
-                .map_err(|_| Error::ChaCha20Poly1305)?;
+                .map_err(|_| Error::ChaCha20Poly1305Encrypt)?;
 
             Ok(Self {
                 ciphertext,
@@ -73,7 +73,7 @@ impl Encrypted {
             let nonce = XNonce::from_slice(&self.nonce);
             let plaintext = cipher
                 .decrypt(nonce, self.ciphertext.as_ref())
-                .map_err(|_| Error::ChaCha20Poly1305)?;
+                .map_err(|_| Error::ChaCha20Poly1305Decrypt)?;
             Ok(plaintext)
         })
         .await?

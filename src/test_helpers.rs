@@ -5,10 +5,12 @@ use axum::extract::Request;
 use axum::response::Response;
 use axum::Router;
 use axum_extra::extract::cookie::Key;
+use ratelimit::Ratelimiter;
 use reqwest::RequestBuilder;
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::num::NonZeroUsize;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::TcpListener;
 use tower::make::Shared;
@@ -64,6 +66,14 @@ pub(crate) fn make_app() -> Result<Router, Box<dyn std::error::Error>> {
         key,
         base_url,
         max_expiration: None,
+        ratelimit_insert: Some(Arc::new(
+            Ratelimiter::builder(60, Duration::from_secs(1))
+                .max_tokens(60)
+                .initial_available(60)
+                .build()
+                .unwrap(),
+        )),
+        ratelimit_delete: None,
     };
 
     Ok(crate::make_app(4096, Duration::new(30, 0)).with_state(state))

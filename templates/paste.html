@@ -47,9 +47,9 @@
 
 {% block nav %}
   {% if can_delete %}
-    <li><a href="{{ base_path.join("delete/") }}{{ id }}"><button>delete</button></a></li>
+    <li><a href="{{ base_path.join("delete/") }}{{ id }}" class="navigation">delete</a></li>
   {% endif %}
-    <li><a href="{{ base_path.join(id) }}?dl={{ ext }}"><button>download</button></a></li>
-    <li><a href="{{ base_path.join(id) }}?fmt=raw"><button>raw</button></a></li>
-    <li><a href="{{ base_path.join(id) }}?fmt=qr"><button>qr</button></a></li>
+    <li><a href="{{ base_path.join(id) }}?dl={{ ext }}" class="navigation">download</a></li>
+    <li><a href="{{ base_path.join(id) }}?fmt=raw" class="navigation">raw</a></li>
+    <li><a href="{{ base_path.join(id) }}?fmt=qr" class="navigation">qr</a></li>
 {% endblock %}

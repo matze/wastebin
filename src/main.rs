@@ -3,8 +3,14 @@ use crate::db::Database;
 use crate::env::BASE_PATH;
 use crate::errors::Error;
 use axum::extract::{DefaultBodyLimit, FromRef};
+use axum::http::HeaderValue;
+use axum::middleware::from_fn;
 use axum::Router;
 use axum_extra::extract::cookie::Key;
+use http::header::{
+    CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
+    X_XSS_PROTECTION,
+};
 use std::num::NonZeroU32;
 use std::process::ExitCode;
 use std::time::Duration;
@@ -27,6 +33,8 @@ pub(crate) mod routes;
 #[cfg(test)]
 mod test_helpers;
 
+static PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
+
 #[derive(Clone)]
 pub struct AppState {
     db: Database,
@@ -42,6 +50,38 @@ impl FromRef<AppState> for Key {
     }
 }
 
+async fn security_headers_layer(
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> Result<axum::response::Response, axum::http::StatusCode> {
+    let mut response = next.run(req).await;
+
+    let headers = response.headers_mut();
+
+    macro_rules! add {
+        ($name:literal, $value:literal) => {
+            headers.insert($name, HeaderValue::from_static($value));
+        };
+        ($name:ident, $value:literal) => {
+            headers.insert($name, HeaderValue::from_static($value));
+        };
+        ($name:ident, $value:ident) => {
+            headers.insert($name, HeaderValue::from_static($value));
+        };
+    }
+
+    add!(SERVER, PACKAGE_NAME);
+
+    add!(CONTENT_SECURITY_POLICY,"default-src 'none'; script-src 'self'; img-src 'self' data: ; style-src 'self' data: ; font-src 'self' data: ; object-src 'none' ; base-uri 'none' ; frame-ancestors 'none' ; form-action 'self' ;");
+    add!(REFERRER_POLICY, "same-origin");
+    add!(X_CONTENT_TYPE_OPTIONS, "nosniff");
+    add!(X_FRAME_OPTIONS, "SAMEORIGIN");
+    add!("x-permitted-cross-domain-policies", "none");
+    add!(X_XSS_PROTECTION, "1; mode=block");
+
+    Ok(response)
+}
+
 pub(crate) fn make_app(max_body_size: usize, timeout: Duration) -> Router<AppState> {
     Router::new()
         .nest(BASE_PATH.path(), routes::routes())
@@ -51,7 +91,8 @@ pub(crate) fn make_app(max_body_size: usize, timeout: Duration) -> Router<AppSta
                 .layer(DefaultBodyLimit::disable())
                 .layer(CompressionLayer::new())
                 .layer(TraceLayer::new_for_http())
-                .layer(TimeoutLayer::new(timeout)),
+                .layer(TimeoutLayer::new(timeout))
+                .layer(from_fn(security_headers_layer)),
         )
 }
 

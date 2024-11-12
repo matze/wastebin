@@ -15,7 +15,8 @@ pub struct Metadata<'a> {
 
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
-pub const CSS_MAX_AGE: Duration = Duration::from_secs(60 * 60 * 24 * 30 * 6);
+pub const CSS_MAX_AGE: Duration = Duration::from_secs(60 * 60 * 24 * 30 * 6); // 6 month
+pub const JS_MAX_AGE: Duration = Duration::from_secs(60 * 60 * 24 * 30 * 6); // 6 month
 
 pub const FAVICON_MAX_AGE: Duration = Duration::from_secs(86400);
 

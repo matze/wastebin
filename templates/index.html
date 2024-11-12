@@ -1,76 +1,18 @@
 {% extends "base.html" %}
 
 {% block head %}
-<script>
-  function dropHandler(ev) {
-    ev.preventDefault();
-
-    let textarea = document.getElementById('text');
-
-    if (ev.dataTransfer.items) {
-      const item = ev.dataTransfer.items[0];
-
-      if (item.kind === 'file') {
-        item.getAsFile().text().then((value) => textarea.value = value);
-      }
-    } else {
-      const item = ev.dataTransfer.files[0];
-      item.text().then((value) => textarea.value = value);
-    }
-  }
-
-  function dragOverHandler(ev) {
-    ev.preventDefault();
-  }
-
-  function keyDownHandler(ev) {
-    if (ev.ctrlKey && ev.key == 's') {
-      ev.preventDefault();
-
-      let textarea = document.getElementById('text');
-      textarea.form.submit();
-    }
-  }
-
-  function openFile() {
-    let input = document.createElement("input");
-    input.type = "file";
-    input.onchange = ev => {
-      const item = ev.target.files[0];
-
-      let textarea = document.getElementById('text');
-      item.text().then((value) => textarea.value = value);
-    };
-
-    input.click();
-  }
-
-  function filterLangs(ev) {
-    ev.preventDefault();
-    let langs = document.getElementById("langs");
-    const term = document.getElementById("filter").value.toLowerCase();
-
-    for (option of langs) {
-      if (option.innerText.toLowerCase().includes(term)) {
-        option.style.display = "";
-      }
-      else {
-        option.style.display = "none";
-      }
-    }
-  }
-</script>
+<script defer src="{{ base_path.join("index.js") }}"></script>
 {% endblock %}
 
 {% block nav %}
-    <li><button onclick="openFile()" class="navigation">open</button></li>
+    <li><button id="open" class="navigation">open</button></li>
 {% endblock %}
 
 {%- block content -%}
-    <form action="{{ base_path.path() }}" method="post" style="height: 100%;">
+    <form id="form" action="{{ base_path.path() }}" method="post">
       <div class="container">
         <div class="content">
-          <textarea id="text" name="text" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text or drop file here>" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);" onkeydown="keyDownHandler(event);" autofocus></textarea>
+          <textarea id="text" name="text" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text or drop file here>" autofocus></textarea>
         </div>
         <div class="controls">
           <div class="extensions-list">
@@ -83,7 +25,7 @@
             </select>
           </div>
           <div class="extension-filter">
-            <input type="search" id="filter" placeholder="Filter ..." onchange="filterLangs(event);" onkeyup="filterLangs(event)">
+            <input type="search" id="filter" placeholder="Filter ...">
           </div>
           <div class="expiration-list">
             <select name="expires" size="8">

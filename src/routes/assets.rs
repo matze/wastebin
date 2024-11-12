@@ -32,6 +32,21 @@ fn favicon() -> impl IntoResponse {
     )
 }
 
+fn js_headers() -> impl IntoResponseParts {
+    (
+        TypedHeader(headers::ContentType::from(mime::TEXT_JAVASCRIPT)),
+        TypedHeader(headers::CacheControl::new().with_max_age(env::JS_MAX_AGE)),
+    )
+}
+
+fn index_js() -> impl IntoResponse {
+    (js_headers(), DATA.index.content)
+}
+
+fn paste_js() -> impl IntoResponse {
+    (js_headers(), DATA.paste.content)
+}
+
 pub fn routes() -> Router<AppState> {
     let style_name = &DATA.style.name;
     Router::new()
@@ -39,4 +54,6 @@ pub fn routes() -> Router<AppState> {
         .route(&format!("/{style_name}"), get(|| async { style_css() }))
         .route("/dark.css", get(|| async { dark_css() }))
         .route("/light.css", get(|| async { light_css() }))
+        .route("/index.js", get(|| async { index_js() }))
+        .route("/paste.js", get(|| async { paste_js() }))
 }

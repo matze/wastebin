@@ -104,6 +104,10 @@ header .navigation:hover {
   cursor: pointer;
 }
 
+#form {
+  height: 100%;
+}
+
 button {
   font-family: "JetBrains Mono", monospace;
   font-size: 1.125rem;
@@ -266,4 +270,17 @@ td.line-number {
 
 .text-center {
   text-align: center;
+}
+
+#encrypted-grid1 {
+  grid-row: 1/2;
+}
+
+#encrypted-grid1 input {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+#encrypted-grid2 {
+  grid-row: 2/3;
 }

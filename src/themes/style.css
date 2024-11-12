@@ -63,6 +63,8 @@ main {
 
 #nav-title {
   margin-right: auto;
+  margin-top: 16px;
+  margin-bottom: 16px;
 }
 
 header ul {
@@ -75,16 +77,19 @@ header li {
   display: inline-block;
 }
 
-header button {
+header .navigation {
   color: #39bae6;
   border: none;
   padding: 1rem;
   background: none;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1.125rem;
 }
 
-header button:hover {
+header .navigation:hover {
   background-color: #39bae6;
   color: #0f1419;
+  cursor: pointer;
 }
 
 button {

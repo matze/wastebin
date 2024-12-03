@@ -42,7 +42,7 @@ pub struct Index<'a> {
     max_expiration: Option<NonZeroU32>,
 }
 
-impl<'a> Index<'a> {
+impl Index<'_> {
     pub fn new(max_expiration: Option<NonZeroU32>) -> Self {
         Self {
             meta: &env::METADATA,
@@ -90,7 +90,7 @@ const EXPIRATION_OPTIONS: [(&str, Expiration); 8] = [
     ("🔥 after reading", Expiration::Burn),
 ];
 
-impl<'a> Index<'a> {
+impl Index<'_> {
     fn expiry_options(&self) -> &str {
         static EXPIRATION_OPTIONS_HTML: OnceLock<String> = OnceLock::new();
 
@@ -136,7 +136,7 @@ pub struct Paste<'a> {
     html: String,
 }
 
-impl<'a> Paste<'a> {
+impl Paste<'_> {
     /// Construct new paste view from cache `key` and paste `html`.
     pub fn new(key: CacheKey, html: Html, can_delete: bool) -> Self {
         let html = html.into_inner();
@@ -163,7 +163,7 @@ pub struct Encrypted<'a> {
     query: String,
 }
 
-impl<'a> Encrypted<'a> {
+impl Encrypted<'_> {
     /// Construct new paste view from cache `key` and paste `html`.
     pub fn new(key: CacheKey, query: QueryData) -> Self {
         let query = match (query.fmt, query.dl) {
@@ -204,7 +204,7 @@ pub struct Qr<'a> {
     code: qrcodegen::QrCode,
 }
 
-impl<'a> Qr<'a> {
+impl Qr<'_> {
     /// Construct new QR code view from `code`.
     pub fn new(code: qrcodegen::QrCode, key: CacheKey) -> Self {
         Self {
@@ -232,7 +232,7 @@ pub struct Burn<'a> {
     code: qrcodegen::QrCode,
 }
 
-impl<'a> Burn<'a> {
+impl Burn<'_> {
     /// Construct new burn page linking to `id`.
     pub fn new(code: qrcodegen::QrCode, id: String) -> Self {
         Self {

@@ -30,6 +30,8 @@ pub static DATA: LazyLock<Data> = LazyLock::new(|| {
     let style = Css::new("style", include_str!("themes/style.css"));
     let light = Css::new("light", &LIGHT_CSS);
     let dark = Css::new("dark", &DARK_CSS);
+    let index = Js::new(include_str!("javascript/index.js"));
+    let paste = Js::new(include_str!("javascript/paste.js"));
     let syntax_set: SyntaxSet =
         syntect::dumps::from_binary(include_bytes!("../assets/newlines.packdump"));
     let mut syntaxes = syntax_set.syntaxes().to_vec();
@@ -39,6 +41,8 @@ pub static DATA: LazyLock<Data> = LazyLock::new(|| {
         style,
         light,
         dark,
+        index,
+        paste,
         syntax_set,
         syntaxes,
     }
@@ -50,10 +54,17 @@ pub struct Css<'a> {
     pub content: &'a str,
 }
 
+/// Javascript content.
+pub struct Js<'a> {
+    pub content: &'a str,
+}
+
 pub struct Data<'a> {
     pub style: Css<'a>,
     pub light: Css<'a>,
     pub dark: Css<'a>,
+    pub index: Js<'a>,
+    pub paste: Js<'a>,
     pub syntax_set: SyntaxSet,
     pub syntaxes: Vec<SyntaxReference>,
 }
@@ -68,6 +79,12 @@ impl<'a> Css<'a> {
         );
 
         Self { name, content }
+    }
+}
+
+impl<'a> Js<'a> {
+    fn new(content: &'a str) -> Self {
+        Self { content }
     }
 }
 

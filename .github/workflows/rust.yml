@@ -17,7 +17,7 @@ jobs:
       with:
         components: clippy
     - name: Run cargo-deny
-      uses: EmbarkStudios/cargo-deny-action@v1
+      uses: EmbarkStudios/cargo-deny-action@v2
     - run: cargo clippy -- -W clippy::pedantic
     - run: cargo fmt --all --check
     - run: cargo test --all-targets

@@ -60,14 +60,32 @@ mod tests {
 
     #[test]
     fn cache_key() {
+        /*
+         * Support ID generated in the old 32-bit format
+         */
+
         let key = Key::from_str("bJZCna").unwrap();
-        assert_eq!(key.id(), "bJZCna");
+        assert_eq!(key.id(), "aaaaaay83de");
         assert_eq!(key.id, 104651828.into());
         assert_eq!(key.ext, "txt");
 
         let key = Key::from_str("sIiFec.rs").unwrap();
-        assert_eq!(key.id(), "sIiFec");
+        assert_eq!(key.id(), "aaaaaeOIhXc");
         assert_eq!(key.id, 1243750162.into());
+        assert_eq!(key.ext, "rs");
+
+        /*
+         * Support new 64-bit format
+         */
+
+        let key = Key::from_str("bJZCna1237p").unwrap();
+        assert_eq!(key.id(), "bJZCna1237p");
+        assert_eq!(key.id, 449476178952511423.into());
+        assert_eq!(key.ext, "txt");
+
+        let key = Key::from_str("-IiFec1237p.rs").unwrap();
+        assert_eq!(key.id(), "-IiFec1237p");
+        assert_eq!(key.id, (-422741260676702273).into());
         assert_eq!(key.ext, "rs");
 
         assert!(Key::from_str("foo").is_err());

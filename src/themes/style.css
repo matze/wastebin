@@ -52,11 +52,13 @@ header {
   justify-content: flex-end;
   align-items: center;
   padding: 0 1em 0 1em;
+  user-select: none;
 }
 
 main {
   flex-grow: 1;
   padding: 1em 2em 1em 2em;
+  user-select: none;
 }
 
 #nav-title {
@@ -234,6 +236,7 @@ td.line-number {
   white-space: pre;
   margin-top: 0px;
   margin-bottom: 0px;
+  user-select: text;
 }
 
 .center {

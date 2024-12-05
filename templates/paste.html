@@ -4,6 +4,46 @@
 <script>
   document.addEventListener('keydown', onKey);
 
+  function copyContent() {
+    const codeLines = document.querySelectorAll('#code .line');
+    const content = Array.from(codeLines)
+      .map(line => line.textContent)
+      .join('\n')
+      .trim();
+
+    navigator.clipboard.writeText(content)
+      .then(() => {
+        const copyButton = document.querySelector('.copy-button');
+        const originalText = copyButton.innerText;
+        copyButton.innerText = 'copied!';
+        setTimeout(() => {
+          copyButton.innerText = originalText;
+        }, 1000);
+
+        const toast = document.createElement('div');
+        toast.textContent = 'Content copied to clipboard!';
+        toast.style.cssText = `
+          position: fixed;
+          bottom: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #333;
+          color: white;
+          padding: 10px 20px;
+          border-radius: 4px;
+          z-index: 1000;
+        `;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+          document.body.removeChild(toast);
+        }, 1500);
+      })
+      .catch(err => {
+        console.error('Copy failed:', err);
+      });
+  }
+
   function onKey(e) {
     if (e.key == 'n') {
       window.location.href = '{{ base_path.path() }}';
@@ -13,6 +53,9 @@
     }
     else if (e.key == 'y') {
       navigator.clipboard.writeText(window.location.href);
+    }
+    else if (e.key == 'c') {
+      copyContent();
     }
     else if (e.key == 'd') {
       window.location.href = '{{ base_path.join(id) }}?dl={{ ext }}';
@@ -49,6 +92,7 @@
   {% if can_delete %}
     <li><a href="{{ base_path.join("delete/") }}{{ id }}"><button>delete</button></a></li>
   {% endif %}
+    <li><button class="copy-button" onclick="copyContent()">copy</button></li>
     <li><a href="{{ base_path.join(id) }}?dl={{ ext }}"><button>download</button></a></li>
     <li><a href="{{ base_path.join(id) }}?fmt=raw"><button>raw</button></a></li>
     <li><a href="{{ base_path.join(id) }}?fmt=qr"><button>qr</button></a></li>

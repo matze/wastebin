@@ -1,3 +1,5 @@
+use std::sync::atomic::AtomicBool;
+
 use crate::cache::Key as CacheKey;
 use crate::crypto::Password;
 use crate::db::read::Entry;
@@ -190,6 +192,20 @@ pub async fn insert(
     headers: HeaderMap,
     request: Request<Body>,
 ) -> Result<Response, Response> {
+    if let Some(ref ratelimiter) = state.0.ratelimit_insert {
+        static RL_LOGGED: AtomicBool = AtomicBool::new(false);
+
+        if ratelimiter.try_wait().is_err() {
+            if !RL_LOGGED.fetch_or(true, std::sync::atomic::Ordering::Acquire) {
+                tracing::info!("Rate limiting paste insertions");
+            }
+
+            Err(StatusCode::FORBIDDEN.into_response())?;
+        }
+
+        RL_LOGGED.store(false, std::sync::atomic::Ordering::Relaxed);
+    }
+
     let content_type = headers
         .typed_get::<headers::ContentType>()
         .ok_or_else(|| StatusCode::UNSUPPORTED_MEDIA_TYPE.into_response())?;
@@ -232,14 +248,28 @@ pub async fn delete(
     jar: SignedCookieJar,
 ) -> Result<Redirect, pages::ErrorResponse<'static>> {
     let id = id.parse()?;
-    let uid = state.db.get_uid(id).await?;
+    let db_uid = state.db.get_uid(id).await?.ok_or(Error::Delete)?;
+
+    if let Some(ref ratelimiter) = state.0.ratelimit_delete {
+        static RL_LOGGED: AtomicBool = AtomicBool::new(false);
+
+        if ratelimiter.try_wait().is_err() {
+            if !RL_LOGGED.fetch_or(true, std::sync::atomic::Ordering::Acquire) {
+                tracing::info!("Rate limiting paste deletions");
+            }
+
+            Err(Error::Delete)?;
+        }
+
+        RL_LOGGED.store(false, std::sync::atomic::Ordering::Relaxed);
+    }
+
     let can_delete = jar
         .get("uid")
         .map(|cookie| cookie.value().parse::<i64>())
         .transpose()
         .map_err(|err| Error::CookieParsing(err.to_string()))?
-        .zip(uid)
-        .map_or(false, |(user_uid, db_uid)| user_uid == db_uid);
+        .map_or(false, |user_uid| user_uid == db_uid);
 
     if !can_delete {
         Err(Error::Delete)?;

@@ -28,6 +28,8 @@ const VAR_BASE_URL: &str = "WASTEBIN_BASE_URL";
 const VAR_PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
 const VAR_HTTP_TIMEOUT: &str = "WASTEBIN_HTTP_TIMEOUT";
 const VAR_MAX_PASTE_EXPIRATION: &str = "WASTEBIN_MAX_PASTE_EXPIRATION";
+const VAR_RATELIMIT_INSERT: &str = "WASTEBIN_RATELIMIT_INSERT";
+const VAR_RATELIMIT_DELETE: &str = "WASTEBIN_RATELIMIT_DELETE";
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -47,6 +49,10 @@ pub enum Error {
     HttpTimeout(ParseIntError),
     #[error("failed to parse {VAR_MAX_PASTE_EXPIRATION}: {0}")]
     MaxPasteExpiration(ParseIntError),
+    #[error("failed to parse {VAR_RATELIMIT_INSERT}: {0}")]
+    RatelimitInsert(ParseIntError),
+    #[error("failed to parse {VAR_RATELIMIT_DELETE}: {0}")]
+    RatelimitDelete(ParseIntError),
 }
 
 pub struct BasePath(String);
@@ -182,6 +188,22 @@ pub fn max_paste_expiration() -> Result<Option<NonZeroU32>, Error> {
     std::env::var(VAR_MAX_PASTE_EXPIRATION)
         .ok()
         .map(|value| value.parse::<u32>().map_err(Error::MaxPasteExpiration))
+        .transpose()
+        .map(|op| op.and_then(NonZero::new))
+}
+
+pub fn ratelimit_insert() -> Result<Option<NonZeroU32>, Error> {
+    std::env::var(VAR_RATELIMIT_INSERT)
+        .ok()
+        .map(|value| value.parse::<u32>().map_err(Error::RatelimitInsert))
+        .transpose()
+        .map(|op| op.and_then(NonZero::new))
+}
+
+pub fn ratelimit_delete() -> Result<Option<NonZeroU32>, Error> {
+    std::env::var(VAR_RATELIMIT_DELETE)
+        .ok()
+        .map(|value| value.parse::<u32>().map_err(Error::RatelimitDelete))
         .transpose()
         .map(|op| op.and_then(NonZero::new))
 }

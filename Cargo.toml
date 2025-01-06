@@ -34,6 +34,7 @@ url = "2"
 zstd = "0.13"
 parking_lot = "0.12.1"
 http = "1.1.0"
+regex = { version = "1.11.1", default-features = false, features = ["std"] }
 
 [dev-dependencies]
 reqwest = { version = "0", default-features = false, features = ["cookies", "json"] }

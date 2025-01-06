@@ -2158,6 +2158,7 @@ dependencies = [
  "parking_lot",
  "qrcodegen",
  "rand",
+ "regex",
  "reqwest",
  "rusqlite",
  "rusqlite_migration",

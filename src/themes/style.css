@@ -239,6 +239,16 @@ td.line-number {
   user-select: text;
 }
 
+.line a {
+  color: rgba(57, 186, 230, .7);
+}
+.line a:hover {
+  text-decoration: underline;
+}
+.line a:visited {
+  color: rgba(225, 57, 230, 0.7);
+}
+
 .center {
   position: absolute;
   left: 50%;

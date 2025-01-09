@@ -17,6 +17,7 @@ pub struct Entry {
     pub expires: Option<NonZeroU32>,
     pub burn_after_reading: Option<bool>,
     pub password: Option<String>,
+    pub title: Option<String>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -33,6 +34,7 @@ impl From<Entry> for write::Entry {
             burn_after_reading: entry.burn_after_reading,
             uid: None,
             password: entry.password,
+            title: entry.title,
         }
     }
 }

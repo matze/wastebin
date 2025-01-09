@@ -54,6 +54,7 @@ mod tests {
             extension: Some("rs".to_string()),
             expires: "0".to_string(),
             password: "".to_string(),
+            title: "".to_string(),
         };
 
         let res = client.post(BASE_PATH.path()).form(&data).send().await?;
@@ -115,6 +116,7 @@ mod tests {
             extension: None,
             expires: "burn".to_string(),
             password: "".to_string(),
+            title: "".to_string(),
         };
 
         let res = client.post(BASE_PATH.path()).form(&data).send().await?;
@@ -154,6 +156,7 @@ mod tests {
             extension: None,
             expires: "burn".to_string(),
             password: password.to_string(),
+            title: "".to_string(),
         };
 
         let res = client.post(BASE_PATH.path()).form(&data).send().await?;
@@ -271,6 +274,7 @@ mod tests {
             extension: None,
             expires: "0".to_string(),
             password: "".to_string(),
+            title: "".to_string(),
         };
 
         let res = client.post(BASE_PATH.path()).form(&data).send().await?;
@@ -311,6 +315,7 @@ mod tests {
             extension: None,
             expires: "0".to_string(),
             password: "".to_string(),
+            title: "".to_string(),
         };
 
         let res = client.post(BASE_PATH.path()).form(&data).send().await?;

@@ -30,6 +30,10 @@
     border-bottom: 1px solid #d9d7d7;
     border-right: 1px solid #d9d7d7;
   }
+
+  h1 {
+    color: #555;
+  }
 }
 
 @media screen and (max-width: 720px) {
@@ -58,7 +62,7 @@ body {
 
 header {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   padding: 0 1em 0 1em;
   user-select: none;
@@ -74,14 +78,17 @@ main {
 }
 
 #nav-title {
-  margin-right: auto;
-  margin-top: 16px;
-  margin-bottom: 16px;
+  /* to cut off very long titles */
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
 }
 
 header ul {
   margin: 0;
   padding: 0;
+  display: flex;
 }
 
 header li {
@@ -106,6 +113,24 @@ header .navigation:hover {
 
 #form {
   height: 100%;
+}
+
+h1 {
+  display: inline-block;
+  font-weight: normal;
+  font-size: 1.125rem;
+
+  margin-top: 0px;
+  margin-bottom: 0px;
+  padding-left: 16px;
+  padding-right: 16px;
+
+  max-width: 80vw;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  vertical-align: text-bottom;
+  text-wrap-mode: nowrap;
+  user-select: text;
 }
 
 button {
@@ -205,7 +230,7 @@ a, a:visited, a:hover {
   grid-row: 1/2;
 }
 
-.expiration-list, .password, .paste-button {
+.expiration-list, .password, .paste-button, .title {
   margin-top: 2em;
 }
 

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="generator" content="wastebin {{ meta.version }}">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{{ meta.title }}</title>
+    <title>{{ meta.title }}{% block title_content %}{% endblock %}</title>
     <link rel="preload" as="style" href="dark.css">
     <link rel="preload" as="style" href="light.css">
     <link rel="stylesheet" href="{{ base_path.join(meta.highlight.style.name) }}">
@@ -15,7 +15,7 @@
     {% block body_top %}{% endblock %}
     <div id="main-container">
       <header>
-        <span id="nav-title"><a href="{{ base_path.path() }}" class="navigation">home</a></span>
+        <span id="nav-title"><a href="{{ base_path.path() }}" class="navigation">home</a>{% block title %}{% endblock %}</span>
         <nav>
           <ul>
             {% block nav %}{% endblock %}

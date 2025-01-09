@@ -16,12 +16,14 @@ pub struct Entry {
     pub extension: Option<String>,
     pub expires: String,
     pub password: String,
+    pub title: String,
 }
 
 impl From<Entry> for write::Entry {
     fn from(entry: Entry) -> Self {
         let burn_after_reading = Some(entry.expires == "burn");
         let password = (!entry.password.is_empty()).then_some(entry.password);
+        let title = (!entry.title.is_empty()).then_some(entry.title);
 
         let expires = match entry.expires.parse::<NonZeroU32>() {
             Err(_) => None,
@@ -35,6 +37,7 @@ impl From<Entry> for write::Entry {
             burn_after_reading,
             uid: None,
             password,
+            title,
         }
     }
 }

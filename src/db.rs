@@ -43,6 +43,7 @@ static MIGRATIONS: LazyLock<Migrations> = LazyLock::new(|| {
         ),
         M::up(include_str!("migrations/0005-drop-text-column.sql")),
         M::up(include_str!("migrations/0006-add-nonce-column.sql")),
+        M::up(include_str!("migrations/0007-add-title-column.sql")),
     ])
 });
 
@@ -86,6 +87,8 @@ pub mod write {
         pub uid: Option<i64>,
         /// Optional password to encrypt the entry
         pub password: Option<String>,
+        /// Title
+        pub title: Option<String>,
     }
 
     /// A compressed entry to be inserted.
@@ -163,6 +166,8 @@ pub mod read {
         pub uid: Option<i64>,
         /// Nonce for this entry
         pub nonce: Option<Vec<u8>>,
+        /// Title
+        pub title: Option<String>,
     }
 
     /// Potentially decrypted but still compressed entry
@@ -173,6 +178,8 @@ pub mod read {
         must_be_deleted: bool,
         /// User identifier that inserted the entry
         uid: Option<i64>,
+        /// Title
+        title: Option<String>,
     }
 
     /// An entry read from the database.
@@ -183,6 +190,8 @@ pub mod read {
         pub must_be_deleted: bool,
         /// User identifier that inserted the entry
         pub uid: Option<i64>,
+        /// Title
+        pub title: Option<String>,
     }
 
     impl DatabaseEntry {
@@ -196,6 +205,7 @@ pub mod read {
                     data: self.data,
                     must_be_deleted: self.must_be_deleted,
                     uid: self.uid,
+                    title: self.title,
                 }),
                 (Some(nonce), Some(password)) => {
                     let encrypted = Encrypted::new(self.data, nonce);
@@ -204,6 +214,7 @@ pub mod read {
                         data: decrypted,
                         must_be_deleted: self.must_be_deleted,
                         uid: self.uid,
+                        title: self.title,
                     })
                 }
             }
@@ -225,6 +236,7 @@ pub mod read {
                 text,
                 uid: self.uid,
                 must_be_deleted: self.must_be_deleted,
+                title: self.title,
             })
         }
     }
@@ -255,18 +267,19 @@ impl Database {
 
         spawn_blocking(move || match entry.expires {
             None => conn.lock().execute(
-                "INSERT INTO entries (id, uid, data, burn_after_reading, nonce) VALUES (?1, ?2, ?3, ?4, ?5)",
-                params![id, entry.uid, data, entry.burn_after_reading, nonce],
+                "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, title) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![id, entry.uid, data, entry.burn_after_reading, nonce, entry.title],
             ),
             Some(expires) => conn.lock().execute(
-                "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, expires) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now', ?6))",
+                "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, expires, title) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now', ?6), ?7)",
                 params![
                     id,
                     entry.uid,
                     data,
                     entry.burn_after_reading,
                     nonce,
-                    format!("{expires} seconds")
+                    format!("{expires} seconds"),
+                    entry.title,
                 ],
             ),
         })
@@ -282,7 +295,7 @@ impl Database {
 
         let entry = spawn_blocking(move || {
             conn.lock().query_row(
-                "SELECT data, burn_after_reading, uid, nonce, expires < datetime('now') FROM entries WHERE id=?1",
+                "SELECT data, burn_after_reading, uid, nonce, expires < datetime('now'), title FROM entries WHERE id=?1",
                 params![id_as_u32],
                 |row| {
                     Ok(read::DatabaseEntry {
@@ -291,6 +304,7 @@ impl Database {
                         uid: row.get(2)?,
                         nonce: row.get(3)?,
                         expired: row.get::<_, Option<bool>>(4)?.unwrap_or(false),
+                        title: row.get::<_, Option<String>>(5)?,
                     })
                 },
             )

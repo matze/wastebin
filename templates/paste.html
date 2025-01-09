@@ -53,3 +53,26 @@
     <li><a href="{{ base_path.join(id) }}?fmt=raw"><button>raw</button></a></li>
     <li><a href="{{ base_path.join(id) }}?fmt=qr"><button>qr</button></a></li>
 {% endblock %}
+
+{% block content_post %}
+<script>
+  while (true) {
+    const o = document.querySelector("span.link");
+    if (!o) {
+      break;
+    }
+    let l = o.nextSibling;
+    let link = o.innerHTML;
+    while(l != null && l.tagName == "SPAN" && l.classList.contains("link")) {
+      let prevL = l;
+      l = l.nextSibling;
+      link += prevL.innerText;
+      prevL.remove();
+    }
+    o.setAttribute("href", link);
+    o.innerText = link;
+	o.className = "";
+    o.outerHTML = o.outerHTML.replace(/^<span(.*)span>$/, "<a$1a>");
+  }
+</script>
+{% endblock %}

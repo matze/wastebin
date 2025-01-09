@@ -22,7 +22,7 @@ rusqlite_migration = { version = "1", default-features = false }
 rust-argon2 = "2.0.0"
 sha2 = "0"
 serde = { version = "1", features = ["derive"] }
-syntect = { version = "5", default-features = false, features = ["html", "plist-load", "regex-fancy"] }
+syntect = { version = "5", default-features = false, features = ["html", "plist-load", "regex-fancy", "yaml-load"] }
 thiserror = "2"
 time = { version = "0.3", features = ["macros", "serde"] }
 tokio = { version = "1", features = ["full"] }
@@ -34,7 +34,6 @@ url = "2"
 zstd = "0.13"
 parking_lot = "0.12.1"
 http = "1.1.0"
-regex = { version = "1.11.1", default-features = false, features = ["std"] }
 
 [dev-dependencies]
 reqwest = { version = "0", default-features = false, features = ["cookies", "json"] }

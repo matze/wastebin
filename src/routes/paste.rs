@@ -66,13 +66,14 @@ async fn get_qr(
     state: AppState,
     key: CacheKey,
     headers: HeaderMap,
+    title: String,
 ) -> Result<pages::Qr<'static>, pages::ErrorResponse<'static>> {
     let id = key.id();
     let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state, &headers, &id))
         .await
         .map_err(Error::from)??;
 
-    Ok(pages::Qr::new(qr_code, key))
+    Ok(pages::Qr::new(qr_code, key, title))
 }
 
 fn get_download(
@@ -116,13 +117,17 @@ async fn get_html(
 
     if let Some(html) = state.cache.get(&key) {
         tracing::trace!(?key, "found cached item");
-        return Ok(pages::Paste::new(key, html, can_delete).into_response());
+        return Ok(
+            pages::Paste::new(key, html, can_delete, entry.title.unwrap_or_default())
+                .into_response(),
+        );
     }
 
     // TODO: turn this upside-down, i.e. cache it but only return a cached version if we were able
     // to decrypt the content. Highlighting is probably still much slower than decryption.
     let can_be_cached = !entry.must_be_deleted;
     let ext = key.ext.clone();
+    let title = entry.title.clone().unwrap_or_default();
     let html = Html::from(entry, ext).await?;
 
     if can_be_cached && !is_protected {
@@ -130,7 +135,7 @@ async fn get_html(
         state.cache.put(key.clone(), html.clone());
     }
 
-    Ok(pages::Paste::new(key, html, can_delete).into_response())
+    Ok(pages::Paste::new(key, html, can_delete, title).into_response())
 }
 
 pub async fn get(
@@ -161,7 +166,13 @@ pub async fn get(
 
             match query.fmt {
                 Some(Format::Raw) => return Ok(entry.text.into_response()),
-                Some(Format::Qr) => return Ok(get_qr(state, key, headers).await.into_response()),
+                Some(Format::Qr) => {
+                    return Ok(
+                        get_qr(state, key, headers, entry.title.clone().unwrap_or_default())
+                            .await
+                            .into_response(),
+                    )
+                }
                 None => (),
             }
 

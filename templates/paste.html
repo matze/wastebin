@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 
+{% block title %}
+  {% if title.len() > 0 %}<h1>{{ title }}</h1>{% endif %}
+{% endblock %}
+{% block title_content %}{% if title.len() > 0 %}: {{ title }}{% endif %}{% endblock %}
+
 {% block head %}
 <script defer src="{{ base_path.join("paste.js") }}"></script>
 {% endblock %}

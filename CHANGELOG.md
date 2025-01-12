@@ -2,15 +2,32 @@
 
 ## Unreleased
 
+
+## 2.6.0
+
+**2025-01-12**
+
 ### Added
 
-- <kbd>ctrl</kbd>+<kbd>s</kbd> binding to store a paste.
+- <kbd>Ctrl</kbd>+<kbd>S</kbd> binding to store a paste.
+- Input field to set a title for a paste.
+- Security headers served with each HTTP response and secure cookie settings.
+- Button to show a paste's QR code.
 
 ### Changed
 
-- Use NonZero internally for data where 0 is not a valid value and
-  any special meaning in expressed via an outer Option.
+- Use `NonZero` internally for data where 0 is not a valid value and any special
+  meaning in expressed via an outer Option.
 - Show QR code on the page after submitting a burn-after-reading paste.
+- Low-impact performance improvements.
+- Return `FORBIDDEN` on wrong password instead of `INTERNAL_SERVER_ERROR`.
+
+### Fixed
+
+- Paste content selection and copying using <kbd>ctrl</kbd>+<kbd>a</kdb> or
+  mouse.
+- Issues reported by the w3c validator.
+- Vertical auto-scroll.
 
 
 ## 2.5.0

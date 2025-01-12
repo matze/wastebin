@@ -243,6 +243,10 @@ a, a:visited, a:hover {
   width: 100%;
 }
 
+.title > input {
+  width: 100%;
+}
+
 .decrypt-container {
   display: grid;
   grid-template-columns: 1fr;

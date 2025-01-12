@@ -20,6 +20,7 @@
 @media (prefers-color-scheme: light) {
   body, textarea, select, input, select > option:hover {
     background-color: #fafafa;
+    color: #333;
   }
 
   select {

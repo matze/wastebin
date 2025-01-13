@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Use SVG icons instead of text for action links and buttons.
+
 
 ## 2.6.0
 

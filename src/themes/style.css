@@ -54,6 +54,10 @@ body {
   height: 100vh;
 }
 
+svg {
+  display: block;
+}
+
 #main-container {
   display: flex;
   flex-direction: column;

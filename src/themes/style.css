@@ -87,6 +87,7 @@ header .nav-group {
   display: flex;
   flex-direction: row;
   align-items: center;
+  min-width: 0;
 }
 
 header .nav-item {
@@ -94,8 +95,10 @@ header .nav-item {
 }
 
 header .nav-title {
-  display: flex;
   overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 header .nav-button {
@@ -115,24 +118,6 @@ header .nav-button:hover {
 
 #form {
   height: 100%;
-}
-
-h1 {
-  display: inline-block;
-  font-weight: normal;
-  font-size: 1.125rem;
-
-  margin-top: 0px;
-  margin-bottom: 0px;
-  padding-left: 16px;
-  padding-right: 16px;
-
-  max-width: 80vw;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  vertical-align: text-bottom;
-  text-wrap-mode: nowrap;
-  user-select: text;
 }
 
 button {

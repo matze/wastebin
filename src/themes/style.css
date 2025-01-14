@@ -110,6 +110,7 @@ header .nav-button:hover {
   background-color: #39bae6;
   color: #0f1419;
   cursor: pointer;
+  border-radius: 8px;
 }
 
 #form {

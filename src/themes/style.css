@@ -268,13 +268,6 @@ a, a:visited, a:hover {
   width: 100%;
 }
 
-.decrypt-container {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr 1fr;
-  grid-gap: 0.5em;
-}
-
 #code {
   overflow: visible;
   min-width: fit-content;
@@ -314,17 +307,4 @@ td.line-number {
 
 .text-center {
   text-align: center;
-}
-
-#encrypted-grid1 {
-  grid-row: 1/2;
-}
-
-#encrypted-grid1 input {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
-}
-
-#encrypted-grid2 {
-  grid-row: 2/3;
 }

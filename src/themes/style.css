@@ -101,7 +101,9 @@ header .nav-title {
 header .nav-button {
   display: flex;
   color: #39bae6;
+  border: none;
   padding: 1rem;
+  background: none;
 }
 
 header .nav-button:hover {

@@ -144,6 +144,19 @@ button:hover {
   cursor: pointer;
 }
 
+.button {
+  width: 100%;
+  padding: 1em;
+  border: none;
+  border-radius: 8px;
+  background-color: #39bae6;
+}
+
+.button:hover {
+  background-color: #fa6e32;
+  transition: background-color 100ms;
+}
+
 select {
   width: 100%;
   font-family: "JetBrains Mono", monospace;
@@ -258,14 +271,6 @@ a, a:visited, a:hover {
   grid-template-columns: 1fr;
   grid-template-rows: 1fr 1fr;
   grid-gap: 0.5em;
-}
-
-.button {
-  width: 100%;
-  padding: 1em;
-  border: none;
-  border-radius: 8px;
-  background-color: #39bae6;
 }
 
 #code {

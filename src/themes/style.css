@@ -65,14 +65,6 @@ svg {
   overflow: auto;
 }
 
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 1em 0 1em;
-  user-select: none;
-}
-
 main {
   flex-grow: 1;
   padding: 1em 2em 1em 2em;
@@ -82,35 +74,37 @@ main {
   min-height: 0;
 }
 
-#nav-title {
-  /* to cut off very long titles */
-  overflow: hidden;
+header {
   display: flex;
   flex-direction: row;
-  align-items: baseline;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1em 0 1em;
+  user-select: none;
 }
 
-header ul {
-  margin: 0;
-  padding: 0;
+header .nav-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+header .nav-item {
   display: flex;
 }
 
-header li {
-  list-style: none;
-  display: inline-block;
+header .nav-title {
+  display: flex;
+  overflow: hidden;
 }
 
-header .navigation {
+header .nav-button {
+  display: flex;
   color: #39bae6;
-  border: none;
   padding: 1rem;
-  background: none;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 1.125rem;
 }
 
-header .navigation:hover {
+header .nav-button:hover {
   background-color: #39bae6;
   color: #0f1419;
   cursor: pointer;

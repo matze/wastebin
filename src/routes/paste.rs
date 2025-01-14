@@ -40,7 +40,8 @@ pub struct PasswordForm {
 fn qr_code_from(
     state: AppState,
     headers: &HeaderMap,
-    id: &str,
+    id: String,
+    ext: Option<String>,
 ) -> Result<qrcodegen::QrCode, Error> {
     let base_url = &state.base_url.map_or_else(
         || {
@@ -56,8 +57,14 @@ fn qr_code_from(
         Ok,
     )?;
 
+    let name = if let Some(ext) = ext {
+        format!("{id}.{ext}")
+    } else {
+        id
+    };
+
     Ok(qrcodegen::QrCode::encode_text(
-        base_url.join(id)?.as_str(),
+        base_url.join(&name)?.as_str(),
         qrcodegen::QrCodeEcc::High,
     )?)
 }
@@ -69,7 +76,13 @@ async fn get_qr(
     title: String,
 ) -> Result<pages::Qr<'static>, pages::ErrorResponse<'static>> {
     let id = key.id();
-    let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state, &headers, &id))
+    let ext = if key.ext.is_empty() {
+        None
+    } else {
+        Some(key.ext.clone())
+    };
+
+    let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state, &headers, id, ext))
         .await
         .map_err(Error::from)??;
 
@@ -267,7 +280,7 @@ pub async fn burn_created(
     state: State<AppState>,
 ) -> Result<impl IntoResponse, pages::ErrorResponse<'static>> {
     let id_clone = id.clone();
-    let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state.0, &headers, &id))
+    let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state.0, &headers, id, None))
         .await
         .map_err(Error::from)??;
 

@@ -215,19 +215,15 @@ a, a:visited, a:hover {
 }
 
 .container {
-  display: grid;
-  grid-template-columns: 4fr 1fr;
-  grid-template-rows: 1fr;
-  grid-gap: 2em;
+  display: flex;
+  flex-direction: row;
+  gap: 32px;
   height: 100%;
-  align-items: stretch;
-  justify-items: stretch;
 }
 
 .content {
-  grid-area: content;
-  grid-column: 1/2;
-  grid-row: 1/2;
+  display: flex;
+  flex: 1;
 }
 
 .content > textarea {
@@ -250,6 +246,7 @@ a, a:visited, a:hover {
   display: flex;
   flex-direction: column;
   gap: 32px;
+  width: 256px;
 }
 
 .controls-group {

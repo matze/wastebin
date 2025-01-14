@@ -21,30 +21,32 @@
           <textarea id="text" name="text" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text or drop file here>" autofocus></textarea>
         </div>
         <div class="controls">
-          <div class="extensions-list">
-            <select name="extension" id="langs" size="17">
-            {%- for syntax in meta.highlight.syntaxes -%}
-              {%- if syntax.file_extensions.len() > 0 %}
-              <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
-              {%- endif -%}
-            {%- endfor %}
-            </select>
+          <div class="controls-group">
+            <div class="controls-row">
+              <select class="controls-row" name="extension" id="langs" size="17">
+              {%- for syntax in meta.highlight.syntaxes -%}
+                {%- if syntax.file_extensions.len() > 0 %}
+                <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
+                {%- endif -%}
+              {%- endfor %}
+              </select>
+              <input class="controls-row" type="search" id="filter" placeholder="Filter ...">
+            </div>
           </div>
-          <div class="extension-filter">
-            <input type="search" id="filter" placeholder="Filter ...">
-          </div>
-          <div class="expiration-list">
+          <div class="controls-group">
             <select name="expires" size="8">
               {{- Self::expiry_options(self)|safe }}
             </select>
           </div>
-          <div class="password">
-            <input type="password" name="password" id="password" placeholder="Password ...">
+          <div class="controls-group">
+            <div class="controls-row">
+              <input type="password" name="password" id="password" placeholder="Password ...">
+            </div>
+            <div class="controls-row">
+              <input type="text" name="title" id="title" placeholder="Title ...">
+            </div>
           </div>
-          <div class="title">
-            <input type="text" name="title" id="title" placeholder="Title ...">
-          </div>
-          <div class="paste-button">
+          <div class="controls-group">
             <button type="submit" title="Paste" class="button">Paste</button>
           </div>
         </div>

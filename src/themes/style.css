@@ -247,22 +247,24 @@ a, a:visited, a:hover {
 }
 
 .controls {
-  grid-row: 1/2;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
-.expiration-list, .password, .paste-button, .title {
-  margin-top: 2em;
+.controls-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.extension-filter > input {
+.controls-row {
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 
-.password > input {
-  width: 100%;
-}
-
-.title > input {
+.controls-row > input {
   width: 100%;
 }
 

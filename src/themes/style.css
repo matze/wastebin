@@ -39,7 +39,11 @@
 
 @media screen and (max-width: 720px) {
   main {
-    padding: 0px !important;
+    padding: 0 !important;
+  }
+
+  header {
+    padding: 0 !important;
   }
 }
 

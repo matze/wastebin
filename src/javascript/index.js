@@ -38,7 +38,9 @@ function openFile() {
   input.type = "file";
   input.onchange = ev => {
     const item = ev.target.files[0];
+    let titleInput = document.getElementById('title');
 
+    titleInput.value = item.name;
     item.text().then((value) => textarea.value = value);
   };
 

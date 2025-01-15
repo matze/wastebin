@@ -3,7 +3,7 @@ use crate::db::Database;
 use crate::env::BASE_PATH;
 use crate::errors::Error;
 use axum::extract::{DefaultBodyLimit, FromRef};
-use axum::http::HeaderValue;
+use axum::http::{HeaderName, HeaderValue};
 use axum::middleware::from_fn;
 use axum::Router;
 use axum_extra::extract::cookie::Key;
@@ -54,30 +54,23 @@ async fn security_headers_layer(
     req: axum::extract::Request,
     next: axum::middleware::Next,
 ) -> Result<axum::response::Response, axum::http::StatusCode> {
+    const SECURITY_HEADERS: [(HeaderName, HeaderValue); 7] = [
+        (SERVER, HeaderValue::from_static(PACKAGE_NAME)),
+        (CONTENT_SECURITY_POLICY, HeaderValue::from_static("default-src 'none'; script-src 'self'; img-src 'self' data: ; style-src 'self' data: ; font-src 'self' data: ; object-src 'none' ; base-uri 'none' ; frame-ancestors 'none' ; form-action 'self' ;")),
+        (REFERRER_POLICY, HeaderValue::from_static("same-origin")),
+        (X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff")),
+        (X_FRAME_OPTIONS, HeaderValue::from_static("SAMEORIGIN")),
+        (HeaderName::from_static("x-permitted-cross-domain-policies"), HeaderValue::from_static("none")),
+        (X_XSS_PROTECTION, HeaderValue::from_static("1; mode=block")),
+    ];
+
     let mut response = next.run(req).await;
-
     let headers = response.headers_mut();
+    headers.reserve(SECURITY_HEADERS.len());
 
-    macro_rules! add {
-        ($name:literal, $value:literal) => {
-            headers.insert($name, HeaderValue::from_static($value));
-        };
-        ($name:ident, $value:literal) => {
-            headers.insert($name, HeaderValue::from_static($value));
-        };
-        ($name:ident, $value:ident) => {
-            headers.insert($name, HeaderValue::from_static($value));
-        };
+    for (key, value) in SECURITY_HEADERS {
+        headers.insert(key, value);
     }
-
-    add!(SERVER, PACKAGE_NAME);
-
-    add!(CONTENT_SECURITY_POLICY,"default-src 'none'; script-src 'self'; img-src 'self' data: ; style-src 'self' data: ; font-src 'self' data: ; object-src 'none' ; base-uri 'none' ; frame-ancestors 'none' ; form-action 'self' ;");
-    add!(REFERRER_POLICY, "same-origin");
-    add!(X_CONTENT_TYPE_OPTIONS, "nosniff");
-    add!(X_FRAME_OPTIONS, "SAMEORIGIN");
-    add!("x-permitted-cross-domain-policies", "none");
-    add!(X_XSS_PROTECTION, "1; mode=block");
 
     Ok(response)
 }

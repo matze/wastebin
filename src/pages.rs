@@ -69,24 +69,20 @@ impl std::fmt::Display for Expiration {
     }
 }
 
-// TODO: replace once Option::expect is const (https://github.com/rust-lang/rust/issues/67441) to construct EXPIRATION_OPTIONS
-macro_rules! nonzero {
-    ($value:literal) => {
-        match NonZero::new($value) {
-            Some(v) => v,
-            None => unreachable!(),
-        }
-    };
-}
-
 const EXPIRATION_OPTIONS: [(&str, Expiration); 8] = [
     ("never", Expiration::None),
-    ("10 minutes", Expiration::Time(nonzero!(600))),
-    ("1 hour", Expiration::Time(nonzero!(3600))),
-    ("1 day", Expiration::Time(nonzero!(86400))),
-    ("1 week", Expiration::Time(nonzero!(604_800))),
-    ("1 month", Expiration::Time(nonzero!(2_592_000))),
-    ("1 year", Expiration::Time(nonzero!(31_536_000))),
+    ("10 minutes", Expiration::Time(NonZero::new(600).unwrap())),
+    ("1 hour", Expiration::Time(NonZero::new(3600).unwrap())),
+    ("1 day", Expiration::Time(NonZero::new(86400).unwrap())),
+    ("1 week", Expiration::Time(NonZero::new(604_800).unwrap())),
+    (
+        "1 month",
+        Expiration::Time(NonZero::new(2_592_000).unwrap()),
+    ),
+    (
+        "1 year",
+        Expiration::Time(NonZero::new(31_536_000).unwrap()),
+    ),
     ("🔥 after reading", Expiration::Burn),
 ];
 

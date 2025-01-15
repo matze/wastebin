@@ -18,7 +18,7 @@
 <span id="js_ext" hidden>{{ ext }}</span>
 {% endblock %}
 
-{% block nav %}
+{% block nav_common %}
   {% if can_delete %}
     <div class="nav-item">
       <a href="{{ base_path.join("delete/") }}{{ id }}" class="nav-button" title="delete paste" aria-label="delete paste">
@@ -42,6 +42,8 @@
         </svg>
       </a>
     </div>
+{% endblock %}
+{% block nav_specific %}
     <div class="nav-item">
       <a href="{{ base_path.join(id) }}.{{ ext }}?fmt=qr" class="nav-button" title="qr code" aria-label="qr code">
         <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">

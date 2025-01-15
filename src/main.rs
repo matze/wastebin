@@ -53,7 +53,7 @@ impl FromRef<AppState> for Key {
 async fn security_headers_layer(
     req: axum::extract::Request,
     next: axum::middleware::Next,
-) -> Result<axum::response::Response, axum::http::StatusCode> {
+) -> axum::response::Response {
     const SECURITY_HEADERS: [(HeaderName, HeaderValue); 7] = [
         (SERVER, HeaderValue::from_static(PACKAGE_NAME)),
         (CONTENT_SECURITY_POLICY, HeaderValue::from_static("default-src 'none'; script-src 'self'; img-src 'self' data: ; style-src 'self' data: ; font-src 'self' data: ; object-src 'none' ; base-uri 'none' ; frame-ancestors 'none' ; form-action 'self' ;")),
@@ -72,7 +72,7 @@ async fn security_headers_layer(
         headers.insert(key, value);
     }
 
-    Ok(response)
+    response
 }
 
 pub(crate) fn make_app(max_body_size: usize, timeout: Duration) -> Router<AppState> {

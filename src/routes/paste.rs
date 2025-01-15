@@ -126,7 +126,7 @@ async fn get_html(
         .transpose()
         .map_err(|err| Error::CookieParsing(err.to_string()))?
         .zip(entry.uid)
-        .map_or(false, |(user_uid, owner_uid)| user_uid == owner_uid);
+        .is_some_and(|(user_uid, owner_uid)| user_uid == owner_uid);
 
     if let Some(html) = state.cache.get(&key) {
         tracing::trace!(?key, "found cached item");
@@ -263,7 +263,7 @@ pub async fn delete(
         .transpose()
         .map_err(|err| Error::CookieParsing(err.to_string()))?
         .zip(uid)
-        .map_or(false, |(user_uid, db_uid)| user_uid == db_uid);
+        .is_some_and(|(user_uid, db_uid)| user_uid == db_uid);
 
     if !can_delete {
         Err(Error::Delete)?;

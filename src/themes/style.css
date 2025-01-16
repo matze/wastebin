@@ -13,7 +13,6 @@
 
   header {
     border-bottom: 1px solid #163855;
-    border-right: 1px solid #163855;
   }
 }
 
@@ -29,7 +28,6 @@
 
   header {
     border-bottom: 1px solid #d9d7d7;
-    border-right: 1px solid #d9d7d7;
   }
 
   h1 {
@@ -66,15 +64,13 @@ svg {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: auto;
 }
 
 main {
   flex-grow: 1;
   padding: 1em 2em 1em 2em;
   user-select: none;
-
-  overflow: visible;
+  overflow: auto;
   min-height: 0;
 }
 
@@ -252,11 +248,6 @@ a, a:visited, a:hover {
 
 .controls-row > input {
   width: 100%;
-}
-
-#code {
-  overflow: visible;
-  min-width: fit-content;
 }
 
 td.line-number {

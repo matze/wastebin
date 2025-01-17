@@ -7,12 +7,6 @@
   outputs = { self, nixpkgs }:
     let
 
-      # to work with older version of flakes
-      lastModifiedDate = self.lastModifiedDate or self.lastModified or "19700101";
-
-      # Generate a user-friendly version number.
-      version = builtins.substring 0 8 lastModifiedDate;
-
       # System types to support.
       supportedSystems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
 
@@ -33,11 +27,11 @@
         {
           wastebin = with pkgs; rustPlatform.buildRustPackage rec {
             pname = "wastebin";
-            version = "2.4.3";
+            version = "2.7.0";
 
             src = ./.;
 
-            cargoHash = "sha256-/3nIvDueiU6WelTlgzNYWGhToDUtf3BfUCbWkJhWAaw=";
+            cargoHash = "sha256-bC0dxwJ2AtUA3dhDneV9Oc4wcKxoKvPH/mOegwGjveE=";
 
             nativeBuildInputs = [ pkg-config ];
 

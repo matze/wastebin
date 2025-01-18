@@ -64,6 +64,7 @@ pub(crate) fn make_app() -> Result<Router, Box<dyn std::error::Error>> {
         key,
         base_url,
         max_expiration: None,
+        max_body_size: 1048576,
     };
 
     Ok(crate::make_app(4096, Duration::new(30, 0)).with_state(state))

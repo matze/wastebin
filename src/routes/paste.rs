@@ -9,7 +9,7 @@ use crate::{pages, AppState, Error};
 use axum::body::Body;
 use axum::extract::{Form, Json, Path, Query, State};
 use axum::http::header::{self, HeaderMap};
-use axum::http::{Request, StatusCode};
+use axum::http::Request;
 use axum::response::{AppendHeaders, IntoResponse, Redirect, Response};
 use axum::RequestExt;
 use axum_extra::extract::cookie::SignedCookieJar;
@@ -214,11 +214,21 @@ pub async fn insert(
     headers: HeaderMap,
     request: Request<Body>,
 ) -> Result<Response, Response> {
-    let content_type = headers
-        .typed_get::<headers::ContentType>()
-        .ok_or_else(|| StatusCode::UNSUPPORTED_MEDIA_TYPE.into_response())?;
+    if headers
+        .typed_get::<headers::ContentLength>()
+        .map_or(true, |content_length| {
+            content_length.0 > state.max_body_size as u64
+        })
+    {
+        /* consume request to make clients accept our formatted response */
+        let _ = request.extract::<axum::body::Bytes, _>().await;
+        let err: pages::ErrorResponse = Error::BigRequest.into();
+        return Err(err.into_response());
+    }
 
-    if content_type == headers::ContentType::form_url_encoded() {
+    let content_type = headers.typed_get::<headers::ContentType>();
+
+    if content_type == Some(headers::ContentType::form_url_encoded()) {
         let is_https = headers
             .get(http::header::HOST)
             .zip(headers.get(http::header::ORIGIN))
@@ -238,7 +248,7 @@ pub async fn insert(
         Ok(form::insert(state, jar, entry, is_https)
             .await
             .into_response())
-    } else if content_type == headers::ContentType::json() {
+    } else if content_type == Some(headers::ContentType::json()) {
         let entry: Json<json::Entry> = request
             .extract()
             .await
@@ -246,7 +256,10 @@ pub async fn insert(
 
         Ok(json::insert(state, entry).await.into_response())
     } else {
-        Err(StatusCode::UNSUPPORTED_MEDIA_TYPE.into_response())
+        /* consume request to make clients accept our formatted response */
+        let _ = request.extract::<axum::body::Bytes, _>().await;
+        let err: pages::ErrorResponse = Error::UnsupportedMediaType.into();
+        Err(err.into_response())
     }
 }
 

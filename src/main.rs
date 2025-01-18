@@ -42,6 +42,7 @@ pub struct AppState {
     key: Key,
     base_url: Option<Url>,
     max_expiration: Option<NonZeroU32>,
+    max_body_size: usize,
 }
 
 impl FromRef<AppState> for Key {
@@ -135,6 +136,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
         key,
         base_url,
         max_expiration,
+        max_body_size,
     };
 
     tracing::debug!("serving on {addr}");

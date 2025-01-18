@@ -19,6 +19,10 @@ pub enum Error {
     Migration(#[from] rusqlite_migration::Error),
     #[error("wrong size")]
     WrongSize,
+    #[error("unsupported media type")]
+    UnsupportedMediaType,
+    #[error("request too big")]
+    BigRequest,
     #[error("illegal characters")]
     IllegalCharacters,
     #[error("integer conversion error: {0}")]
@@ -76,6 +80,8 @@ impl From<Error> for StatusCode {
             | Error::Argon2(_)
             | Error::ChaCha20Poly1305Encrypt
             | Error::Axum(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::BigRequest => StatusCode::PAYLOAD_TOO_LARGE,
+            Error::UnsupportedMediaType => StatusCode::UNSUPPORTED_MEDIA_TYPE,
             Error::Delete | Error::ChaCha20Poly1305Decrypt => StatusCode::FORBIDDEN,
         }
     }

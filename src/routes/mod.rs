@@ -39,7 +39,7 @@ mod tests {
     async fn unknown_paste() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new(make_app()?).await;
 
-        let res = client.get(&BASE_PATH.join("000000")).send().await?;
+        let res = client.get(&BASE_PATH.join("00000000000")).send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
         Ok(())

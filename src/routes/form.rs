@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 use crate::db::write;
 use crate::env::BASE_PATH;
-use crate::id::Id;
+use crate::id::{Id, Inner};
 use crate::{pages, AppState, Error};
 use axum::extract::{Form, State};
 use axum::response::Redirect;
@@ -50,7 +50,7 @@ pub async fn insert(
 ) -> Result<(SignedCookieJar, Redirect), pages::ErrorResponse<'static>> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
-        rng.gen::<u32>()
+        rng.gen::<Inner>()
     })
     .await
     .map_err(Error::from)?

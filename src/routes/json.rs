@@ -3,7 +3,7 @@ use std::num::NonZeroU32;
 use crate::db::write;
 use crate::env::BASE_PATH;
 use crate::errors::{Error, JsonErrorResponse};
-use crate::id::Id;
+use crate::id::{Id, Inner};
 use crate::AppState;
 use axum::extract::State;
 use axum::Json;
@@ -45,7 +45,7 @@ pub async fn insert(
 ) -> Result<Json<RedirectResponse>, JsonErrorResponse> {
     let id: Id = tokio::task::spawn_blocking(|| {
         let mut rng = rand::thread_rng();
-        rng.gen::<u32>()
+        rng.gen::<Inner>()
     })
     .await
     .map_err(Error::from)?

@@ -90,6 +90,10 @@ header .nav-group {
   min-width: 0;
 }
 
+header #nav-group-actions {
+  min-width: fit-content;
+}
+
 header .nav-item {
   display: flex;
 }

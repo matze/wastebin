@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixed
+
+- Actually respect `WASTEBIN_MAX_BODY_SIZE`.
+
+
 
 ## 2.7.0
 
@@ -16,7 +21,7 @@
 - Pre-fill the title box when uploading a local file.
 - Optimize code for minor performance improvements.
 
-### Fix
+### Fixed
 
 - Include extension in the QR code link.
 

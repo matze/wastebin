@@ -21,7 +21,7 @@ pub struct Error<'a> {
 /// Error response carrying a status code and the page itself.
 pub type ErrorResponse<'a> = (StatusCode, Error<'a>);
 
-impl<'a> Error<'a> {
+impl Error<'_> {
     /// Create new [`Error`] from `description`.
     pub fn new(description: String) -> Self {
         Self {

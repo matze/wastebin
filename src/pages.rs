@@ -21,14 +21,20 @@ pub struct Error<'a> {
 /// Error response carrying a status code and the page itself.
 pub type ErrorResponse<'a> = (StatusCode, Error<'a>);
 
-impl From<crate::Error> for ErrorResponse<'_> {
-    fn from(err: crate::Error) -> Self {
-        let html = Error {
+impl<'a> Error<'a> {
+    /// Create new [`Error`] from `description`.
+    pub fn new(description: String) -> Self {
+        Self {
             meta: &env::METADATA,
             base_path: &env::BASE_PATH,
-            description: err.to_string(),
-        };
+            description,
+        }
+    }
+}
 
+impl From<crate::Error> for ErrorResponse<'_> {
+    fn from(err: crate::Error) -> Self {
+        let html = Error::new(err.to_string());
         (err.into(), html)
     }
 }

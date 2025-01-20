@@ -2,9 +2,10 @@ use crate::cache::Cache;
 use crate::db::Database;
 use crate::env::BASE_PATH;
 use crate::errors::Error;
-use axum::extract::{DefaultBodyLimit, FromRef};
-use axum::http::{HeaderName, HeaderValue};
-use axum::middleware::from_fn;
+use axum::extract::{DefaultBodyLimit, FromRef, Request};
+use axum::http::{HeaderName, HeaderValue, StatusCode};
+use axum::middleware::{from_fn, Next};
+use axum::response::{IntoResponse, Response};
 use axum::Router;
 use axum_extra::extract::cookie::Key;
 use http::header::{
@@ -50,10 +51,7 @@ impl FromRef<AppState> for Key {
     }
 }
 
-async fn security_headers_layer(
-    req: axum::extract::Request,
-    next: axum::middleware::Next,
-) -> axum::response::Response {
+async fn security_headers_layer(req: Request, next: Next) -> Response {
     const SECURITY_HEADERS: [(HeaderName, HeaderValue); 7] = [
         (SERVER, HeaderValue::from_static(PACKAGE_NAME)),
         (CONTENT_SECURITY_POLICY, HeaderValue::from_static("default-src 'none'; script-src 'self'; img-src 'self' data: ; style-src 'self' data: ; font-src 'self' data: ; object-src 'none' ; base-uri 'none' ; frame-ancestors 'none' ; form-action 'self' ;")),
@@ -75,6 +73,24 @@ async fn security_headers_layer(
     response
 }
 
+async fn handle_service_errors(req: Request, next: Next) -> Response {
+    let response = next.run(req).await;
+
+    match response.status() {
+        StatusCode::PAYLOAD_TOO_LARGE => (
+            StatusCode::PAYLOAD_TOO_LARGE,
+            pages::Error::new("payload exceeded limit".to_string()),
+        )
+            .into_response(),
+        StatusCode::UNSUPPORTED_MEDIA_TYPE => (
+            StatusCode::UNSUPPORTED_MEDIA_TYPE,
+            pages::Error::new("unsupported media type".to_string()),
+        )
+            .into_response(),
+        _ => response,
+    }
+}
+
 pub(crate) fn make_app(max_body_size: usize, timeout: Duration) -> Router<AppState> {
     Router::new()
         .nest(BASE_PATH.path(), routes::routes())
@@ -84,6 +100,7 @@ pub(crate) fn make_app(max_body_size: usize, timeout: Duration) -> Router<AppSta
                 .layer(CompressionLayer::new())
                 .layer(TraceLayer::new_for_http())
                 .layer(TimeoutLayer::new(timeout))
+                .layer(from_fn(handle_service_errors))
                 .layer(from_fn(security_headers_layer)),
         )
 }

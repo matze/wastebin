@@ -14,24 +14,22 @@ const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
 #[derive(Clone)]
 pub struct Html(String);
 
-static LIGHT_CSS: LazyLock<String> = LazyLock::new(|| {
+pub static LIGHT_CSS: LazyLock<String> = LazyLock::new(|| {
     let theme = include_str!("themes/ayu-light.tmTheme");
     let theme = ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme");
     css_for_theme_with_class_style(&theme, ClassStyle::Spaced).expect("generating CSS")
 });
 
-static DARK_CSS: LazyLock<String> = LazyLock::new(|| {
+pub static DARK_CSS: LazyLock<String> = LazyLock::new(|| {
     let theme = include_str!("themes/ayu-dark.tmTheme");
     let theme = ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme");
     css_for_theme_with_class_style(&theme, ClassStyle::Spaced).expect("generating CSS")
 });
 
 pub static DATA: LazyLock<Data> = LazyLock::new(|| {
-    let style = Css::new("style", include_str!("themes/style.css"));
-    let light = Css::new("light", &LIGHT_CSS);
-    let dark = Css::new("dark", &DARK_CSS);
-    let index = Js::new(include_str!("javascript/index.js"));
-    let paste = Js::new(include_str!("javascript/paste.js"));
+    let style = Hashed::new("style", "css", include_str!("themes/style.css"));
+    let index = Hashed::new("index", "js", include_str!("javascript/index.js"));
+    let paste = Hashed::new("paste", "js", include_str!("javascript/paste.js"));
     let syntax_set: SyntaxSet =
         syntect::dumps::from_binary(include_bytes!("../assets/newlines.packdump"));
     let mut syntaxes = syntax_set.syntaxes().to_vec();
@@ -39,8 +37,6 @@ pub static DATA: LazyLock<Data> = LazyLock::new(|| {
 
     Data {
         style,
-        light,
-        dark,
         index,
         paste,
         syntax_set,
@@ -48,43 +44,30 @@ pub static DATA: LazyLock<Data> = LazyLock::new(|| {
     }
 });
 
-/// Combines CSS content with a filename containing the hash of the content.
-pub struct Css<'a> {
+/// Combines content with a filename containing the hash of the content.
+pub struct Hashed<'a> {
     pub name: String,
     pub content: &'a str,
 }
 
-/// Javascript content.
-pub struct Js<'a> {
-    pub content: &'a str,
-}
-
 pub struct Data<'a> {
-    pub style: Css<'a>,
-    pub light: Css<'a>,
-    pub dark: Css<'a>,
-    pub index: Js<'a>,
-    pub paste: Js<'a>,
+    pub style: Hashed<'a>,
+    pub index: Hashed<'a>,
+    pub paste: Hashed<'a>,
     pub syntax_set: SyntaxSet,
     pub syntaxes: Vec<SyntaxReference>,
 }
 
-impl<'a> Css<'a> {
-    fn new(name: &str, content: &'a str) -> Self {
+impl<'a> Hashed<'a> {
+    fn new(name: &str, ext: &str, content: &'a str) -> Self {
         let name = format!(
-            "{name}.{}.css",
+            "{name}.{}.{ext}",
             hex::encode(Sha256::digest(content.as_bytes()))
                 .get(0..16)
                 .expect("at least 16 characters")
         );
 
         Self { name, content }
-    }
-}
-
-impl<'a> Js<'a> {
-    fn new(content: &'a str) -> Self {
-        Self { content }
     }
 }
 

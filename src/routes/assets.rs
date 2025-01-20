@@ -1,4 +1,4 @@
-use crate::highlight::DATA;
+use crate::highlight::{self, DATA};
 use crate::{AppState, Router};
 use axum::response::{IntoResponse, IntoResponseParts};
 use axum::routing::get;
@@ -21,11 +21,11 @@ fn style_css() -> impl IntoResponse {
 }
 
 fn dark_css() -> impl IntoResponse {
-    (css_headers(), DATA.dark.content)
+    (css_headers(), highlight::DARK_CSS.as_str())
 }
 
 fn light_css() -> impl IntoResponse {
-    (css_headers(), DATA.light.content)
+    (css_headers(), highlight::LIGHT_CSS.as_str())
 }
 
 fn favicon() -> impl IntoResponse {
@@ -52,12 +52,15 @@ fn paste_js() -> impl IntoResponse {
 }
 
 pub fn routes() -> Router<AppState> {
-    let style_name = &DATA.style.name;
+    let style_url = format!("/{}", &DATA.style.name);
+    let index_url = format!("/{}", &DATA.index.name);
+    let paste_url = format!("/{}", &DATA.paste.name);
+
     Router::new()
         .route("/favicon.ico", get(|| async { favicon() }))
-        .route(&format!("/{style_name}"), get(|| async { style_css() }))
+        .route(&style_url, get(|| async { style_css() }))
         .route("/dark.css", get(|| async { dark_css() }))
         .route("/light.css", get(|| async { light_css() }))
-        .route("/index.js", get(|| async { index_js() }))
-        .route("/paste.js", get(|| async { paste_js() }))
+        .route(&index_url, get(|| async { index_js() }))
+        .route(&paste_url, get(|| async { paste_js() }))
 }

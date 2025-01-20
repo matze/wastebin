@@ -9,7 +9,7 @@
 {% block title_content %}{% if title.len() > 0 %}: {{ title }}{% endif %}{% endblock %}
 
 {% block head %}
-<script defer src="{{ base_path.join("paste.js") }}"></script>
+<script defer src="{{ base_path.join(meta.highlight.paste.name) }}"></script>
 {% endblock %}
 
 {% block body_top %}

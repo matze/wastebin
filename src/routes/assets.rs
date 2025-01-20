@@ -9,46 +9,24 @@ use std::time::Duration;
 /// Asset maximum age of six months.
 const MAX_AGE: Duration = Duration::from_secs(60 * 60 * 24 * 30 * 6);
 
-fn css_headers() -> impl IntoResponseParts {
+fn css_from(content: &'static str) -> impl IntoResponse {
     (
-        TypedHeader(headers::ContentType::from(mime::TEXT_CSS)),
-        TypedHeader(headers::CacheControl::new().with_max_age(MAX_AGE)),
+        (
+            TypedHeader(headers::ContentType::from(mime::TEXT_CSS)),
+            TypedHeader(headers::CacheControl::new().with_max_age(MAX_AGE)),
+        ),
+        content,
     )
 }
 
-fn style_css() -> impl IntoResponse {
-    (css_headers(), DATA.style.content)
-}
-
-fn dark_css() -> impl IntoResponse {
-    (css_headers(), highlight::DARK_CSS.as_str())
-}
-
-fn light_css() -> impl IntoResponse {
-    (css_headers(), highlight::LIGHT_CSS.as_str())
-}
-
-fn favicon() -> impl IntoResponse {
+fn js_from(content: &'static str) -> impl IntoResponse {
     (
-        TypedHeader(headers::ContentType::png()),
-        TypedHeader(headers::CacheControl::new().with_max_age(MAX_AGE)),
-        Bytes::from_static(include_bytes!("../../assets/favicon.png")),
+        (
+            TypedHeader(headers::ContentType::from(mime::TEXT_JAVASCRIPT)),
+            TypedHeader(headers::CacheControl::new().with_max_age(MAX_AGE)),
+        ),
+        content,
     )
-}
-
-fn js_headers() -> impl IntoResponseParts {
-    (
-        TypedHeader(headers::ContentType::from(mime::TEXT_JAVASCRIPT)),
-        TypedHeader(headers::CacheControl::new().with_max_age(MAX_AGE)),
-    )
-}
-
-fn index_js() -> impl IntoResponse {
-    (js_headers(), DATA.index.content)
-}
-
-fn paste_js() -> impl IntoResponse {
-    (js_headers(), DATA.paste.content)
 }
 
 pub fn routes() -> Router<AppState> {
@@ -57,10 +35,25 @@ pub fn routes() -> Router<AppState> {
     let paste_url = format!("/{}", &DATA.paste.name);
 
     Router::new()
-        .route("/favicon.ico", get(|| async { favicon() }))
-        .route(&style_url, get(|| async { style_css() }))
-        .route("/dark.css", get(|| async { dark_css() }))
-        .route("/light.css", get(|| async { light_css() }))
-        .route(&index_url, get(|| async { index_js() }))
-        .route(&paste_url, get(|| async { paste_js() }))
+        .route(
+            "/favicon.ico",
+            get(|| async {
+                (
+                    TypedHeader(headers::ContentType::png()),
+                    TypedHeader(headers::CacheControl::new().with_max_age(MAX_AGE)),
+                    Bytes::from_static(include_bytes!("../../assets/favicon.png")),
+                )
+            }),
+        )
+        .route(&style_url, get(|| async { css_from(DATA.style.content) }))
+        .route(
+            "/dark.css",
+            get(|| async { css_from(highlight::DARK_CSS.as_str()) }),
+        )
+        .route(
+            "/light.css",
+            get(|| async { css_from(highlight::LIGHT_CSS.as_str()) }),
+        )
+        .route(&index_url, get(|| async { js_from(&DATA.index.content) }))
+        .route(&paste_url, get(|| async { js_from(&DATA.paste.content) }))
 }

@@ -103,6 +103,7 @@ header .nav-title {
   text-overflow: ellipsis;
   min-width: 0;
   white-space: nowrap;
+  user-select: text;
 }
 
 header .nav-button {

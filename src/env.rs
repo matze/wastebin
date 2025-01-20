@@ -15,11 +15,6 @@ pub struct Metadata<'a> {
 
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
-pub const CSS_MAX_AGE: Duration = Duration::from_secs(60 * 60 * 24 * 30 * 6); // 6 month
-pub const JS_MAX_AGE: Duration = Duration::from_secs(60 * 60 * 24 * 30 * 6); // 6 month
-
-pub const FAVICON_MAX_AGE: Duration = Duration::from_secs(86400);
-
 const VAR_ADDRESS_PORT: &str = "WASTEBIN_ADDRESS_PORT";
 const VAR_CACHE_SIZE: &str = "WASTEBIN_CACHE_SIZE";
 const VAR_DATABASE_PATH: &str = "WASTEBIN_DATABASE_PATH";

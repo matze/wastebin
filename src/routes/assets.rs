@@ -1,6 +1,6 @@
 use crate::highlight::{self, DATA};
 use crate::{AppState, Router};
-use axum::response::{IntoResponse, IntoResponseParts};
+use axum::response::IntoResponse;
 use axum::routing::get;
 use axum_extra::{headers, TypedHeader};
 use bytes::Bytes;
@@ -54,6 +54,6 @@ pub fn routes() -> Router<AppState> {
             "/light.css",
             get(|| async { css_from(highlight::LIGHT_CSS.as_str()) }),
         )
-        .route(&index_url, get(|| async { js_from(&DATA.index.content) }))
-        .route(&paste_url, get(|| async { js_from(&DATA.paste.content) }))
+        .route(&index_url, get(|| async { js_from(DATA.index.content) }))
+        .route(&paste_url, get(|| async { js_from(DATA.paste.content) }))
 }

@@ -155,6 +155,10 @@ run-time behavior:
   will be generated which means cookies will become invalid after restarts and
   paste creators will not be able to delete their pastes anymore.
 * `WASTEBIN_TITLE` overrides the HTML page title. Defaults to `wastebin`.
+* `WASTEBIN_RATELIMIT_INSERT` sets the maximum allowed creation amount of new
+  pastes per minute. Defaults to 0 meaning disabled.
+* `WASTEBIN_RATELIMIT_DELETE` sets the maximum allowed delete attempts of existing
+  pastes per minute. Defaults to 0 meaning disabled.
 * `RUST_LOG` influences logging. Besides the typical `trace`, `debug`, `info`
   etc. keys, you can also set the `tower_http` key to some log level to get
   additional information request and response logs.

@@ -12,8 +12,10 @@ use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
     X_XSS_PROTECTION,
 };
+use ratelimit::Ratelimiter;
 use std::num::NonZeroU32;
 use std::process::ExitCode;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
@@ -43,6 +45,8 @@ pub struct AppState {
     key: Key,
     base_url: Option<Url>,
     max_expiration: Option<NonZeroU32>,
+    ratelimit_insert: Option<Arc<Ratelimiter>>,
+    ratelimit_delete: Option<Arc<Ratelimiter>>,
 }
 
 impl FromRef<AppState> for Key {
@@ -142,6 +146,8 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let base_url = env::base_url()?;
     let timeout = env::http_timeout()?;
     let max_expiration = env::max_paste_expiration()?;
+    let ratelimit_insert = env::ratelimit_insert()?;
+    let ratelimit_delete = env::ratelimit_delete()?;
 
     let cache = Cache::new(cache_size);
     let db = Database::new(method)?;
@@ -151,6 +157,26 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
         key,
         base_url,
         max_expiration,
+        ratelimit_insert: ratelimit_insert.map(|rli| {
+            let value = rli.get().into();
+            Arc::new(
+                Ratelimiter::builder(value, Duration::from_secs(60))
+                    .max_tokens(value)
+                    .initial_available(value)
+                    .build()
+                    .expect("valid rate limiter values"),
+            )
+        }),
+        ratelimit_delete: ratelimit_delete.map(|rld| {
+            let value = rld.get().into();
+            Arc::new(
+                Ratelimiter::builder(value, Duration::from_secs(60))
+                    .max_tokens(value)
+                    .initial_available(value)
+                    .build()
+                    .expect("valid rate limiter values"),
+            )
+        }),
     };
 
     tracing::debug!("serving on {addr}");
@@ -158,6 +184,8 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
     tracing::debug!("enforcing a http timeout of {timeout:#?}");
     tracing::debug!("maximum expiration time of {max_expiration:?} seconds");
+    tracing::debug!("ratelimiting insert amount to {ratelimit_insert:?} per minute");
+    tracing::debug!("ratelimiting delete attempts to {ratelimit_delete:?} per minute");
 
     let service = make_app(max_body_size, timeout).with_state(state);
     let listener = TcpListener::bind(&addr).await?;

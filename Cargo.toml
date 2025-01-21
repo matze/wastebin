@@ -17,6 +17,7 @@ lru = "0.12"
 mime = "0.3"
 qrcodegen = "1"
 rand = "0.8"
+ratelimit = "0.10"
 rusqlite = { version = "0.32", features = ["bundled"] }
 rusqlite_migration = { version = "1", default-features = false }
 rust-argon2 = "2.0.0"

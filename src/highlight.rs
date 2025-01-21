@@ -6,7 +6,7 @@ use std::io::Cursor;
 use std::sync::LazyLock;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, line_tokens_to_classed_spans, ClassStyle};
-use syntect::parsing::{ParseState, ScopeStack, SyntaxReference, SyntaxSet};
+use syntect::parsing::{ParseState, ScopeStack, SyntaxDefinition, SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
 
 const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
@@ -32,6 +32,11 @@ pub static DATA: LazyLock<Data> = LazyLock::new(|| {
     let paste = Hashed::new("paste", "js", include_str!("javascript/paste.js"));
     let syntax_set: SyntaxSet =
         syntect::dumps::from_binary(include_bytes!("../assets/newlines.packdump"));
+    let link_highlighting = SyntaxDefinition::load_from_str(
+        include_str!("../assets/LinkHighlight.sublime-syntax"), false, None).expect("loading link style");
+    let mut builder = syntax_set.into_builder();
+    builder.add(link_highlighting);
+    let syntax_set = builder.build();
     let mut syntaxes = syntax_set.syntaxes().to_vec();
     syntaxes.sort_by(|a, b| a.name.partial_cmp(&b.name).unwrap_or(Ordering::Less));
 
@@ -72,12 +77,13 @@ impl<'a> Hashed<'a> {
 }
 
 fn highlight(source: &str, ext: &str) -> Result<String, Error> {
-    let syntax_ref = DATA
-        .syntax_set
-        .find_syntax_by_extension(ext)
+    let syntax_ref = (ext != "txt").then(||
+        DATA
+            .syntax_set
+            .find_syntax_by_extension(ext)).flatten()
         .unwrap_or_else(|| {
             DATA.syntax_set
-                .find_syntax_by_extension("txt")
+                .find_syntax_by_extension("link_highlight")
                 .expect("finding txt syntax")
         });
 
@@ -86,12 +92,13 @@ fn highlight(source: &str, ext: &str) -> Result<String, Error> {
     let mut scope_stack = ScopeStack::new();
 
     for (mut line_number, line) in LinesWithEndings::from(source).enumerate() {
+        // let mut links = HashMap::new();
         let (formatted, delta) = if line.len() > HIGHLIGHT_LINE_LENGTH_CUTOFF {
             (line.to_string(), 0)
         } else {
-            let parsed = parse_state.parse_line(line, &DATA.syntax_set)?;
+            let parsed = parse_state.parse_line(&line, &DATA.syntax_set)?;
             line_tokens_to_classed_spans(
-                line,
+                &line,
                 parsed.as_slice(),
                 ClassStyle::Spaced,
                 &mut scope_stack,

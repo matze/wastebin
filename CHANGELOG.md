@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Select extension based on the filename.
+
 ### Fixed
 
 - Actually respect `WASTEBIN_MAX_BODY_SIZE`.

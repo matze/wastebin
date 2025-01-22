@@ -40,7 +40,21 @@ function openFile() {
     const item = ev.target.files[0];
     let titleInput = document.getElementById('title');
 
+    // Iterate through the `langs` <select> and
+    // try to match the value with the extension. If we have one, select it.
+    const extension = item.name.split(".").pop().toLowerCase();
+    const langSelect = document.getElementById('langs');
+
+    for (i = 0; i < langSelect.length; i++) {
+      if (langSelect[i].value == extension) {
+        langSelect[i].selected = true;
+      }
+    }
+
+    // Set title to the filename.
     titleInput.value = item.name;
+
+    // Set <textarea> to file content.
     item.text().then((value) => textarea.value = value);
   };
 

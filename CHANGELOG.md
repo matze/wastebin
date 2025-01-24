@@ -2,14 +2,24 @@
 
 ## Unreleased
 
+
+## 2.7.1
+
+**2025-01-24**
+
 ### Changed
 
 - Select extension based on the filename.
+- Serve Javascript under hashed URL to avoid caching issues.
+- Use same six month maximum age cache control for all assets.
+- Show nicer error pages for some middleware layer issues instead of plain text
+  responses.
 
 ### Fixed
 
 - Actually respect `WASTEBIN_MAX_BODY_SIZE`.
-
+- Allow selection of title.
+- QR code overflowing content.
 
 
 ## 2.7.0

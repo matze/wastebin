@@ -153,7 +153,7 @@ run-time behavior:
   pastes.
 * `WASTEBIN_SIGNING_KEY` sets the key to sign cookies. If not set, a random key
   will be generated which means cookies will become invalid after restarts and
-  paste creators will not be able to delete their pastes anymore. Needs to be 64 charaters long.
+  paste creators will not be able to delete their pastes anymore. Needs to be 64 characters long.
 * `WASTEBIN_TITLE` overrides the HTML page title. Defaults to `wastebin`.
 * `RUST_LOG` influences logging. Besides the typical `trace`, `debug`, `info`
   etc. keys, you can also set the `tower_http` key to some log level to get

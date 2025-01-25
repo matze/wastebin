@@ -86,7 +86,6 @@ to.
 
 ### Run with docker-compose
 ```
-version: '3.3'
 services:
   wastebin:
     environment:

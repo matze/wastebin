@@ -133,30 +133,19 @@ combination.
 The following environment variables can be set to configure the server and
 run-time behavior:
 
-* `WASTEBIN_ADDRESS_PORT` string that determines which address and port to bind
-  a. If not set, it binds by default to `0.0.0.0:8088`.
-* `WASTEBIN_BASE_URL` string that determines the base URL for the QR code
-  display. If not set, the user agent's `Host` header field is used as an
-  approximation.
-* `WASTEBIN_CACHE_SIZE` number of rendered syntax highlight items to cache.
-  Defaults to 128 and can be disabled by setting to 0.
-* `WASTEBIN_DATABASE_PATH` path to the sqlite3 database file. If not set, an
-  in-memory database is used.
-* `WASTEBIN_HTTP_TIMEOUT` maximum number of seconds a request can be processed
-  until wastebin responds with 408, by default it is set to 5 seconds.
-* `WASTEBIN_MAX_BODY_SIZE` number of bytes to accept for POST requests. Defaults
-  to 1 MB.
-* `WASTEBIN_MAX_PASTE_EXPIRATION` maximum allowed lifetime of a paste in
-  seconds. Defaults to 0 meaning unlimited.
-* `WASTEBIN_PASSWORD_SALT` salt used to hash user passwords used for encrypting
-  pastes.
-* `WASTEBIN_SIGNING_KEY` sets the key to sign cookies. If not set, a random key
-  will be generated which means cookies will become invalid after restarts and
-  paste creators will not be able to delete their pastes anymore. Needs to be 64 characters long.
-* `WASTEBIN_TITLE` overrides the HTML page title. Defaults to `wastebin`.
-* `RUST_LOG` influences logging. Besides the typical `trace`, `debug`, `info`
-  etc. keys, you can also set the `tower_http` key to some log level to get
-  additional information request and response logs.
+| Variable                          | Description                                                   | Default               |
+| --------------------------------- | ------------------------------------------------------------- | --------------------- |
+| `WASTEBIN_ADDRESS_PORT`           | Address and port to bind the server to.                       | `0.0.0.0:8088`.       |
+| `WASTEBIN_BASE_URL`               | Base URL for the QR code display.                             | User agent's `Host` header field used as an approximation. |
+| `WASTEBIN_CACHE_SIZE`             | Number of rendered items to cache, disable with 0.            | 128                   |
+| `WASTEBIN_DATABASE_PATH`          | Path to the sqlite3 database file.                            | `:memory:`            |
+| `WASTEBIN_HTTP_TIMEOUT`           | Maximum number of seconds a request can be processed until wastebin responds with 408 | 5 |
+| `WASTEBIN_MAX_BODY_SIZE`          | Number of bytes to accept for POST requests.                  | 1048576, i.e. 1 MB    |
+| `WASTEBIN_MAX_PASTE_EXPIRATION`   | Maximum allowed lifetime of a paste in seconds.               | 0, i.e. unlimited     |
+| `WASTEBIN_PASSWORD_SALT`          | Salt used to hash user passwords used for encrypting pastes.  | `somesalt`            |
+| `WASTEBIN_SIGNING_KEY`            | Key to sign cookies, at least 64 bytes long.                  | Random key generated at startup, i.e. cookies will become invalid after restarts and paste creators will not be able to delete their pastes. |
+| `WASTEBIN_TITLE`                  | HTML page title.                                              | `wastebin`            |
+| `RUST_LOG`                        | Log level. Besides the typical `trace`, `debug`, `info` etc. keys, you can also set the `tower_http` key to some log level to get additional information request and response logs. | |
 
 
 ### API endpoints

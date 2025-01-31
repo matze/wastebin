@@ -131,8 +131,8 @@ pub mod write {
             let (data, nonce) = if let Some(password) = &self.entry.password {
                 let password = Password::from(password.as_bytes().to_vec());
                 let plaintext = Plaintext::from(self.data);
-                let encrypted = Encrypted::encrypt(password, plaintext).await?;
-                (encrypted.ciphertext, Some(encrypted.nonce))
+                let Encrypted { ciphertext, nonce } = plaintext.encrypt(password).await?;
+                (ciphertext, Some(nonce))
             } else {
                 (self.data, None)
             };

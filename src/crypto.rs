@@ -18,14 +18,18 @@ static CONFIG: LazyLock<argon2::Config> = LazyLock::new(|| argon2::Config {
 
 static SALT: LazyLock<String> = LazyLock::new(env::password_hash_salt);
 
+/// Encrypted data item.
 pub struct Encrypted {
+    /// Encrypted ciphertext.
     pub ciphertext: Vec<u8>,
+    /// Nonce used for encryption.
     pub nonce: Vec<u8>,
 }
 
 #[derive(Clone)]
 pub struct Password(Vec<u8>);
 
+/// Plaintext bytes to be encrypted.
 pub struct Plaintext(Vec<u8>);
 
 impl From<Vec<u8>> for Password {
@@ -46,27 +50,29 @@ fn cipher_from(password: &[u8]) -> Result<XChaCha20Poly1305, Error> {
     Ok(XChaCha20Poly1305::new(key))
 }
 
-impl Encrypted {
-    pub fn new(ciphertext: Vec<u8>, nonce: Vec<u8>) -> Self {
-        Self { ciphertext, nonce }
-    }
-
-    pub async fn encrypt(password: Password, plaintext: Plaintext) -> Result<Self, Error> {
+impl Plaintext {
+    /// Consume and encrypt plaintext into [`Encrypted`] using `password`.
+    pub async fn encrypt(self, password: Password) -> Result<Encrypted, Error> {
         spawn_blocking(move || {
             let cipher = cipher_from(&password.0)?;
             let nonce = XChaCha20Poly1305::generate_nonce(&mut OsRng);
             let ciphertext = cipher
-                .encrypt(&nonce, plaintext.0.as_ref())
+                .encrypt(&nonce, self.0.as_ref())
                 .map_err(|_| Error::ChaCha20Poly1305Encrypt)?;
 
-            Ok(Self {
-                ciphertext,
-                nonce: nonce.to_vec(),
-            })
+            Ok(Encrypted::new(ciphertext, nonce.to_vec()))
         })
         .await?
     }
+}
 
+impl Encrypted {
+    /// Create new [`Encrypted`] item from `ciphertext` and `nonce`.
+    pub fn new(ciphertext: Vec<u8>, nonce: Vec<u8>) -> Self {
+        Self { ciphertext, nonce }
+    }
+
+    /// Decrypt into bytes using `password`.
     pub async fn decrypt(self, password: Password) -> Result<Vec<u8>, Error> {
         spawn_blocking(move || {
             let cipher = cipher_from(&password.0)?;
@@ -88,12 +94,10 @@ mod tests {
     async fn roundtrip() {
         let password = "secret".to_string();
         let plaintext = "encrypt me".to_string();
-        let encrypted = Encrypted::encrypt(
-            Password::from(password.as_bytes().to_vec()),
-            Plaintext::from(plaintext.as_bytes().to_vec()),
-        )
-        .await
-        .unwrap();
+        let encrypted = Plaintext::from(plaintext.as_bytes().to_vec())
+            .encrypt(Password::from(password.as_bytes().to_vec()))
+            .await
+            .unwrap();
         let decrypted = encrypted
             .decrypt(Password::from(password.as_bytes().to_vec()))
             .await

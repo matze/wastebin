@@ -32,7 +32,12 @@ pub static DATA: LazyLock<Data> = LazyLock::new(|| {
     let paste = Hashed::new("paste", "js", include_str!("javascript/paste.js"));
     let syntax_set = two_face::syntax::extra_newlines();
     let mut syntaxes = syntax_set.syntaxes().to_vec();
-    syntaxes.sort_by(|a, b| a.name.partial_cmp(&b.name).unwrap_or(Ordering::Less));
+    syntaxes.sort_by(|a, b| {
+        a.name
+            .to_lowercase()
+            .partial_cmp(&b.name.to_lowercase())
+            .unwrap_or(Ordering::Less)
+    });
 
     Data {
         style,

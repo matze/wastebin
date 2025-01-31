@@ -7,6 +7,10 @@
 - Use the [two-face](https://docs.rs/two-face) crate for an extended syntax
   list.
 
+### Fixes
+
+- Sort syntax list in case insensitive manner.
+
 
 ## 2.7.1
 

@@ -135,17 +135,17 @@ run-time behavior:
 
 | Variable                          | Description                                                   | Default               |
 | --------------------------------- | ------------------------------------------------------------- | --------------------- |
-| `WASTEBIN_ADDRESS_PORT`           | Address and port to bind the server to.                       | `0.0.0.0:8088`.       |
+| `WASTEBIN_ADDRESS_PORT`           | Address and port to bind the server to.                       | `0.0.0.0:8088`        |
 | `WASTEBIN_BASE_URL`               | Base URL for the QR code display.                             | User agent's `Host` header field used as an approximation. |
-| `WASTEBIN_CACHE_SIZE`             | Number of rendered items to cache, disable with 0.            | 128                   |
+| `WASTEBIN_CACHE_SIZE`             | Number of rendered items to cache. Disable with 0.            | `128`                 |
 | `WASTEBIN_DATABASE_PATH`          | Path to the sqlite3 database file.                            | `:memory:`            |
-| `WASTEBIN_HTTP_TIMEOUT`           | Maximum number of seconds a request can be processed until wastebin responds with 408 | 5 |
-| `WASTEBIN_MAX_BODY_SIZE`          | Number of bytes to accept for POST requests.                  | 1048576, i.e. 1 MB    |
-| `WASTEBIN_MAX_PASTE_EXPIRATION`   | Maximum allowed lifetime of a paste in seconds.               | 0, i.e. unlimited     |
+| `WASTEBIN_HTTP_TIMEOUT`           | Maximum number of seconds a request is processed until wastebin responds with 408. | `5` |
+| `WASTEBIN_MAX_BODY_SIZE`          | Number of bytes to accept for POST requests.                  | `1048576`, i.e. 1 MB  |
+| `WASTEBIN_MAX_PASTE_EXPIRATION`   | Maximum allowed lifetime of a paste in seconds. Disable with 0. | `0`                 |
 | `WASTEBIN_PASSWORD_SALT`          | Salt used to hash user passwords used for encrypting pastes.  | `somesalt`            |
-| `WASTEBIN_SIGNING_KEY`            | Key to sign cookies, at least 64 bytes long.                  | Random key generated at startup, i.e. cookies will become invalid after restarts and paste creators will not be able to delete their pastes. |
+| `WASTEBIN_SIGNING_KEY`            | Key to sign cookies. Must be at least 64 bytes long.          | Random key generated at startup, i.e. cookies will become invalid after restarts and paste creators will not be able to delete their pastes. |
 | `WASTEBIN_TITLE`                  | HTML page title.                                              | `wastebin`            |
-| `RUST_LOG`                        | Log level. Besides the typical `trace`, `debug`, `info` etc. keys, you can also set the `tower_http` key to some log level to get additional information request and response logs. | |
+| `RUST_LOG`                        | Log level. Besides the typical `trace`, `debug`, `info` etc. keys, you can also set the `tower_http` key to a log level to get additional request and response logs. | --- |
 
 
 ### API endpoints

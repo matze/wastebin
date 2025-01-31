@@ -30,8 +30,7 @@ pub static DATA: LazyLock<Data> = LazyLock::new(|| {
     let style = Hashed::new("style", "css", include_str!("themes/style.css"));
     let index = Hashed::new("index", "js", include_str!("javascript/index.js"));
     let paste = Hashed::new("paste", "js", include_str!("javascript/paste.js"));
-    let syntax_set: SyntaxSet =
-        syntect::dumps::from_binary(include_bytes!("../assets/newlines.packdump"));
+    let syntax_set = two_face::syntax::extra_newlines();
     let mut syntaxes = syntax_set.syntaxes().to_vec();
     syntaxes.sort_by(|a, b| a.name.partial_cmp(&b.name).unwrap_or(Ordering::Less));
 

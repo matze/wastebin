@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Use the [two-face](https://docs.rs/two-face) crate for an extended syntax
+  list.
+
 
 ## 2.7.1
 

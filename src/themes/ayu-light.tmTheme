@@ -690,28 +690,28 @@ a {
 				<string>bold italic</string>
 			</dict>
 		</dict>
-		<dict>
-			<key>name</key>
-			<string>Markup Code</string>
-			<key>scope</key>
-			<string>markup.raw</string>
-			<key>settings</key>
-			<dict>
-				<key>background</key>
-				<string>#53596307</string>
-			</dict>
-		</dict>
-		<dict>
-			<key>name</key>
-			<string>Markup Code Inline</string>
-			<key>scope</key>
-			<string>markup.raw.inline</string>
-			<key>settings</key>
-			<dict>
-				<key>background</key>
-				<string>#53596310</string>
-			</dict>
-		</dict>
+		<!-- <dict> -->
+		<!-- 	<key>name</key> -->
+		<!-- 	<string>Markup Code</string> -->
+		<!-- 	<key>scope</key> -->
+		<!-- 	<string>markup.raw</string> -->
+		<!-- 	<key>settings</key> -->
+		<!-- 	<dict> -->
+		<!-- 		<key>background</key> -->
+		<!-- 		<string>#53596307</string> -->
+		<!-- 	</dict> -->
+		<!-- </dict> -->
+		<!-- <dict> -->
+		<!-- 	<key>name</key> -->
+		<!-- 	<string>Markup Code Inline</string> -->
+		<!-- 	<key>scope</key> -->
+		<!-- 	<string>markup.raw.inline</string> -->
+		<!-- 	<key>settings</key> -->
+		<!-- 	<dict> -->
+		<!-- 		<key>background</key> -->
+		<!-- 		<string>#53596310</string> -->
+		<!-- 	</dict> -->
+		<!-- </dict> -->
 		<dict>
 			<key>name</key>
 			<string>Markdown Separator</string>
@@ -837,8 +837,8 @@ a {
 			<string>markup.raw.block.fenced.markdown</string>
 			<key>settings</key>
 			<dict>
-				<key>background</key>
-				<string>#53596310</string>
+				<!-- <key>background</key> -->
+				<!-- <string>#53596310</string> -->
 				<key>foreground</key>
 				<string>#535963</string>
 			</dict>
@@ -850,8 +850,8 @@ a {
 			<string>punctuation.definition.fenced.markdown, variable.language.fenced.markdown</string>
 			<key>settings</key>
 			<dict>
-				<key>background</key>
-				<string>#53596310</string>
+				<!-- <key>background</key> -->
+				<!-- <string>#53596310</string> -->
 				<key>foreground</key>
 				<string>#ABB0B6</string>
 			</dict>

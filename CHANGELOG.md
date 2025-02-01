@@ -10,6 +10,7 @@
 ### Fixes
 
 - Sort syntax list in case insensitive manner.
+- Wrong background color for inline code in Markdown.
 
 
 ## 2.7.1

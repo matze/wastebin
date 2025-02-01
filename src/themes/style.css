@@ -1,37 +1,23 @@
 @import url("light.css") (prefers-color-scheme: light);
 @import url("dark.css") (prefers-color-scheme: dark);
 
+:root {
+  --main-accent-color: #39bae6;
+  --main-highlight-color: #fa6e32;
+  --main-line-number-color: #abb0b6;
+}
+
 @media (prefers-color-scheme: dark) {
-  body, textarea, select, input, select > option:hover {
-    background-color: #0f1419;
-    color: #e6e1cf;
-  }
-
-  select {
-    color: #e6e1cf;
-  }
-
-  header {
-    border-bottom: 1px solid #163855;
+  :root {
+    --main-bg-color: #0f1419;
+    --main-fg-color: #e6e1cf;
   }
 }
 
 @media (prefers-color-scheme: light) {
-  body, textarea, select, input, select > option:hover {
-    background-color: #fafafa;
-    color: #333;
-  }
-
-  select {
-    color: #0f1419;
-  }
-
-  header {
-    border-bottom: 1px solid #d9d7d7;
-  }
-
-  h1 {
-    color: #555;
+  :root {
+    --main-bg-color: #fafafa;
+    --main-fg-color: #333;
   }
 }
 
@@ -47,6 +33,11 @@
 
 html {
   font-size: 16px;
+}
+
+body, textarea, select, input, select > option:hover {
+  background-color: var(--main-bg-color);
+  color: var(--main-fg-color);
 }
 
 body {
@@ -81,6 +72,9 @@ header {
   align-items: center;
   padding: 0 1em 0 1em;
   user-select: none;
+  border-bottom-color: color-mix(in srgb, var(--main-accent-color) 50%, transparent);
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
 }
 
 header .nav-group {
@@ -104,19 +98,20 @@ header .nav-title {
   min-width: 0;
   white-space: nowrap;
   user-select: text;
+  color: var(--main-fg-color);
 }
 
 header .nav-button {
   display: flex;
-  color: #39bae6;
+  color: var(--main-accent-color);
   border: none;
   padding: 1rem;
   background: none;
 }
 
 header .nav-button:hover {
-  background-color: #39bae6;
-  color: #0f1419;
+  background-color: var(--main-accent-color);
+  color: var(--main-bg-color);
   cursor: pointer;
   border-radius: 8px;
 }
@@ -139,11 +134,11 @@ button:hover {
   padding: 1em;
   border: none;
   border-radius: 8px;
-  background-color: #39bae6;
+  background-color: var(--main-accent-color);
 }
 
 .button:hover {
-  background-color: #fa6e32;
+  background-color: var(--main-highlight-color);
   transition: background-color 100ms;
 }
 
@@ -155,8 +150,8 @@ select {
 }
 
 select > option:hover {
-  background-color: #39bae6;
-  color: #0f1419;
+  background-color: var(--main-accent-color);
+  color: var(--main-bg-color);
 }
 
 option {
@@ -167,7 +162,7 @@ input {
   font-family: "JetBrains Mono", monospace;
   font-size: 1.0625rem;
   padding: 0.25rem;
-  border-color: #39bae6;
+  border-color: var(--main-accent-color);
   border-style: solid;
   border-width: 1px;
   border-radius: 4px;
@@ -265,11 +260,11 @@ td.line-number {
 }
 
 .line-number > a, .line-number > a:visited {
-  color: #abb0b6;
+  color: var(--main-line-number-color);
 }
 
 .line-number > a:hover, .line-number > a:focus {
-  color: #fa6e32;
+  color: var(--main-highlight-color);
 }
 
 .line {

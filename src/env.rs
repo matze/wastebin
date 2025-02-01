@@ -16,14 +16,15 @@ pub struct Metadata<'a> {
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
 const VAR_ADDRESS_PORT: &str = "WASTEBIN_ADDRESS_PORT";
+const VAR_BASE_URL: &str = "WASTEBIN_BASE_URL";
 const VAR_CACHE_SIZE: &str = "WASTEBIN_CACHE_SIZE";
 const VAR_DATABASE_PATH: &str = "WASTEBIN_DATABASE_PATH";
-const VAR_MAX_BODY_SIZE: &str = "WASTEBIN_MAX_BODY_SIZE";
-const VAR_SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
-const VAR_BASE_URL: &str = "WASTEBIN_BASE_URL";
-const VAR_PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
 const VAR_HTTP_TIMEOUT: &str = "WASTEBIN_HTTP_TIMEOUT";
+const VAR_MAX_BODY_SIZE: &str = "WASTEBIN_MAX_BODY_SIZE";
 const VAR_MAX_PASTE_EXPIRATION: &str = "WASTEBIN_MAX_PASTE_EXPIRATION";
+const VAR_SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
+const VAR_THEME: &str = "WASTEBIN_THEME";
+const VAR_PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -101,6 +102,25 @@ pub static BASE_PATH: LazyLock<BasePath> = LazyLock::new(|| {
             Err(err) => {
                 tracing::error!("error parsing `VAR_BASE_URL`, defaulting to '/': {err}");
                 BasePath::default()
+            }
+        },
+    )
+});
+
+pub static THEME: LazyLock<highlight::Theme> = LazyLock::new(|| {
+    std::env::var(VAR_THEME).map_or_else(
+        |_| highlight::Theme::Ayu,
+        |var| match var.as_str() {
+            "ayu" => highlight::Theme::Ayu,
+            "base16ocean" => highlight::Theme::Base16Ocean,
+            "coldark" => highlight::Theme::Coldark,
+            "gruvbox" => highlight::Theme::Gruvbox,
+            "monokai" => highlight::Theme::Monokai,
+            "onehalf" => highlight::Theme::Onehalf,
+            "solarized" => highlight::Theme::Solarized,
+            _ => {
+                tracing::error!("unrecognized theme {var}");
+                highlight::Theme::Ayu
             }
         },
     )

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- `WASTEBIN_THEME` configuration key to change the default theme from `ayu` to
+  `base16ocean`, `coldark`, `gruvbox`, `monokai`, `onehalf` or `solarized`.
+
 ### Changed
 
 - Use the [two-face](https://docs.rs/two-face) crate for an extended syntax

@@ -1,4 +1,5 @@
 use crate::db::read::Entry;
+use crate::env;
 use crate::errors::Error;
 use sha2::{Digest, Sha256};
 use std::cmp::Ordering;
@@ -8,22 +9,60 @@ use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, line_tokens_to_classed_spans, ClassStyle};
 use syntect::parsing::{ParseState, ScopeStack, SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
+use two_face::theme::EmbeddedThemeName;
 
 const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
+
+/// Supported themes.
+pub enum Theme {
+    Ayu,
+    Base16Ocean,
+    Coldark,
+    Gruvbox,
+    Monokai,
+    Onehalf,
+    Solarized,
+}
 
 #[derive(Clone)]
 pub struct Html(String);
 
 pub static LIGHT_CSS: LazyLock<String> = LazyLock::new(|| {
-    let theme = include_str!("themes/ayu-light.tmTheme");
-    let theme = ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme");
-    css_for_theme_with_class_style(&theme, ClassStyle::Spaced).expect("generating CSS")
+    let theme_set = two_face::theme::extra();
+
+    let theme = match *env::THEME {
+        Theme::Ayu => {
+            let theme = include_str!("themes/ayu-light.tmTheme");
+            &ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
+        }
+        Theme::Base16Ocean => theme_set.get(EmbeddedThemeName::Base16OceanLight),
+        Theme::Coldark => theme_set.get(EmbeddedThemeName::ColdarkCold),
+        Theme::Gruvbox => theme_set.get(EmbeddedThemeName::GruvboxLight),
+        Theme::Monokai => theme_set.get(EmbeddedThemeName::MonokaiExtendedLight),
+        Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfLight),
+        Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedLight),
+    };
+
+    css_for_theme_with_class_style(theme, ClassStyle::Spaced).expect("generating CSS")
 });
 
 pub static DARK_CSS: LazyLock<String> = LazyLock::new(|| {
-    let theme = include_str!("themes/ayu-dark.tmTheme");
-    let theme = ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme");
-    css_for_theme_with_class_style(&theme, ClassStyle::Spaced).expect("generating CSS")
+    let theme_set = two_face::theme::extra();
+
+    let theme = match *env::THEME {
+        Theme::Ayu => {
+            let theme = include_str!("themes/ayu-dark.tmTheme");
+            &ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
+        }
+        Theme::Base16Ocean => theme_set.get(EmbeddedThemeName::Base16OceanDark),
+        Theme::Coldark => theme_set.get(EmbeddedThemeName::ColdarkDark),
+        Theme::Gruvbox => theme_set.get(EmbeddedThemeName::GruvboxDark),
+        Theme::Monokai => theme_set.get(EmbeddedThemeName::MonokaiExtended),
+        Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfDark),
+        Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedDark),
+    };
+
+    css_for_theme_with_class_style(theme, ClassStyle::Spaced).expect("generating CSS")
 });
 
 pub static DATA: LazyLock<Data> = LazyLock::new(|| {

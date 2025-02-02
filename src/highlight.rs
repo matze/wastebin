@@ -1,11 +1,12 @@
 use crate::db::read::Entry;
 use crate::env;
 use crate::errors::Error;
+use askama::Template;
 use sha2::{Digest, Sha256};
 use std::cmp::Ordering;
 use std::io::Cursor;
 use std::sync::LazyLock;
-use syntect::highlighting::ThemeSet;
+use syntect::highlighting::{Color, ThemeSet};
 use syntect::html::{css_for_theme_with_class_style, line_tokens_to_classed_spans, ClassStyle};
 use syntect::parsing::{ParseState, ScopeStack, SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
@@ -24,49 +25,104 @@ pub enum Theme {
     Solarized,
 }
 
+#[derive(Template)]
+#[template(path = "style.css", escape = "none")]
+struct StyleCss {
+    light_background: Color,
+    light_foreground: Color,
+    dark_background: Color,
+    dark_foreground: Color,
+}
+
 #[derive(Clone)]
 pub struct Html(String);
 
-pub static LIGHT_CSS: LazyLock<String> = LazyLock::new(|| {
+pub static LIGHT_THEME: LazyLock<syntect::highlighting::Theme> = LazyLock::new(|| {
     let theme_set = two_face::theme::extra();
 
-    let theme = match *env::THEME {
+    match *env::THEME {
         Theme::Ayu => {
             let theme = include_str!("themes/ayu-light.tmTheme");
-            &ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
+            ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
         }
-        Theme::Base16Ocean => theme_set.get(EmbeddedThemeName::Base16OceanLight),
-        Theme::Coldark => theme_set.get(EmbeddedThemeName::ColdarkCold),
-        Theme::Gruvbox => theme_set.get(EmbeddedThemeName::GruvboxLight),
-        Theme::Monokai => theme_set.get(EmbeddedThemeName::MonokaiExtendedLight),
-        Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfLight),
-        Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedLight),
-    };
+        Theme::Base16Ocean => theme_set.get(EmbeddedThemeName::Base16OceanLight).clone(),
+        Theme::Coldark => theme_set.get(EmbeddedThemeName::ColdarkCold).clone(),
+        Theme::Gruvbox => theme_set.get(EmbeddedThemeName::GruvboxLight).clone(),
+        Theme::Monokai => theme_set
+            .get(EmbeddedThemeName::MonokaiExtendedLight)
+            .clone(),
+        Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfLight).clone(),
+        Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedLight).clone(),
+    }
+});
 
-    css_for_theme_with_class_style(theme, ClassStyle::Spaced).expect("generating CSS")
+pub static LIGHT_CSS: LazyLock<String> = LazyLock::new(|| {
+    css_for_theme_with_class_style(&LIGHT_THEME, ClassStyle::Spaced).expect("generating CSS")
+});
+
+pub static DARK_THEME: LazyLock<syntect::highlighting::Theme> = LazyLock::new(|| {
+    let theme_set = two_face::theme::extra();
+
+    match *env::THEME {
+        Theme::Ayu => {
+            let theme = include_str!("themes/ayu-dark.tmTheme");
+            ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
+        }
+        Theme::Base16Ocean => theme_set.get(EmbeddedThemeName::Base16OceanDark).clone(),
+        Theme::Coldark => theme_set.get(EmbeddedThemeName::ColdarkDark).clone(),
+        Theme::Gruvbox => theme_set.get(EmbeddedThemeName::GruvboxDark).clone(),
+        Theme::Monokai => theme_set.get(EmbeddedThemeName::MonokaiExtended).clone(),
+        Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfDark).clone(),
+        Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedDark).clone(),
+    }
 });
 
 pub static DARK_CSS: LazyLock<String> = LazyLock::new(|| {
-    let theme_set = two_face::theme::extra();
+    css_for_theme_with_class_style(&DARK_THEME, ClassStyle::Spaced).expect("generating CSS")
+});
 
-    let theme = match *env::THEME {
-        Theme::Ayu => {
-            let theme = include_str!("themes/ayu-dark.tmTheme");
-            &ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
-        }
-        Theme::Base16Ocean => theme_set.get(EmbeddedThemeName::Base16OceanDark),
-        Theme::Coldark => theme_set.get(EmbeddedThemeName::ColdarkDark),
-        Theme::Gruvbox => theme_set.get(EmbeddedThemeName::GruvboxDark),
-        Theme::Monokai => theme_set.get(EmbeddedThemeName::MonokaiExtended),
-        Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfDark),
-        Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedDark),
+trait ColorExt {
+    fn new(r: u8, g: u8, b: u8, a: u8) -> Self;
+}
+
+impl ColorExt for Color {
+    fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
+        Self { r, g, b, a }
+    }
+}
+
+pub static STYLE_CSS: LazyLock<String> = LazyLock::new(|| {
+    let light_foreground = LIGHT_THEME
+        .settings
+        .foreground
+        .unwrap_or(Color::new(3, 3, 3, 100));
+
+    let light_background = LIGHT_THEME
+        .settings
+        .background
+        .unwrap_or(Color::new(250, 250, 250, 100));
+
+    let dark_foreground = DARK_THEME
+        .settings
+        .foreground
+        .unwrap_or(Color::new(230, 225, 207, 100));
+
+    let dark_background = DARK_THEME
+        .settings
+        .background
+        .unwrap_or(Color::new(15, 20, 25, 100));
+
+    let style = StyleCss {
+        light_background,
+        light_foreground,
+        dark_background,
+        dark_foreground,
     };
-
-    css_for_theme_with_class_style(theme, ClassStyle::Spaced).expect("generating CSS")
+    style.render().expect("rendering style css")
 });
 
 pub static DATA: LazyLock<Data> = LazyLock::new(|| {
-    let style = Hashed::new("style", "css", include_str!("themes/style.css"));
+    let style = Hashed::new("style", "css", &STYLE_CSS);
     let index = Hashed::new("index", "js", include_str!("javascript/index.js"));
     let paste = Hashed::new("paste", "js", include_str!("javascript/paste.js"));
     let syntax_set = two_face::syntax::extra_newlines();

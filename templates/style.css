@@ -9,15 +9,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --main-bg-color: #0f1419;
-    --main-fg-color: #e6e1cf;
+    --main-bg-color: rgb({{ dark_background.r }}, {{ dark_background.g }}, {{ dark_background.b }}, {{ dark_background.a }});
+    --main-fg-color: rgb({{ dark_foreground.r }}, {{ dark_foreground.g }}, {{ dark_foreground.b }}, {{ dark_foreground.a }});
   }
 }
 
 @media (prefers-color-scheme: light) {
   :root {
-    --main-bg-color: #fafafa;
-    --main-fg-color: #333;
+    --main-bg-color: rgb({{ light_background.r }}, {{ light_background.g }}, {{ light_background.b }}, {{ light_background.a }});
+    --main-fg-color: rgb({{ light_foreground.r }}, {{ light_foreground.g }}, {{ light_foreground.b }}, {{ light_foreground.a }});
   }
 }
 

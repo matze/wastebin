@@ -4,14 +4,7 @@ use std::env::VarError;
 use std::net::SocketAddr;
 use std::num::{NonZero, NonZeroU32, NonZeroUsize, ParseIntError};
 use std::path::PathBuf;
-use std::sync::LazyLock;
 use std::time::Duration;
-
-pub struct Metadata<'a> {
-    pub title: String,
-    pub version: &'a str,
-    pub highlight: &'a highlight::Data<'a>,
-}
 
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -44,87 +37,29 @@ pub enum Error {
     HttpTimeout(ParseIntError),
     #[error("failed to parse {VAR_MAX_PASTE_EXPIRATION}: {0}")]
     MaxPasteExpiration(ParseIntError),
+    #[error("unknown theme {0}")]
+    UnknownTheme(String),
 }
 
-pub struct BasePath(String);
-
-impl BasePath {
-    pub fn path(&self) -> &str {
-        &self.0
-    }
-
-    pub fn join(&self, s: &str) -> String {
-        let b = &self.0;
-        format!("{b}{s}")
-    }
+pub fn title() -> String {
+    std::env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string())
 }
 
-impl Default for BasePath {
-    fn default() -> Self {
-        BasePath("/".to_string())
-    }
-}
-
-pub static METADATA: LazyLock<Metadata> = LazyLock::new(|| {
-    let title = std::env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string());
-    let version = env!("CARGO_PKG_VERSION");
-    let highlight = &highlight::DATA;
-
-    Metadata {
-        title,
-        version,
-        highlight,
-    }
-});
-
-// NOTE: This relies on `VAR_BASE_URL` but repeats parsing to handle errors.
-pub static BASE_PATH: LazyLock<BasePath> = LazyLock::new(|| {
-    std::env::var(VAR_BASE_URL).map_or_else(
-        |err| {
-            match err {
-                VarError::NotPresent => (),
-                VarError::NotUnicode(_) => {
-                    tracing::warn!("`VAR_BASE_URL` not Unicode, defaulting to '/'");
-                }
-            };
-            BasePath::default()
-        },
-        |var| match url::Url::parse(&var) {
-            Ok(url) => {
-                let path = url.path();
-
-                if path.ends_with('/') {
-                    BasePath(path.to_string())
-                } else {
-                    BasePath(format!("{path}/"))
-                }
-            }
-            Err(err) => {
-                tracing::error!("error parsing `VAR_BASE_URL`, defaulting to '/': {err}");
-                BasePath::default()
-            }
-        },
-    )
-});
-
-pub static THEME: LazyLock<highlight::Theme> = LazyLock::new(|| {
+pub fn theme() -> Result<highlight::Theme, Error> {
     std::env::var(VAR_THEME).map_or_else(
-        |_| highlight::Theme::Ayu,
+        |_| Ok(highlight::Theme::Ayu),
         |var| match var.as_str() {
-            "ayu" => highlight::Theme::Ayu,
-            "base16ocean" => highlight::Theme::Base16Ocean,
-            "coldark" => highlight::Theme::Coldark,
-            "gruvbox" => highlight::Theme::Gruvbox,
-            "monokai" => highlight::Theme::Monokai,
-            "onehalf" => highlight::Theme::Onehalf,
-            "solarized" => highlight::Theme::Solarized,
-            _ => {
-                tracing::error!("unrecognized theme {var}");
-                highlight::Theme::Ayu
-            }
+            "ayu" => Ok(highlight::Theme::Ayu),
+            "base16ocean" => Ok(highlight::Theme::Base16Ocean),
+            "coldark" => Ok(highlight::Theme::Coldark),
+            "gruvbox" => Ok(highlight::Theme::Gruvbox),
+            "monokai" => Ok(highlight::Theme::Monokai),
+            "onehalf" => Ok(highlight::Theme::Onehalf),
+            "solarized" => Ok(highlight::Theme::Solarized),
+            _ => Err(Error::UnknownTheme(var)),
         },
     )
-});
+}
 
 pub fn cache_size() -> Result<NonZeroUsize, Error> {
     std::env::var(VAR_CACHE_SIZE)

@@ -1,18 +1,14 @@
 use crate::cache::Cache;
 use crate::db::{self, Database};
-use crate::env::base_url;
-use axum::extract::Request;
-use axum::response::Response;
-use axum::Router;
+use crate::highlight::{Highlighter, Theme};
+use crate::{Assets, Page};
 use axum_extra::extract::cookie::Key;
 use reqwest::RequestBuilder;
-use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::num::NonZeroUsize;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::TcpListener;
-use tower::make::Shared;
-use tower_service::Service;
 
 pub(crate) struct Client {
     client: reqwest::Client,
@@ -20,11 +16,24 @@ pub(crate) struct Client {
 }
 
 impl Client {
-    pub(crate) async fn new<S>(svc: S) -> Self
-    where
-        S: Service<Request, Response = Response, Error = Infallible> + Clone + Send + 'static,
-        S::Future: Send,
-    {
+    pub(crate) async fn new() -> Self {
+        let db = Database::new(db::Open::Memory).expect("open memory database");
+        let cache = Cache::new(NonZeroUsize::new(128).unwrap());
+        let key = Key::generate();
+        let page = Arc::new(Page::new(
+            Assets::new(Theme::Ayu),
+            String::from("test"),
+            None,
+        ));
+        let state = crate::AppState {
+            db,
+            cache,
+            key,
+            max_expiration: None,
+            page,
+            highlighter: Arc::new(Highlighter::default()),
+        };
+
         let listener = TcpListener::bind("127.0.0.1:0")
             .await
             .expect("Could not bind ephemeral socket");
@@ -32,7 +41,9 @@ impl Client {
         let addr = listener.local_addr().unwrap();
 
         tokio::spawn(async move {
-            axum::serve(listener, Shared::new(svc)).await.unwrap();
+            crate::serve(listener, state, Duration::new(30, 0), 1024 * 1024)
+                .await
+                .unwrap();
         });
 
         let client = reqwest::Client::builder()
@@ -45,26 +56,12 @@ impl Client {
     }
 
     pub(crate) fn get(&self, url: &str) -> RequestBuilder {
+        println!("{:?}", self.addr);
+        println!("{url}");
         self.client.get(format!("http://{}{}", self.addr, url))
     }
 
     pub(crate) fn post(&self, url: &str) -> RequestBuilder {
         self.client.post(format!("http://{}{}", self.addr, url))
     }
-}
-
-pub(crate) fn make_app() -> Result<Router, Box<dyn std::error::Error>> {
-    let db = Database::new(db::Open::Memory)?;
-    let cache = Cache::new(NonZeroUsize::new(128).unwrap());
-    let key = Key::generate();
-    let base_url = base_url().unwrap();
-    let state = crate::AppState {
-        db,
-        cache,
-        key,
-        base_url,
-        max_expiration: None,
-    };
-
-    Ok(crate::make_app(4096, Duration::new(30, 0)).with_state(state))
 }

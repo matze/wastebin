@@ -1,7 +1,3 @@
-const BASE_PATH = document.getElementById('js_base_path').innerHTML;
-const BASE_PATH_ID = document.getElementById('js_base_path_id').innerHTML;
-const EXT = document.getElementById('js_ext').innerHTML;
-
 document.addEventListener('keydown', onKey);
 
 function onKey(e) {
@@ -9,19 +5,19 @@ function onKey(e) {
     window.location.href = BASE_PATH;
   }
   else if (e.key == 'r') {
-    window.location.href = `${BASE_PATH_ID}?fmt=raw`;
+    window.location.href = "?fmt=raw";
   }
   else if (e.key == 'y') {
     navigator.clipboard.writeText(window.location.href);
   }
   else if (e.key == 'd') {
-    window.location.href = `${BASE_PATH_ID}?dl=${EXT}`;
+    window.location.href = "?fmt=dl";
   }
   else if (e.key == 'q') {
-    window.location.href = `${BASE_PATH_ID}?fmt=qr`;
+    window.location.href = "?fmt=qr";
   }
   else if (e.key == 'p') {
-    window.location.href = `${BASE_PATH_ID}`;
+    window.location.href = window.location.href.split("?")[0];
   }
   else if (e.key == '?') {
     var overlay = document.getElementById("overlay");

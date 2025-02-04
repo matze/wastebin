@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block head %}
-<script defer src="{{ base_path.join(meta.highlight.index.name) }}"></script>
+<script defer src="{{ page.assets.index_js.route() }}"></script>
 {% endblock %}
 
 {% block nav_specific %}
@@ -15,7 +15,7 @@
 {% endblock %}
 
 {%- block content -%}
-    <form id="form" action="{{ base_path.path() }}" method="post">
+    <form id="form" action="/" method="post">
       <div class="container">
         <div class="content">
           <textarea id="text" name="text" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text or drop file here>" autofocus></textarea>
@@ -24,7 +24,7 @@
           <div class="controls-group">
             <div class="controls-row">
               <select class="controls-row" name="extension" id="langs" size="17">
-              {%- for syntax in meta.highlight.syntaxes -%}
+              {%- for syntax in highlighter.syntaxes -%}
                 {%- if syntax.file_extensions.len() > 0 %}
                 <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
                 {%- endif -%}

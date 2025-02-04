@@ -2,22 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="generator" content="wastebin {{ meta.version }}">
+    <meta name="generator" content="wastebin {{ page.version }}">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{{ meta.title }}{% block title_content %}{% endblock %}</title>
-    <link rel="preload" as="style" href="dark.css">
-    <link rel="preload" as="style" href="light.css">
-    <link rel="stylesheet" href="{{ base_path.join(meta.highlight.style.name) }}">
-    <link rel="icon" href="{{ base_path.join("favicon.ico") }}" type="image/png">
+    <title>{{ page.title }}{% block title_content %}{% endblock %}</title>
+    <link rel="preload" as="style" href="{{ page.assets.css.dark.route() }}">
+    <link rel="preload" as="style" href="{{ page.assets.css.light.route() }}">
+    <link rel="stylesheet" href="{{ page.assets.css.style.route() }}">
+    <link rel="icon" href="{{ page.assets.favicon.route() }}" type="image/png">
     {% block head %}{% endblock %}
   </head>
   <body>
-    {% block body_top %}{% endblock %}
     <div id="main-container">
       <header>
         <div class="nav-group">
           <div id="nav-item">
-            <a href="{{ base_path.path() }}" class="nav-button" title="home" aria-label="home">
+            <a href="/" class="nav-button" title="home" aria-label="home">
               <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m4 12 8-8 8 8M6 10.5V19a1 1 0 0 0 1 1h3v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h3a1 1 0 0 0 1-1v-8.5"/>
               </svg>

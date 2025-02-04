@@ -1,59 +1,56 @@
-use std::num::NonZero;
-use std::num::NonZeroU32;
-use std::sync::OnceLock;
-
 use crate::cache::Key as CacheKey;
-use crate::env;
-use crate::highlight::Html;
+use crate::highlight::{Highlighter, Html};
 use crate::routes::paste::{Format, QueryData};
+use crate::{errors, Page};
 use askama::Template;
 use axum::http::StatusCode;
+use std::num::{NonZero, NonZeroU32};
+use std::sync::{Arc, OnceLock};
 
 /// Error page showing a message.
 #[derive(Template)]
 #[template(path = "error.html")]
-pub struct Error<'a> {
-    meta: &'a env::Metadata<'a>,
-    base_path: &'static env::BasePath,
+pub struct Error {
+    page: Arc<Page>,
     description: String,
 }
 
 /// Error response carrying a status code and the page itself.
-pub type ErrorResponse<'a> = (StatusCode, Error<'a>);
+pub type ErrorResponse = (StatusCode, Error);
 
-impl Error<'_> {
-    /// Create new [`Error`] from `description`.
-    pub fn new(description: String) -> Self {
-        Self {
-            meta: &env::METADATA,
-            base_path: &env::BASE_PATH,
-            description,
-        }
-    }
+/// Create an error response from `error` consisting of [`StatusCode`] derive from `error` as well
+/// as a rendered page with a description.
+pub fn make_error(error: errors::Error, page: Arc<Page>) -> ErrorResponse {
+    let description = error.to_string();
+    (error.into(), Error { page, description })
 }
 
-impl From<crate::Error> for ErrorResponse<'_> {
-    fn from(err: crate::Error) -> Self {
-        let html = Error::new(err.to_string());
-        (err.into(), html)
+impl Error {
+    /// Create new [`Error`] from `description`.
+    pub fn new(description: String, page: Arc<Page>) -> Self {
+        Self { page, description }
     }
 }
 
 /// Index page displaying a form for paste insertion and a selection box for languages.
 #[derive(Template)]
 #[template(path = "index.html")]
-pub struct Index<'a> {
-    meta: &'a env::Metadata<'a>,
-    base_path: &'static env::BasePath,
+pub struct Index {
+    page: Arc<Page>,
     max_expiration: Option<NonZeroU32>,
+    highlighter: Arc<Highlighter>,
 }
 
-impl Index<'_> {
-    pub fn new(max_expiration: Option<NonZeroU32>) -> Self {
+impl Index {
+    pub fn new(
+        max_expiration: Option<NonZeroU32>,
+        page: Arc<Page>,
+        highlighter: Arc<Highlighter>,
+    ) -> Self {
         Self {
-            meta: &env::METADATA,
-            base_path: &env::BASE_PATH,
+            page,
             max_expiration,
+            highlighter,
         }
     }
 }
@@ -93,7 +90,7 @@ const EXPIRATION_OPTIONS: [(&str, Expiration); 8] = [
     ("🔥 after reading", Expiration::Burn),
 ];
 
-impl Index<'_> {
+impl Index {
     fn expiry_options(&self) -> &str {
         static EXPIRATION_OPTIONS_HTML: OnceLock<String> = OnceLock::new();
 
@@ -130,9 +127,8 @@ impl Index<'_> {
 /// Paste view showing the formatted paste as well as a bunch of links.
 #[derive(Template)]
 #[template(path = "formatted.html")]
-pub struct Paste<'a> {
-    meta: &'a env::Metadata<'a>,
-    base_path: &'static env::BasePath,
+pub struct Paste {
+    page: Arc<Page>,
     id: String,
     ext: String,
     can_delete: bool,
@@ -140,14 +136,19 @@ pub struct Paste<'a> {
     title: String,
 }
 
-impl Paste<'_> {
+impl Paste {
     /// Construct new paste view from cache `key` and paste `html`.
-    pub fn new(key: CacheKey, html: Html, can_delete: bool, title: String) -> Self {
+    pub fn new(
+        key: CacheKey,
+        html: Html,
+        can_delete: bool,
+        title: String,
+        page: Arc<Page>,
+    ) -> Self {
         let html = html.into_inner();
 
         Self {
-            meta: &env::METADATA,
-            base_path: &env::BASE_PATH,
+            page,
             id: key.id(),
             ext: key.ext,
             can_delete,
@@ -160,27 +161,25 @@ impl Paste<'_> {
 /// View showing password input.
 #[derive(Template)]
 #[template(path = "encrypted.html")]
-pub struct Encrypted<'a> {
-    meta: &'a env::Metadata<'a>,
-    base_path: &'static env::BasePath,
+pub struct Encrypted {
+    page: Arc<Page>,
     id: String,
     ext: String,
     query: String,
 }
 
-impl Encrypted<'_> {
+impl Encrypted {
     /// Construct new paste view from cache `key` and paste `html`.
-    pub fn new(key: CacheKey, query: QueryData) -> Self {
-        let query = match (query.fmt, query.dl) {
-            (Some(Format::Raw), None) => "?fmt=raw".to_string(),
-            (Some(Format::Qr), None) => "?fmt=qr".to_string(),
-            (None, Some(dl)) => format!("?dl={dl}"),
-            _ => String::new(),
+    pub fn new(key: CacheKey, query: QueryData, page: Arc<Page>) -> Self {
+        let query = match query.fmt {
+            Some(Format::Raw) => "?fmt=raw".to_string(),
+            Some(Format::Qr) => "?fmt=qr".to_string(),
+            Some(Format::Dl) => "?fmt=dl".to_string(),
+            None => String::new(),
         };
 
         Self {
-            meta: &env::METADATA,
-            base_path: &env::BASE_PATH,
+            page,
             id: key.id(),
             ext: key.ext,
             query,
@@ -200,9 +199,8 @@ fn dark_modules(code: &qrcodegen::QrCode) -> Vec<(i32, i32)> {
 /// Paste view showing the formatted paste as well as a bunch of links.
 #[derive(Template)]
 #[template(path = "qr.html", escape = "none")]
-pub struct Qr<'a> {
-    meta: &'a env::Metadata<'a>,
-    base_path: &'static env::BasePath,
+pub struct Qr {
+    page: Arc<Page>,
     id: String,
     ext: String,
     can_delete: bool,
@@ -210,12 +208,11 @@ pub struct Qr<'a> {
     title: String,
 }
 
-impl Qr<'_> {
+impl Qr {
     /// Construct new QR code view from `code`.
-    pub fn new(code: qrcodegen::QrCode, key: CacheKey, title: String) -> Self {
+    pub fn new(code: qrcodegen::QrCode, key: CacheKey, title: String, page: Arc<Page>) -> Self {
         Self {
-            meta: &env::METADATA,
-            base_path: &env::BASE_PATH,
+            page,
             id: key.id(),
             ext: key.ext,
             code,
@@ -232,22 +229,16 @@ impl Qr<'_> {
 /// Burn page shown if "burn-after-reading" was selected during insertion.
 #[derive(Template)]
 #[template(path = "burn.html", escape = "none")]
-pub struct Burn<'a> {
-    meta: &'a env::Metadata<'a>,
-    base_path: &'static env::BasePath,
+pub struct Burn {
+    page: Arc<Page>,
     id: String,
     code: qrcodegen::QrCode,
 }
 
-impl Burn<'_> {
+impl Burn {
     /// Construct new burn page linking to `id`.
-    pub fn new(code: qrcodegen::QrCode, id: String) -> Self {
-        Self {
-            meta: &env::METADATA,
-            base_path: &env::BASE_PATH,
-            id,
-            code,
-        }
+    pub fn new(code: qrcodegen::QrCode, id: String, page: Arc<Page>) -> Self {
+        Self { page, id, code }
     }
 
     fn dark_modules(&self) -> Vec<(i32, i32)> {

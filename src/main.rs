@@ -1,19 +1,23 @@
+use crate::assets::{Asset, CssAssets, Kind};
 use crate::cache::Cache;
 use crate::db::Database;
-use crate::env::BASE_PATH;
 use crate::errors::Error;
-use axum::extract::{DefaultBodyLimit, FromRef, Request};
+use crate::highlight::Highlighter;
+use axum::extract::{DefaultBodyLimit, FromRef, Request, State};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
-use axum::middleware::{from_fn, Next};
+use axum::middleware::{from_fn, from_fn_with_state, Next};
 use axum::response::{IntoResponse, Response};
-use axum::Router;
+use axum::routing::get;
 use axum_extra::extract::cookie::Key;
+use highlight::Theme;
 use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
     X_XSS_PROTECTION,
 };
+use http::{header, HeaderMap};
 use std::num::NonZeroU32;
 use std::process::ExitCode;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
@@ -22,6 +26,7 @@ use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 use url::Url;
 
+mod assets;
 mod cache;
 mod crypto;
 mod db;
@@ -36,13 +41,28 @@ mod test_helpers;
 
 static PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 
+pub struct Page {
+    version: &'static str,
+    title: String,
+    assets: Assets,
+    base_url: Option<Url>,
+}
+
+pub struct Assets {
+    favicon: Asset,
+    css: CssAssets,
+    index_js: Asset,
+    paste_js: Asset,
+}
+
 #[derive(Clone)]
 pub struct AppState {
     db: Database,
     cache: Cache,
     key: Key,
-    base_url: Option<Url>,
     max_expiration: Option<NonZeroU32>,
+    page: Arc<Page>,
+    highlighter: Arc<Highlighter>,
 }
 
 impl FromRef<AppState> for Key {
@@ -53,6 +73,7 @@ impl FromRef<AppState> for Key {
 
 async fn security_headers_layer(req: Request, next: Next) -> impl IntoResponse {
     const SECURITY_HEADERS: [(HeaderName, HeaderValue); 7] = [
+
         (SERVER, HeaderValue::from_static(PACKAGE_NAME)),
         (CONTENT_SECURITY_POLICY, HeaderValue::from_static("default-src 'none'; script-src 'self'; img-src 'self' data: ; style-src 'self' data: ; font-src 'self' data: ; object-src 'none' ; base-uri 'none' ; frame-ancestors 'none' ; form-action 'self' ;")),
         (REFERRER_POLICY, HeaderValue::from_static("same-origin")),
@@ -65,36 +86,73 @@ async fn security_headers_layer(req: Request, next: Next) -> impl IntoResponse {
     (SECURITY_HEADERS, next.run(req).await)
 }
 
-async fn handle_service_errors(req: Request, next: Next) -> Response {
+impl Assets {
+    fn new(theme: Theme) -> Self {
+        Self {
+            favicon: Asset::new(
+                "favicon.ico",
+                mime::IMAGE_PNG,
+                include_bytes!("../assets/favicon.png").to_vec(),
+            ),
+            css: CssAssets::new(theme),
+            index_js: Asset::new_hashed(
+                "index",
+                Kind::Js,
+                include_bytes!("javascript/index.js").to_vec(),
+            ),
+            paste_js: Asset::new_hashed(
+                "paste",
+                Kind::Js,
+                include_bytes!("javascript/paste.js").to_vec(),
+            ),
+        }
+    }
+}
+
+impl Page {
+    /// Create new page meta data from generated  `assets`, `title` and optional `base_url`.
+    fn new(assets: Assets, title: String, base_url: Option<Url>) -> Self {
+        Self {
+            version: env!("CARGO_PKG_VERSION"),
+            title,
+            assets,
+            base_url,
+        }
+    }
+
+    /// Get base URL set in constructor or fall back to the user agent's `Host` header field.
+    fn base_url_or_from(&self, headers: &HeaderMap) -> Result<Url, Error> {
+        self.base_url.clone().map_or_else(
+            || {
+                let host = headers
+                    .get(header::HOST)
+                    .ok_or_else(|| Error::NoHost)?
+                    .to_str()
+                    .map_err(|_| Error::IllegalCharacters)?;
+
+                Ok::<_, Error>(Url::parse(&format!("https://{host}"))?)
+            },
+            Ok,
+        )
+    }
+}
+
+async fn handle_service_errors(state: State<AppState>, req: Request, next: Next) -> Response {
     let response = next.run(req).await;
 
     match response.status() {
         StatusCode::PAYLOAD_TOO_LARGE => (
             StatusCode::PAYLOAD_TOO_LARGE,
-            pages::Error::new("payload exceeded limit".to_string()),
+            pages::Error::new("payload exceeded limit".to_string(), state.page.clone()),
         )
             .into_response(),
         StatusCode::UNSUPPORTED_MEDIA_TYPE => (
             StatusCode::UNSUPPORTED_MEDIA_TYPE,
-            pages::Error::new("unsupported media type".to_string()),
+            pages::Error::new("unsupported media type".to_string(), state.page.clone()),
         )
             .into_response(),
         _ => response,
     }
-}
-
-pub(crate) fn make_app(max_body_size: usize, timeout: Duration) -> Router<AppState> {
-    Router::new()
-        .nest(BASE_PATH.path(), routes::routes())
-        .layer(
-            ServiceBuilder::new()
-                .layer(DefaultBodyLimit::max(max_body_size))
-                .layer(CompressionLayer::new())
-                .layer(TraceLayer::new_for_http())
-                .layer(TimeoutLayer::new(timeout))
-                .layer(from_fn(handle_service_errors))
-                .layer(from_fn(security_headers_layer)),
-        )
 }
 
 async fn shutdown_signal() {
@@ -123,6 +181,60 @@ async fn shutdown_signal() {
     tracing::info!("received signal, exiting ...");
 }
 
+async fn favicon(State(state): State<AppState>) -> impl IntoResponse {
+    state.page.assets.favicon.clone()
+}
+
+async fn style_css(State(state): State<AppState>) -> impl IntoResponse {
+    state.page.assets.css.style.clone()
+}
+
+async fn dark_css(State(state): State<AppState>) -> impl IntoResponse {
+    state.page.assets.css.dark.clone()
+}
+
+async fn light_css(State(state): State<AppState>) -> impl IntoResponse {
+    state.page.assets.css.light.clone()
+}
+
+async fn index_js(State(state): State<AppState>) -> impl IntoResponse {
+    state.page.assets.index_js.clone()
+}
+
+async fn paste_js(State(state): State<AppState>) -> impl IntoResponse {
+    state.page.assets.paste_js.clone()
+}
+
+async fn serve(
+    listener: TcpListener,
+    state: AppState,
+    timeout: Duration,
+    max_body_size: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let app = routes::routes()
+        .route(state.page.assets.favicon.route(), get(favicon))
+        .route(state.page.assets.css.style.route(), get(style_css))
+        .route(state.page.assets.css.dark.route(), get(dark_css))
+        .route(state.page.assets.css.light.route(), get(light_css))
+        .route(state.page.assets.index_js.route(), get(index_js))
+        .route(state.page.assets.paste_js.route(), get(paste_js))
+        .layer(
+            ServiceBuilder::new()
+                .layer(DefaultBodyLimit::max(max_body_size))
+                .layer(CompressionLayer::new())
+                .layer(TraceLayer::new_for_http())
+                .layer(TimeoutLayer::new(timeout))
+                .layer(from_fn_with_state(state.clone(), handle_service_errors))
+                .layer(from_fn(security_headers_layer)),
+        );
+
+    axum::serve(listener, app.with_state(state))
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
+
+    Ok(())
+}
+
 async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
@@ -134,16 +246,11 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let base_url = env::base_url()?;
     let timeout = env::http_timeout()?;
     let max_expiration = env::max_paste_expiration()?;
+    let theme = env::theme()?;
+    let title = env::title();
 
     let cache = Cache::new(cache_size);
     let db = Database::new(method)?;
-    let state = AppState {
-        db,
-        cache,
-        key,
-        base_url,
-        max_expiration,
-    };
 
     tracing::debug!("serving on {addr}");
     tracing::debug!("caching {cache_size} paste highlights");
@@ -151,12 +258,19 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("enforcing a http timeout of {timeout:#?}");
     tracing::debug!("maximum expiration time of {max_expiration:?} seconds");
 
-    let service = make_app(max_body_size, timeout).with_state(state);
-    let listener = TcpListener::bind(&addr).await?;
+    let assets = Assets::new(theme);
+    let page = Page::new(assets, title, base_url);
+    let state = AppState {
+        db,
+        cache,
+        key,
+        max_expiration,
+        page: Arc::new(page),
+        highlighter: Arc::new(Highlighter::default()),
+    };
 
-    axum::serve(listener, service)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    let listener = TcpListener::bind(&addr).await?;
+    serve(listener, state, timeout, max_body_size).await?;
 
     Ok(())
 }

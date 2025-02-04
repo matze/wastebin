@@ -3,13 +3,16 @@ use crate::AppState;
 use axum::extract::State;
 use axum::routing::{get, Router};
 
-mod assets;
 mod form;
 mod json;
 pub(crate) mod paste;
 
-async fn index<'a>(state: State<AppState>) -> Index<'a> {
-    Index::new(state.max_expiration)
+async fn index(state: State<AppState>) -> Index {
+    Index::new(
+        state.max_expiration,
+        state.page.clone(),
+        state.highlighter.clone(),
+    )
 }
 
 pub fn routes() -> Router<AppState> {
@@ -21,25 +24,22 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/burn/:id", get(paste::burn_created))
         .route("/delete/:id", get(paste::delete))
-        .merge(assets::routes())
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
     use crate::db::write::Entry;
-    use crate::env::BASE_PATH;
     use crate::routes;
-    use crate::test_helpers::{make_app, Client};
+    use crate::test_helpers::Client;
     use reqwest::{header, StatusCode};
     use serde::Serialize;
+    use std::collections::HashMap;
 
     #[tokio::test]
     async fn unknown_paste() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?).await;
+        let client = Client::new().await;
 
-        let res = client.get(&BASE_PATH.join("000000")).send().await?;
+        let res = client.get("/000000").send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
         Ok(())
@@ -47,7 +47,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_via_form() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?).await;
+        let client = Client::new().await;
 
         let data = routes::form::Entry {
             text: "FooBarBaz".to_string(),
@@ -57,10 +57,11 @@ mod tests {
             title: "".to_string(),
         };
 
-        let res = client.post(BASE_PATH.path()).form(&data).send().await?;
+        let res = client.post("/").form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
+        println!("here {location}");
 
         let res = client
             .get(location)
@@ -96,12 +97,12 @@ mod tests {
 
     #[tokio::test]
     async fn insert_via_form_fail() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?).await;
+        let client = Client::new().await;
 
         let mut data = HashMap::new();
         data.insert("Hello", "World");
 
-        let res = client.post(BASE_PATH.path()).form(&data).send().await?;
+        let res = client.post("/").form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
 
         Ok(())
@@ -109,7 +110,7 @@ mod tests {
 
     #[tokio::test]
     async fn burn_after_reading() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?).await;
+        let client = Client::new().await;
 
         let data = routes::form::Entry {
             text: "FooBarBaz".to_string(),
@@ -119,7 +120,7 @@ mod tests {
             title: "".to_string(),
         };
 
-        let res = client.post(BASE_PATH.path()).form(&data).send().await?;
+        let res = client.post("/").form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
@@ -148,7 +149,7 @@ mod tests {
 
     #[tokio::test]
     async fn burn_after_reading_with_encryption() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?).await;
+        let client = Client::new().await;
         let password = "asd";
 
         let data = routes::form::Entry {
@@ -159,7 +160,7 @@ mod tests {
             title: "".to_string(),
         };
 
-        let res = client.post(BASE_PATH.path()).form(&data).send().await?;
+        let res = client.post("/").form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
@@ -206,14 +207,14 @@ mod tests {
 
     #[tokio::test]
     async fn insert_via_json() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?).await;
+        let client = Client::new().await;
 
         let entry = Entry {
             text: "FooBarBaz".to_string(),
             ..Default::default()
         };
 
-        let res = client.post(BASE_PATH.path()).json(&entry).send().await?;
+        let res = client.post("/").json(&entry).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
 
         let payload = res.json::<routes::json::RedirectResponse>().await?;
@@ -227,11 +228,11 @@ mod tests {
 
     #[tokio::test]
     async fn insert_via_json_fail() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?).await;
+        let client = Client::new().await;
 
         let entry = "Hello World";
 
-        let res = client.post(BASE_PATH.path()).json(&entry).send().await?;
+        let res = client.post("/").json(&entry).send().await?;
         assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
 
         Ok(())
@@ -239,7 +240,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_via_json_encrypted() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?).await;
+        let client = Client::new().await;
         let password = "SuperSecretPassword";
 
         let entry = Entry {
@@ -248,7 +249,7 @@ mod tests {
             ..Default::default()
         };
 
-        let res = client.post(BASE_PATH.path()).json(&entry).send().await?;
+        let res = client.post("/").json(&entry).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
 
         let payload = res.json::<routes::json::RedirectResponse>().await?;
@@ -267,7 +268,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_via_link() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?).await;
+        let client = Client::new().await;
 
         let data = routes::form::Entry {
             text: "FooBarBaz".to_string(),
@@ -277,7 +278,7 @@ mod tests {
             title: "".to_string(),
         };
 
-        let res = client.post(BASE_PATH.path()).form(&data).send().await?;
+        let res = client.post("/").form(&data).send().await?;
         let uid_cookie = res.cookies().find(|cookie| cookie.name() == "uid").unwrap();
         assert_eq!(uid_cookie.name(), "uid");
         assert!(uid_cookie.value().len() > 40);
@@ -292,15 +293,12 @@ mod tests {
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
-        let id = location.replace(BASE_PATH.path(), "");
+        let id = location.replace("/", "");
 
-        let res = client
-            .get(&BASE_PATH.join(&format!("delete/{id}")))
-            .send()
-            .await?;
+        let res = client.get(&format!("/delete/{id}")).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
-        let res = client.get(&BASE_PATH.join(&id)).send().await?;
+        let res = client.get(&format!("/{id}")).send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
         Ok(())
@@ -308,7 +306,7 @@ mod tests {
 
     #[tokio::test]
     async fn download() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new(make_app()?).await;
+        let client = Client::new().await;
 
         let data = routes::form::Entry {
             text: "FooBarBaz".to_string(),
@@ -318,7 +316,7 @@ mod tests {
             title: "".to_string(),
         };
 
-        let res = client.post(BASE_PATH.path()).form(&data).send().await?;
+        let res = client.post("/").form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;

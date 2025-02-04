@@ -1,7 +1,6 @@
 use std::num::NonZeroU32;
 
 use crate::db::write;
-use crate::env::BASE_PATH;
 use crate::errors::{Error, JsonErrorResponse};
 use crate::id::Id;
 use crate::AppState;
@@ -59,8 +58,7 @@ pub async fn insert(
             .map_or_else(|| Some(max_exp), |value| Some(value.min(max_exp)));
     }
 
-    let url = id.to_url_path(&entry);
-    let path = BASE_PATH.join(&url);
+    let path = format!("/{}", id.to_url_path(&entry));
     state.db.insert(id, entry).await?;
 
     Ok(Json::from(RedirectResponse { path }))

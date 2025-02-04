@@ -9,8 +9,12 @@
 
 ### Changed
 
+- **Breaking**: From now on, `WASTEBIN_BASE_URL` is only used for the QR code
+  link but not for internal routing. Use a dedicated proxy server to do that if
+  necessary.
 - Use the [two-face](https://docs.rs/two-face) crate for an extended syntax
   list.
+- Serve all CSS assets under hashed URL to avoid caching issues.
 
 ### Fixes
 

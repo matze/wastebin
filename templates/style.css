@@ -1,5 +1,5 @@
-@import url("light.css") (prefers-color-scheme: light);
-@import url("dark.css") (prefers-color-scheme: dark);
+@import url({{ light_asset.route }}) (prefers-color-scheme: light);
+@import url({{ dark_asset.route }}) (prefers-color-scheme: dark);
 
 :root {
   --main-accent-color: #39bae6;

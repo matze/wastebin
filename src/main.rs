@@ -51,7 +51,7 @@ impl FromRef<AppState> for Key {
     }
 }
 
-async fn security_headers_layer(req: Request, next: Next) -> Response {
+async fn security_headers_layer(req: Request, next: Next) -> impl IntoResponse {
     const SECURITY_HEADERS: [(HeaderName, HeaderValue); 7] = [
         (SERVER, HeaderValue::from_static(PACKAGE_NAME)),
         (CONTENT_SECURITY_POLICY, HeaderValue::from_static("default-src 'none'; script-src 'self'; img-src 'self' data: ; style-src 'self' data: ; font-src 'self' data: ; object-src 'none' ; base-uri 'none' ; frame-ancestors 'none' ; form-action 'self' ;")),
@@ -62,15 +62,7 @@ async fn security_headers_layer(req: Request, next: Next) -> Response {
         (X_XSS_PROTECTION, HeaderValue::from_static("1; mode=block")),
     ];
 
-    let mut response = next.run(req).await;
-    let headers = response.headers_mut();
-    headers.reserve(SECURITY_HEADERS.len());
-
-    for (key, value) in SECURITY_HEADERS {
-        headers.insert(key, value);
-    }
-
-    response
+    (SECURITY_HEADERS, next.run(req).await)
 }
 
 async fn handle_service_errors(req: Request, next: Next) -> Response {

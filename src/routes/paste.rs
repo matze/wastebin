@@ -36,7 +36,7 @@ pub struct PasswordForm {
 }
 
 fn qr_code_from(
-    state: AppState,
+    state: &AppState,
     id: String,
     ext: Option<String>,
 ) -> Result<qrcodegen::QrCode, Error> {
@@ -64,7 +64,7 @@ async fn get_qr(
         let ext = key.ext.is_empty().then_some(key.ext.clone());
         let page = state.page.clone();
 
-        let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state, id, ext))
+        let qr_code = tokio::task::spawn_blocking(move || qr_code_from(&state, id, ext))
             .await
             .map_err(Error::from)??;
 
@@ -162,7 +162,7 @@ pub async fn get(
         let page = state.page.clone();
 
         match state.db.get(key.id, password.clone()).await {
-            Err(Error::NoPassword) => Ok(pages::Encrypted::new(key, query, page).into_response()),
+            Err(Error::NoPassword) => Ok(pages::Encrypted::new(key, &query, page).into_response()),
             Err(err) => Err(err),
             Ok(entry) => {
                 if entry.must_be_deleted {
@@ -279,7 +279,7 @@ pub async fn burn_created(
     async {
         let id_clone = id.clone();
         let page = state.page.clone();
-        let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state.0, id, None))
+        let qr_code = tokio::task::spawn_blocking(move || qr_code_from(&state.0, id, None))
             .await
             .map_err(Error::from)??;
 

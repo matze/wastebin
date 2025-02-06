@@ -170,7 +170,7 @@ pub struct Encrypted {
 
 impl Encrypted {
     /// Construct new paste view from cache `key` and paste `html`.
-    pub fn new(key: CacheKey, query: QueryData, page: Arc<Page>) -> Self {
+    pub fn new(key: CacheKey, query: &QueryData, page: Arc<Page>) -> Self {
         let query = match query.fmt {
             Some(Format::Raw) => "?fmt=raw".to_string(),
             Some(Format::Qr) => "?fmt=qr".to_string(),

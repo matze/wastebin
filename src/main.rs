@@ -14,7 +14,6 @@ use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
     X_XSS_PROTECTION,
 };
-use http::{header, HeaderMap};
 use std::num::NonZeroU32;
 use std::process::ExitCode;
 use std::sync::Arc;
@@ -45,7 +44,7 @@ pub struct Page {
     version: &'static str,
     title: String,
     assets: Assets,
-    base_url: Option<Url>,
+    base_url: Url,
 }
 
 pub struct Assets {
@@ -111,29 +110,13 @@ impl Assets {
 
 impl Page {
     /// Create new page meta data from generated  `assets`, `title` and optional `base_url`.
-    fn new(assets: Assets, title: String, base_url: Option<Url>) -> Self {
+    fn new(assets: Assets, title: String, base_url: Url) -> Self {
         Self {
             version: env!("CARGO_PKG_VERSION"),
             title,
             assets,
             base_url,
         }
-    }
-
-    /// Get base URL set in constructor or fall back to the user agent's `Host` header field.
-    fn base_url_or_from(&self, headers: &HeaderMap) -> Result<Url, Error> {
-        self.base_url.clone().map_or_else(
-            || {
-                let host = headers
-                    .get(header::HOST)
-                    .ok_or_else(|| Error::NoHost)?
-                    .to_str()
-                    .map_err(|_| Error::IllegalCharacters)?;
-
-                Ok::<_, Error>(Url::parse(&format!("https://{host}"))?)
-            },
-            Ok,
-        )
     }
 }
 

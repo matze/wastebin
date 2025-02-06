@@ -37,12 +37,9 @@ pub struct PasswordForm {
 
 fn qr_code_from(
     state: AppState,
-    headers: &HeaderMap,
     id: String,
     ext: Option<String>,
 ) -> Result<qrcodegen::QrCode, Error> {
-    let base_url = &state.page.base_url_or_from(headers)?;
-
     let name = if let Some(ext) = ext {
         format!("{id}.{ext}")
     } else {
@@ -50,7 +47,7 @@ fn qr_code_from(
     };
 
     Ok(qrcodegen::QrCode::encode_text(
-        base_url.join(&name)?.as_str(),
+        state.page.base_url.join(&name)?.as_str(),
         qrcodegen::QrCodeEcc::High,
     )?)
 }
@@ -58,7 +55,6 @@ fn qr_code_from(
 async fn get_qr(
     state: AppState,
     key: CacheKey,
-    headers: HeaderMap,
     title: String,
 ) -> Result<pages::Qr, pages::ErrorResponse> {
     let page = state.page.clone();
@@ -68,7 +64,7 @@ async fn get_qr(
         let ext = key.ext.is_empty().then_some(key.ext.clone());
         let page = state.page.clone();
 
-        let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state, &headers, id, ext))
+        let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state, id, ext))
             .await
             .map_err(Error::from)??;
 
@@ -176,14 +172,9 @@ pub async fn get(
                 match query.fmt {
                     Some(Format::Raw) => return Ok(entry.text.into_response()),
                     Some(Format::Qr) => {
-                        return Ok(get_qr(
-                            state,
-                            key,
-                            headers,
-                            entry.title.clone().unwrap_or_default(),
-                        )
-                        .await
-                        .into_response())
+                        return Ok(get_qr(state, key, entry.title.clone().unwrap_or_default())
+                            .await
+                            .into_response())
                     }
                     Some(Format::Dl) => {
                         return Ok(get_download(entry.text, &key.id(), &key.ext).into_response());
@@ -281,7 +272,6 @@ pub async fn delete(
 
 pub async fn burn_created(
     Path(id): Path<String>,
-    headers: HeaderMap,
     state: State<AppState>,
 ) -> Result<Burn, pages::ErrorResponse> {
     let page = state.page.clone();
@@ -289,10 +279,9 @@ pub async fn burn_created(
     async {
         let id_clone = id.clone();
         let page = state.page.clone();
-        let qr_code =
-            tokio::task::spawn_blocking(move || qr_code_from(state.0, &headers, id, None))
-                .await
-                .map_err(Error::from)??;
+        let qr_code = tokio::task::spawn_blocking(move || qr_code_from(state.0, id, None))
+            .await
+            .map_err(Error::from)??;
 
         Ok(Burn::new(qr_code, id_clone, page))
     }

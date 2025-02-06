@@ -100,20 +100,30 @@ pub fn max_body_size() -> Result<usize, Error> {
         .map_err(Error::MaxBodySize)
 }
 
-pub fn base_url() -> Result<Option<url::Url>, Error> {
-    let result = std::env::var(VAR_BASE_URL).map_or_else(
-        |err| match err {
-            VarError::NotPresent => Ok(None),
-            VarError::NotUnicode(_) => Err(Error::BaseUrl("Not Unicode".to_string())),
+/// Read base URL either from the environment variable or fallback to the hostname.
+pub fn base_url() -> Result<url::Url, Error> {
+    if let Some(base_url) = std::env::var(VAR_BASE_URL).map_or_else(
+        |err| {
+            if matches!(err, VarError::NotUnicode(_)) {
+                Err(Error::BaseUrl(format!("{VAR_BASE_URL} is not unicode")))
+            } else {
+                Ok(None)
+            }
         },
         |var| {
             Ok(Some(
                 url::Url::parse(&var).map_err(|err| Error::BaseUrl(err.to_string()))?,
             ))
         },
-    )?;
+    )? {
+        return Ok(base_url);
+    }
 
-    Ok(result)
+    let hostname =
+        hostname::get().map_err(|err| Error::BaseUrl(format!("failed to get hostname: {err}")))?;
+
+    url::Url::parse(&format!("https://{}", hostname.to_string_lossy()))
+        .map_err(|err| Error::BaseUrl(err.to_string()))
 }
 
 pub fn password_hash_salt() -> String {

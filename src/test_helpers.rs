@@ -23,7 +23,7 @@ impl Client {
         let page = Arc::new(Page::new(
             Assets::new(Theme::Ayu),
             String::from("test"),
-            None,
+            url::Url::parse("https://localhost:8888").unwrap(),
         ));
         let state = crate::AppState {
             db,

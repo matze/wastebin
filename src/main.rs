@@ -70,6 +70,30 @@ impl FromRef<AppState> for Key {
     }
 }
 
+impl FromRef<AppState> for Arc<Highlighter> {
+    fn from_ref(state: &AppState) -> Self {
+        state.highlighter.clone()
+    }
+}
+
+impl FromRef<AppState> for Arc<Page> {
+    fn from_ref(state: &AppState) -> Self {
+        state.page.clone()
+    }
+}
+
+impl FromRef<AppState> for Database {
+    fn from_ref(state: &AppState) -> Self {
+        state.db.clone()
+    }
+}
+
+impl FromRef<AppState> for Cache {
+    fn from_ref(state: &AppState) -> Self {
+        state.cache.clone()
+    }
+}
+
 async fn security_headers_layer(req: Request, next: Next) -> impl IntoResponse {
     const SECURITY_HEADERS: [(HeaderName, HeaderValue); 7] = [
 
@@ -120,18 +144,22 @@ impl Page {
     }
 }
 
-async fn handle_service_errors(state: State<AppState>, req: Request, next: Next) -> Response {
+async fn handle_service_errors(
+    State(page): State<Arc<Page>>,
+    req: Request,
+    next: Next,
+) -> Response {
     let response = next.run(req).await;
 
     match response.status() {
         StatusCode::PAYLOAD_TOO_LARGE => (
             StatusCode::PAYLOAD_TOO_LARGE,
-            pages::Error::new("payload exceeded limit".to_string(), state.page.clone()),
+            pages::Error::new("payload exceeded limit".to_string(), page),
         )
             .into_response(),
         StatusCode::UNSUPPORTED_MEDIA_TYPE => (
             StatusCode::UNSUPPORTED_MEDIA_TYPE,
-            pages::Error::new("unsupported media type".to_string(), state.page.clone()),
+            pages::Error::new("unsupported media type".to_string(), page),
         )
             .into_response(),
         _ => response,
@@ -164,28 +192,28 @@ async fn shutdown_signal() {
     tracing::info!("received signal, exiting ...");
 }
 
-async fn favicon(State(state): State<AppState>) -> impl IntoResponse {
-    state.page.assets.favicon.clone()
+async fn favicon(State(page): State<Arc<Page>>) -> impl IntoResponse {
+    page.assets.favicon.clone()
 }
 
-async fn style_css(State(state): State<AppState>) -> impl IntoResponse {
-    state.page.assets.css.style.clone()
+async fn style_css(State(page): State<Arc<Page>>) -> impl IntoResponse {
+    page.assets.css.style.clone()
 }
 
-async fn dark_css(State(state): State<AppState>) -> impl IntoResponse {
-    state.page.assets.css.dark.clone()
+async fn dark_css(State(page): State<Arc<Page>>) -> impl IntoResponse {
+    page.assets.css.dark.clone()
 }
 
-async fn light_css(State(state): State<AppState>) -> impl IntoResponse {
-    state.page.assets.css.light.clone()
+async fn light_css(State(page): State<Arc<Page>>) -> impl IntoResponse {
+    page.assets.css.light.clone()
 }
 
-async fn index_js(State(state): State<AppState>) -> impl IntoResponse {
-    state.page.assets.index_js.clone()
+async fn index_js(State(page): State<Arc<Page>>) -> impl IntoResponse {
+    page.assets.index_js.clone()
 }
 
-async fn paste_js(State(state): State<AppState>) -> impl IntoResponse {
-    state.page.assets.paste_js.clone()
+async fn paste_js(State(page): State<Arc<Page>>) -> impl IntoResponse {
+    page.assets.paste_js.clone()
 }
 
 async fn serve(
@@ -209,9 +237,10 @@ async fn serve(
                 .layer(TimeoutLayer::new(timeout))
                 .layer(from_fn_with_state(state.clone(), handle_service_errors))
                 .layer(from_fn(security_headers_layer)),
-        );
+        )
+        .with_state(state);
 
-    axum::serve(listener, app.with_state(state))
+    axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await?;
 

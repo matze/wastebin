@@ -1,9 +1,10 @@
-use crate::cache::Key as CacheKey;
+use crate::cache::{Cache, Key as CacheKey};
 use crate::crypto::Password;
 use crate::db::read::Entry;
+use crate::highlight::Highlighter;
 use crate::pages::{self, make_error, Burn};
 use crate::routes::{form, json};
-use crate::{AppState, Error};
+use crate::{AppState, Database, Error, Page};
 use axum::body::Body;
 use axum::extract::{Form, Json, Path, Query, State};
 use axum::http::header::{self, HeaderMap};
@@ -14,6 +15,7 @@ use axum_extra::extract::cookie::SignedCookieJar;
 use axum_extra::headers;
 use axum_extra::headers::{HeaderMapExt, HeaderValue};
 use serde::Deserialize;
+use std::sync::Arc;
 
 #[derive(Deserialize, Debug)]
 pub enum Format {
@@ -35,11 +37,7 @@ pub struct PasswordForm {
     password: String,
 }
 
-fn qr_code_from(
-    state: &AppState,
-    id: String,
-    ext: Option<String>,
-) -> Result<qrcodegen::QrCode, Error> {
+fn qr_code_from(page: &Page, id: String, ext: Option<String>) -> Result<qrcodegen::QrCode, Error> {
     let name = if let Some(ext) = ext {
         format!("{id}.{ext}")
     } else {
@@ -47,31 +45,34 @@ fn qr_code_from(
     };
 
     Ok(qrcodegen::QrCode::encode_text(
-        state.page.base_url.join(&name)?.as_str(),
+        page.base_url.join(&name)?.as_str(),
         qrcodegen::QrCodeEcc::High,
     )?)
 }
 
 async fn get_qr(
-    state: AppState,
+    page: Arc<Page>,
     key: CacheKey,
     title: String,
 ) -> Result<pages::Qr, pages::ErrorResponse> {
-    let page = state.page.clone();
+    let err_page = page.clone();
 
     async {
         let id = key.id();
         let ext = key.ext.is_empty().then_some(key.ext.clone());
-        let page = state.page.clone();
 
-        let qr_code = tokio::task::spawn_blocking(move || qr_code_from(&state, id, ext))
-            .await
-            .map_err(Error::from)??;
+        let qr_code = {
+            let page = page.clone();
+
+            tokio::task::spawn_blocking(move || qr_code_from(&page, id, ext))
+                .await
+                .map_err(Error::from)??
+        };
 
         Ok(pages::Qr::new(qr_code, key, title, page))
     }
     .await
-    .map_err(|err| make_error(err, page))
+    .map_err(|err| make_error(err, err_page))
 }
 
 fn get_download(text: String, id: &str, extension: &str) -> impl IntoResponse {
@@ -90,14 +91,14 @@ fn get_download(text: String, id: &str, extension: &str) -> impl IntoResponse {
 }
 
 async fn get_html(
-    state: AppState,
+    page: Arc<Page>,
+    cache: Cache,
+    highlighter: Arc<Highlighter>,
     key: CacheKey,
     entry: Entry,
     jar: SignedCookieJar,
     is_protected: bool,
 ) -> Result<impl IntoResponse, pages::ErrorResponse> {
-    let page = state.page.clone();
-
     async {
         let can_delete = jar
             .get("uid")
@@ -107,16 +108,14 @@ async fn get_html(
             .zip(entry.uid)
             .is_some_and(|(user_uid, owner_uid)| user_uid == owner_uid);
 
-        let page = state.page.clone();
-
-        if let Some(html) = state.cache.get(&key) {
+        if let Some(html) = cache.get(&key) {
             tracing::trace!(?key, "found cached item");
             return Ok(pages::Paste::new(
                 key,
                 html,
                 can_delete,
                 entry.title.unwrap_or_default(),
-                page,
+                page.clone(),
             )
             .into_response());
         }
@@ -126,29 +125,31 @@ async fn get_html(
         let can_be_cached = !entry.must_be_deleted;
         let ext = key.ext.clone();
         let title = entry.title.clone().unwrap_or_default();
-        let html = state.highlighter.highlight(entry, ext).await?;
+        let html = highlighter.highlight(entry, ext).await?;
 
         if can_be_cached && !is_protected {
             tracing::trace!(?key, "cache item");
-            state.cache.put(key.clone(), html.clone());
+            cache.put(key.clone(), html.clone());
         }
 
-        Ok(pages::Paste::new(key, html, can_delete, title, page).into_response())
+        Ok(pages::Paste::new(key, html, can_delete, title, page.clone()).into_response())
     }
     .await
     .map_err(|err| make_error(err, page))
 }
 
+#[expect(clippy::too_many_arguments)]
 pub async fn get(
+    State(cache): State<Cache>,
+    State(page): State<Arc<Page>>,
+    State(db): State<Database>,
+    State(highlighter): State<Arc<Highlighter>>,
     Path(id): Path<String>,
     headers: HeaderMap,
     jar: SignedCookieJar,
     Query(query): Query<QueryData>,
-    State(state): State<AppState>,
     form: Option<Form<PasswordForm>>,
 ) -> Result<Response, pages::ErrorResponse> {
-    let page = state.page.clone();
-
     async {
         let password = form
             .map(|form| form.password.clone())
@@ -159,22 +160,27 @@ pub async fn get(
             })
             .map(|password| Password::from(password.as_bytes().to_vec()));
         let key: CacheKey = id.parse()?;
-        let page = state.page.clone();
 
-        match state.db.get(key.id, password.clone()).await {
-            Err(Error::NoPassword) => Ok(pages::Encrypted::new(key, &query, page).into_response()),
+        match db.get(key.id, password.clone()).await {
+            Err(Error::NoPassword) => {
+                Ok(pages::Encrypted::new(key, &query, page.clone()).into_response())
+            }
             Err(err) => Err(err),
             Ok(entry) => {
                 if entry.must_be_deleted {
-                    state.db.delete(key.id).await?;
+                    db.delete(key.id).await?;
                 }
 
                 match query.fmt {
                     Some(Format::Raw) => return Ok(entry.text.into_response()),
                     Some(Format::Qr) => {
-                        return Ok(get_qr(state, key, entry.title.clone().unwrap_or_default())
-                            .await
-                            .into_response())
+                        return Ok(get_qr(
+                            page.clone(),
+                            key,
+                            entry.title.clone().unwrap_or_default(),
+                        )
+                        .await
+                        .into_response())
                     }
                     Some(Format::Dl) => {
                         return Ok(get_download(entry.text, &key.id(), &key.ext).into_response());
@@ -185,9 +191,17 @@ pub async fn get(
                 if let Some(value) = headers.get(header::ACCEPT) {
                     if let Ok(value) = value.to_str() {
                         if value.contains("text/html") {
-                            return Ok(get_html(state, key, entry, jar, password.is_some())
-                                .await
-                                .into_response());
+                            return Ok(get_html(
+                                page.clone(),
+                                cache,
+                                highlighter,
+                                key,
+                                entry,
+                                jar,
+                                password.is_some(),
+                            )
+                            .await
+                            .into_response());
                         }
                     }
                 }
@@ -244,12 +258,13 @@ pub async fn insert(
 
 pub async fn delete(
     Path(id): Path<String>,
-    state: State<AppState>,
+    State(db): State<Database>,
+    State(page): State<Arc<Page>>,
     jar: SignedCookieJar,
 ) -> Result<Redirect, pages::ErrorResponse> {
     async {
         let id = id.parse()?;
-        let uid = state.db.get_uid(id).await?;
+        let uid = db.get_uid(id).await?;
         let can_delete = jar
             .get("uid")
             .map(|cookie| cookie.value().parse::<i64>())
@@ -262,28 +277,28 @@ pub async fn delete(
             Err(Error::Delete)?;
         }
 
-        state.db.delete(id).await?;
+        db.delete(id).await?;
 
         Ok(Redirect::to("/"))
     }
     .await
-    .map_err(|err| make_error(err, state.page.clone()))
+    .map_err(|err| make_error(err, page.clone()))
 }
 
 pub async fn burn_created(
     Path(id): Path<String>,
-    state: State<AppState>,
+    State(page): State<Arc<Page>>,
 ) -> Result<Burn, pages::ErrorResponse> {
-    let page = state.page.clone();
-
     async {
         let id_clone = id.clone();
-        let page = state.page.clone();
-        let qr_code = tokio::task::spawn_blocking(move || qr_code_from(&state.0, id, None))
-            .await
-            .map_err(Error::from)??;
+        let qr_code = tokio::task::spawn_blocking({
+            let page = page.clone();
+            move || qr_code_from(&page, id, None)
+        })
+        .await
+        .map_err(Error::from)??;
 
-        Ok(Burn::new(qr_code, id_clone, page))
+        Ok(Burn::new(qr_code, id_clone, page.clone()))
     }
     .await
     .map_err(|err| make_error(err, page))

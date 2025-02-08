@@ -56,8 +56,6 @@ impl Client {
     }
 
     pub(crate) fn get(&self, url: &str) -> RequestBuilder {
-        println!("{:?}", self.addr);
-        println!("{url}");
         self.client.get(format!("http://{}{}", self.addr, url))
     }
 

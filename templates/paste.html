@@ -15,7 +15,7 @@
 {% block nav_common %}
   {% if can_delete %}
     <div class="nav-item">
-      <a href="/delete/"{{ id }}" class="nav-button" title="delete paste" aria-label="delete paste">
+      <a href="/delete/{{ key.id() }}" class="nav-button" title="delete paste" aria-label="delete paste">
         <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"/>
         </svg>
@@ -23,14 +23,14 @@
     </div>
   {% endif %}
     <div class="nav-item">
-        <a href="/{{ id }}.{{ ext }}?fmt=dl" class="nav-button" title="download file" aria-label="download file">
+        <a href="/dl/{{ key }}" class="nav-button" title="download file" aria-label="download file">
         <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 13V4M7 14H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1h-2m-1-5-4 5-4-5m9 8h.01"/>
         </svg>
       </a>
     </div>
     <div class="nav-item">
-      <a href="/{{ id }}?fmt=raw" class="nav-button" title="display raw file" aria-label="display raw file">
+      <a href="/raw/{{ key }}" class="nav-button" title="display raw file" aria-label="display raw file">
         <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 3v4a1 1 0 0 1-1 1H5m5 4-2 2 2 2m4-4 2 2-2 2m5-12v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7.914a1 1 0 0 1 .293-.707l3.914-3.914A1 1 0 0 1 9.914 3H18a1 1 0 0 1 1 1Z"/>
         </svg>
@@ -39,7 +39,7 @@
 {% endblock %}
 {% block nav_specific %}
     <div class="nav-item">
-      <a href="/{{ id }}.{{ ext }}?fmt=qr" class="nav-button" title="qr code" aria-label="qr code">
+      <a href="/qr/{{ key }}" class="nav-button" title="qr code" aria-label="qr code">
         <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
           <path stroke="currentColor" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4Zm10 10h6v6h-6v-6Zm0-10h6v6h-6V4Zm-4 10h.01v.01H10V14Zm0 4h.01v.01H10V18Zm-3 2h.01v.01H7V20Zm0-4h.01v.01H7V16Zm-3 2h.01v.01H4V18Zm0-4h.01v.01H4V14Z"/>
           <path stroke="currentColor" stroke-linejoin="round" stroke-width="2" d="M7 7h.01v.01H7V7Zm10 10h.01v.01H17V17Z"/>

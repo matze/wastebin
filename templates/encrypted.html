@@ -2,11 +2,7 @@
 
 {% block content %}
   <div class="center">
-{% if ext.is_empty() %}
-    <form action="/{{ id }}{{ query }}" method="post">
-{% else %}
-    <form action="/{{ id }}.{{ ext }}{{ query }}" method="post">
-{% endif %}
+    <form action="/{{ id }}" method="post">
       <div class="controls">
         <div id="controls-row">
           <input type="password" id="password" name="password" placeholder="Password ..." autofocus>

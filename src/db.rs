@@ -346,6 +346,23 @@ impl Database {
         Ok(uid)
     }
 
+    /// Get title of a paste.
+    pub async fn get_title(&self, id: Id) -> Result<String, Error> {
+        let conn = self.conn.clone();
+        let id = id.as_u32();
+
+        let title = spawn_blocking(move || {
+            conn.lock().query_row(
+                "SELECT title FROM entries WHERE id=?1",
+                params![id],
+                |row| row.get(0),
+            )
+        })
+        .await??;
+
+        Ok(title)
+    }
+
     /// Delete `id`.
     pub async fn delete(&self, id: Id) -> Result<(), Error> {
         let conn = self.conn.clone();

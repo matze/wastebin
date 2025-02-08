@@ -1,6 +1,7 @@
 use crate::errors::Error;
 use crate::highlight::Html;
 use crate::id::Id;
+use std::fmt::Display;
 use std::num::NonZeroUsize;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
@@ -38,6 +39,16 @@ impl Key {
     /// Make a copy of the owned id.
     pub fn id(&self) -> String {
         self.id.to_string()
+    }
+}
+
+impl Display for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.ext.is_empty() {
+            write!(f, "{}", self.id)
+        } else {
+            write!(f, "{}.{}", self.id, self.ext)
+        }
     }
 }
 

@@ -78,7 +78,7 @@ impl Asset {
 }
 
 /// Collection of light and dark CSS and main UI style CSS derived from them.
-pub struct CssAssets {
+pub struct Css {
     /// Main UI CSS stylesheet.
     pub style: Asset,
     /// Light theme colors.
@@ -98,7 +98,7 @@ impl ColorExt for Color {
     }
 }
 
-impl CssAssets {
+impl Css {
     /// Create CSS assets for `theme`.
     pub fn new(theme: Theme) -> Self {
         #[derive(Template)]

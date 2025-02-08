@@ -1,7 +1,8 @@
-use crate::assets::{Asset, CssAssets, Kind};
+use crate::assets::{Asset, Css, Kind};
 use crate::cache::Cache;
 use crate::db::Database;
 use crate::errors::Error;
+use crate::handlers::{delete, download, html, insert, raw};
 use axum::extract::{DefaultBodyLimit, FromRef, Request, State};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use axum::middleware::{from_fn, from_fn_with_state, Next};
@@ -29,10 +30,9 @@ mod crypto;
 mod db;
 mod env;
 mod errors;
+mod handlers;
 mod highlight;
 mod id;
-mod pages;
-pub(crate) mod routes;
 #[cfg(test)]
 mod test_helpers;
 
@@ -68,7 +68,7 @@ pub type Page = Arc<page::Page>;
 
 pub struct Assets {
     favicon: Asset,
-    css: CssAssets,
+    css: Css,
     index_js: Asset,
     paste_js: Asset,
 }
@@ -139,7 +139,7 @@ impl Assets {
                 mime::IMAGE_PNG,
                 include_bytes!("../assets/favicon.png").to_vec(),
             ),
-            css: CssAssets::new(theme),
+            css: Css::new(theme),
             index_js: Asset::new_hashed(
                 "index",
                 Kind::Js,
@@ -160,12 +160,18 @@ async fn handle_service_errors(State(page): State<Page>, req: Request, next: Nex
     match response.status() {
         StatusCode::PAYLOAD_TOO_LARGE => (
             StatusCode::PAYLOAD_TOO_LARGE,
-            pages::Error::new("payload exceeded limit".to_string(), page),
+            html::Error {
+                page,
+                description: String::from("payload exceeded limit"),
+            },
         )
             .into_response(),
         StatusCode::UNSUPPORTED_MEDIA_TYPE => (
             StatusCode::UNSUPPORTED_MEDIA_TYPE,
-            pages::Error::new("unsupported media type".to_string(), page),
+            html::Error {
+                page,
+                description: String::from("unsupported media type"),
+            },
         )
             .into_response(),
         _ => response,
@@ -235,15 +241,18 @@ async fn serve(
         .route(state.page.assets.css.light.route(), get(light_css))
         .route(state.page.assets.index_js.route(), get(index_js))
         .route(state.page.assets.paste_js.route(), get(paste_js))
-        .route("/", get(routes::index).post(routes::paste::insert))
+        .route("/", get(html::index).post(insert::insert))
         .route(
             "/:id",
-            get(routes::paste::get)
-                .post(routes::paste::get)
-                .delete(routes::paste::delete),
+            get(html::paste::get)
+                .post(html::paste::get)
+                .delete(delete::delete),
         )
-        .route("/burn/:id", get(routes::paste::burn_created))
-        .route("/delete/:id", get(routes::paste::delete))
+        .route("/dl/:id", get(download::download))
+        .route("/qr/:id", get(html::qr))
+        .route("/raw/:id", get(raw::raw))
+        .route("/burn/:id", get(html::burn))
+        .route("/delete/:id", get(delete::delete))
         .layer(
             ServiceBuilder::new()
                 .layer(DefaultBodyLimit::max(max_body_size))

@@ -2,19 +2,19 @@ document.addEventListener('keydown', onKey);
 
 function onKey(e) {
   if (e.key == 'n') {
-    window.location.href = BASE_PATH;
+    window.location.href = "/";
   }
   else if (e.key == 'r') {
-    window.location.href = "?fmt=raw";
+    window.location.href = "/raw" + window.location.pathname;
   }
   else if (e.key == 'y') {
     navigator.clipboard.writeText(window.location.href);
   }
   else if (e.key == 'd') {
-    window.location.href = "?fmt=dl";
+    window.location.href = "/dl" + window.location.pathname;
   }
   else if (e.key == 'q') {
-    window.location.href = "?fmt=qr";
+    window.location.href = "/qr" + window.location.pathname;
   }
   else if (e.key == 'p') {
     window.location.href = window.location.href.split("?")[0];

@@ -2,12 +2,11 @@ use crate::assets::{Asset, CssAssets, Kind};
 use crate::cache::Cache;
 use crate::db::Database;
 use crate::errors::Error;
-use crate::highlight::Highlighter;
 use axum::extract::{DefaultBodyLimit, FromRef, Request, State};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use axum::middleware::{from_fn, from_fn_with_state, Next};
 use axum::response::{IntoResponse, Response};
-use axum::routing::get;
+use axum::routing::{get, Router};
 use axum_extra::extract::cookie::Key;
 use highlight::Theme;
 use http::header::{
@@ -23,7 +22,6 @@ use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
-use url::Url;
 
 mod assets;
 mod cache;
@@ -40,12 +38,33 @@ mod test_helpers;
 
 static PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 
-pub struct Page {
-    version: &'static str,
-    title: String,
-    assets: Assets,
-    base_url: Url,
+pub mod page {
+    use crate::Assets;
+    use url::Url;
+
+    pub struct Page {
+        pub version: &'static str,
+        pub title: String,
+        pub assets: Assets,
+        pub base_url: Url,
+    }
+
+    impl Page {
+        /// Create new page meta data from generated  `assets`, `title` and optional `base_url`.
+        #[must_use]
+        pub fn new(assets: Assets, title: String, base_url: Url) -> Self {
+            Self {
+                version: env!("CARGO_PKG_VERSION"),
+                title,
+                assets,
+                base_url,
+            }
+        }
+    }
 }
+
+/// Reference counted [`page::Page`] wrapper.
+pub type Page = Arc<page::Page>;
 
 pub struct Assets {
     favicon: Asset,
@@ -54,14 +73,17 @@ pub struct Assets {
     paste_js: Asset,
 }
 
+/// Reference counted [`highlight::Highlighter`] wrapper.
+pub type Highlighter = Arc<highlight::Highlighter>;
+
 #[derive(Clone)]
 pub struct AppState {
     db: Database,
     cache: Cache,
     key: Key,
     max_expiration: Option<NonZeroU32>,
-    page: Arc<Page>,
-    highlighter: Arc<Highlighter>,
+    page: Page,
+    highlighter: Highlighter,
 }
 
 impl FromRef<AppState> for Key {
@@ -70,13 +92,13 @@ impl FromRef<AppState> for Key {
     }
 }
 
-impl FromRef<AppState> for Arc<Highlighter> {
+impl FromRef<AppState> for Highlighter {
     fn from_ref(state: &AppState) -> Self {
         state.highlighter.clone()
     }
 }
 
-impl FromRef<AppState> for Arc<Page> {
+impl FromRef<AppState> for Page {
     fn from_ref(state: &AppState) -> Self {
         state.page.clone()
     }
@@ -132,23 +154,7 @@ impl Assets {
     }
 }
 
-impl Page {
-    /// Create new page meta data from generated  `assets`, `title` and optional `base_url`.
-    fn new(assets: Assets, title: String, base_url: Url) -> Self {
-        Self {
-            version: env!("CARGO_PKG_VERSION"),
-            title,
-            assets,
-            base_url,
-        }
-    }
-}
-
-async fn handle_service_errors(
-    State(page): State<Arc<Page>>,
-    req: Request,
-    next: Next,
-) -> Response {
+async fn handle_service_errors(State(page): State<Page>, req: Request, next: Next) -> Response {
     let response = next.run(req).await;
 
     match response.status() {
@@ -192,27 +198,27 @@ async fn shutdown_signal() {
     tracing::info!("received signal, exiting ...");
 }
 
-async fn favicon(State(page): State<Arc<Page>>) -> impl IntoResponse {
+async fn favicon(State(page): State<Page>) -> impl IntoResponse {
     page.assets.favicon.clone()
 }
 
-async fn style_css(State(page): State<Arc<Page>>) -> impl IntoResponse {
+async fn style_css(State(page): State<Page>) -> impl IntoResponse {
     page.assets.css.style.clone()
 }
 
-async fn dark_css(State(page): State<Arc<Page>>) -> impl IntoResponse {
+async fn dark_css(State(page): State<Page>) -> impl IntoResponse {
     page.assets.css.dark.clone()
 }
 
-async fn light_css(State(page): State<Arc<Page>>) -> impl IntoResponse {
+async fn light_css(State(page): State<Page>) -> impl IntoResponse {
     page.assets.css.light.clone()
 }
 
-async fn index_js(State(page): State<Arc<Page>>) -> impl IntoResponse {
+async fn index_js(State(page): State<Page>) -> impl IntoResponse {
     page.assets.index_js.clone()
 }
 
-async fn paste_js(State(page): State<Arc<Page>>) -> impl IntoResponse {
+async fn paste_js(State(page): State<Page>) -> impl IntoResponse {
     page.assets.paste_js.clone()
 }
 
@@ -222,13 +228,22 @@ async fn serve(
     timeout: Duration,
     max_body_size: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let app = routes::routes()
+    let app = Router::new()
         .route(state.page.assets.favicon.route(), get(favicon))
         .route(state.page.assets.css.style.route(), get(style_css))
         .route(state.page.assets.css.dark.route(), get(dark_css))
         .route(state.page.assets.css.light.route(), get(light_css))
         .route(state.page.assets.index_js.route(), get(index_js))
         .route(state.page.assets.paste_js.route(), get(paste_js))
+        .route("/", get(routes::index).post(routes::paste::insert))
+        .route(
+            "/:id",
+            get(routes::paste::get)
+                .post(routes::paste::get)
+                .delete(routes::paste::delete),
+        )
+        .route("/burn/:id", get(routes::paste::burn_created))
+        .route("/delete/:id", get(routes::paste::delete))
         .layer(
             ServiceBuilder::new()
                 .layer(DefaultBodyLimit::max(max_body_size))
@@ -271,14 +286,15 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("maximum expiration time of {max_expiration:?} seconds");
 
     let assets = Assets::new(theme);
-    let page = Page::new(assets, title, base_url);
+    let page = Arc::new(page::Page::new(assets, title, base_url));
+    let highlighter = Arc::new(highlight::Highlighter::default());
     let state = AppState {
         db,
         cache,
         key,
         max_expiration,
-        page: Arc::new(page),
-        highlighter: Arc::new(Highlighter::default()),
+        page,
+        highlighter,
     };
 
     let listener = TcpListener::bind(&addr).await?;

@@ -1,10 +1,9 @@
 use crate::cache::{Cache, Key as CacheKey};
 use crate::crypto::Password;
 use crate::db::read::Entry;
-use crate::highlight::Highlighter;
 use crate::pages::{self, make_error, Burn};
 use crate::routes::{form, json};
-use crate::{AppState, Database, Error, Page};
+use crate::{AppState, Database, Error, Highlighter, Page};
 use axum::body::Body;
 use axum::extract::{Form, Json, Path, Query, State};
 use axum::http::header::{self, HeaderMap};
@@ -15,7 +14,6 @@ use axum_extra::extract::cookie::SignedCookieJar;
 use axum_extra::headers;
 use axum_extra::headers::{HeaderMapExt, HeaderValue};
 use serde::Deserialize;
-use std::sync::Arc;
 
 #[derive(Deserialize, Debug)]
 pub enum Format {
@@ -51,7 +49,7 @@ fn qr_code_from(page: &Page, id: String, ext: Option<String>) -> Result<qrcodege
 }
 
 async fn get_qr(
-    page: Arc<Page>,
+    page: Page,
     key: CacheKey,
     title: String,
 ) -> Result<pages::Qr, pages::ErrorResponse> {
@@ -91,9 +89,9 @@ fn get_download(text: String, id: &str, extension: &str) -> impl IntoResponse {
 }
 
 async fn get_html(
-    page: Arc<Page>,
+    page: Page,
     cache: Cache,
-    highlighter: Arc<Highlighter>,
+    highlighter: Highlighter,
     key: CacheKey,
     entry: Entry,
     jar: SignedCookieJar,
@@ -141,9 +139,9 @@ async fn get_html(
 #[expect(clippy::too_many_arguments)]
 pub async fn get(
     State(cache): State<Cache>,
-    State(page): State<Arc<Page>>,
+    State(page): State<Page>,
     State(db): State<Database>,
-    State(highlighter): State<Arc<Highlighter>>,
+    State(highlighter): State<Highlighter>,
     Path(id): Path<String>,
     headers: HeaderMap,
     jar: SignedCookieJar,
@@ -259,7 +257,7 @@ pub async fn insert(
 pub async fn delete(
     Path(id): Path<String>,
     State(db): State<Database>,
-    State(page): State<Arc<Page>>,
+    State(page): State<Page>,
     jar: SignedCookieJar,
 ) -> Result<Redirect, pages::ErrorResponse> {
     async {
@@ -287,7 +285,7 @@ pub async fn delete(
 
 pub async fn burn_created(
     Path(id): Path<String>,
-    State(page): State<Arc<Page>>,
+    State(page): State<Page>,
 ) -> Result<Burn, pages::ErrorResponse> {
     async {
         let id_clone = id.clone();

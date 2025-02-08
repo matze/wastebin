@@ -1,7 +1,7 @@
 use crate::cache::Cache;
 use crate::db::{self, Database};
 use crate::highlight::{Highlighter, Theme};
-use crate::{Assets, Page};
+use crate::{page, Assets};
 use axum_extra::extract::cookie::Key;
 use reqwest::RequestBuilder;
 use std::net::SocketAddr;
@@ -20,7 +20,7 @@ impl Client {
         let db = Database::new(db::Open::Memory).expect("open memory database");
         let cache = Cache::new(NonZeroUsize::new(128).unwrap());
         let key = Key::generate();
-        let page = Arc::new(Page::new(
+        let page = Arc::new(page::Page::new(
             Assets::new(Theme::Ayu),
             String::from("test"),
             url::Url::parse("https://localhost:8888").unwrap(),

@@ -1,17 +1,17 @@
 use crate::cache::Key as CacheKey;
-use crate::highlight::{Highlighter, Html};
+use crate::highlight::Html;
 use crate::routes::paste::{Format, QueryData};
-use crate::{errors, Page};
+use crate::{errors, Highlighter, Page};
 use askama::Template;
 use axum::http::StatusCode;
 use std::num::{NonZero, NonZeroU32};
-use std::sync::{Arc, OnceLock};
+use std::sync::OnceLock;
 
 /// Error page showing a message.
 #[derive(Template)]
 #[template(path = "error.html")]
 pub struct Error {
-    page: Arc<Page>,
+    page: Page,
     description: String,
 }
 
@@ -20,14 +20,14 @@ pub type ErrorResponse = (StatusCode, Error);
 
 /// Create an error response from `error` consisting of [`StatusCode`] derive from `error` as well
 /// as a rendered page with a description.
-pub fn make_error(error: errors::Error, page: Arc<Page>) -> ErrorResponse {
+pub fn make_error(error: errors::Error, page: Page) -> ErrorResponse {
     let description = error.to_string();
     (error.into(), Error { page, description })
 }
 
 impl Error {
     /// Create new [`Error`] from `description`.
-    pub fn new(description: String, page: Arc<Page>) -> Self {
+    pub fn new(description: String, page: Page) -> Self {
         Self { page, description }
     }
 }
@@ -36,17 +36,13 @@ impl Error {
 #[derive(Template)]
 #[template(path = "index.html")]
 pub struct Index {
-    page: Arc<Page>,
+    page: Page,
     max_expiration: Option<NonZeroU32>,
-    highlighter: Arc<Highlighter>,
+    highlighter: Highlighter,
 }
 
 impl Index {
-    pub fn new(
-        max_expiration: Option<NonZeroU32>,
-        page: Arc<Page>,
-        highlighter: Arc<Highlighter>,
-    ) -> Self {
+    pub fn new(max_expiration: Option<NonZeroU32>, page: Page, highlighter: Highlighter) -> Self {
         Self {
             page,
             max_expiration,
@@ -128,7 +124,7 @@ impl Index {
 #[derive(Template)]
 #[template(path = "formatted.html")]
 pub struct Paste {
-    page: Arc<Page>,
+    page: Page,
     id: String,
     ext: String,
     can_delete: bool,
@@ -138,13 +134,7 @@ pub struct Paste {
 
 impl Paste {
     /// Construct new paste view from cache `key` and paste `html`.
-    pub fn new(
-        key: CacheKey,
-        html: Html,
-        can_delete: bool,
-        title: String,
-        page: Arc<Page>,
-    ) -> Self {
+    pub fn new(key: CacheKey, html: Html, can_delete: bool, title: String, page: Page) -> Self {
         let html = html.into_inner();
 
         Self {
@@ -162,7 +152,7 @@ impl Paste {
 #[derive(Template)]
 #[template(path = "encrypted.html")]
 pub struct Encrypted {
-    page: Arc<Page>,
+    page: Page,
     id: String,
     ext: String,
     query: String,
@@ -170,7 +160,7 @@ pub struct Encrypted {
 
 impl Encrypted {
     /// Construct new paste view from cache `key` and paste `html`.
-    pub fn new(key: CacheKey, query: &QueryData, page: Arc<Page>) -> Self {
+    pub fn new(key: CacheKey, query: &QueryData, page: Page) -> Self {
         let query = match query.fmt {
             Some(Format::Raw) => "?fmt=raw".to_string(),
             Some(Format::Qr) => "?fmt=qr".to_string(),
@@ -200,7 +190,7 @@ fn dark_modules(code: &qrcodegen::QrCode) -> Vec<(i32, i32)> {
 #[derive(Template)]
 #[template(path = "qr.html", escape = "none")]
 pub struct Qr {
-    page: Arc<Page>,
+    page: Page,
     id: String,
     ext: String,
     can_delete: bool,
@@ -210,7 +200,7 @@ pub struct Qr {
 
 impl Qr {
     /// Construct new QR code view from `code`.
-    pub fn new(code: qrcodegen::QrCode, key: CacheKey, title: String, page: Arc<Page>) -> Self {
+    pub fn new(code: qrcodegen::QrCode, key: CacheKey, title: String, page: Page) -> Self {
         Self {
             page,
             id: key.id(),
@@ -230,14 +220,14 @@ impl Qr {
 #[derive(Template)]
 #[template(path = "burn.html", escape = "none")]
 pub struct Burn {
-    page: Arc<Page>,
+    page: Page,
     id: String,
     code: qrcodegen::QrCode,
 }
 
 impl Burn {
     /// Construct new burn page linking to `id`.
-    pub fn new(code: qrcodegen::QrCode, id: String, page: Arc<Page>) -> Self {
+    pub fn new(code: qrcodegen::QrCode, id: String, page: Page) -> Self {
         Self { page, id, code }
     }
 

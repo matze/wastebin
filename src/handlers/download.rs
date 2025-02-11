@@ -1,5 +1,6 @@
 use crate::cache::Key;
 use crate::crypto::Password;
+use crate::db::read::Entry;
 use crate::handlers::html::{make_error, ErrorResponse, PasswordInput};
 use crate::{Database, Error, Page};
 use axum::extract::{Form, Path, State};
@@ -25,19 +26,16 @@ pub async fn download(
         let key: Key = id.parse()?;
 
         match db.get(key.id, password.clone()).await {
+            Ok(Entry::Regular(data) | Entry::Burned(data)) => {
+                Ok(get_download(data.text, &key.id(), &key.ext).into_response())
+            }
+            Ok(Entry::Expired) => Err(Error::NotFound),
             Err(Error::NoPassword) => Ok(PasswordInput {
                 page: page.clone(),
                 id: key.id.to_string(),
             }
             .into_response()),
             Err(err) => Err(err),
-            Ok(entry) => {
-                if entry.must_be_deleted {
-                    db.delete(key.id).await?;
-                }
-
-                Ok(get_download(entry.text, &key.id(), &key.ext).into_response())
-            }
         }
     }
     .await

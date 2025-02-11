@@ -1,4 +1,4 @@
-use crate::db::read::Entry;
+use crate::db::read::Data;
 use crate::errors::Error;
 use std::cmp::Ordering;
 use syntect::html::{line_tokens_to_classed_spans, ClassStyle};
@@ -102,12 +102,12 @@ impl Highlighter {
         Ok(html)
     }
 
-    /// Highlight `entry` with the given file extension.
-    pub async fn highlight(&self, entry: Entry, ext: String) -> Result<Html, Error> {
+    /// Highlight `data` with the given file extension.
+    pub async fn highlight(&self, data: Data, ext: String) -> Result<Html, Error> {
         let highlighter = self.clone();
 
         Ok(Html(
-            tokio::task::spawn_blocking(move || highlighter.highlight_inner(&entry.text, &ext))
+            tokio::task::spawn_blocking(move || highlighter.highlight_inner(&data.text, &ext))
                 .await??,
         ))
     }

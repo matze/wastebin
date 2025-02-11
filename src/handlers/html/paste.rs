@@ -1,6 +1,6 @@
 use crate::cache::Key;
 use crate::crypto::Password;
-use crate::db::read::Entry;
+use crate::db::read::{Data, Entry};
 use crate::handlers::html::{make_error, ErrorResponse, PasswordInput};
 use crate::highlight::Html;
 use crate::{Cache, Database, Error, Highlighter, Page};
@@ -42,40 +42,41 @@ pub async fn get(
         let password = form.map(|form| Password::from(form.password.as_bytes().to_vec()));
         let key: Key = id.parse()?;
 
-        match db.get(key.id, password.clone()).await {
-            Ok(entry) => {
-                if entry.must_be_deleted {
-                    db.delete(key.id).await?;
+        let (data, can_be_cached) = match db.get(key.id, password.clone()).await {
+            Ok(Entry::Regular(data)) => (data, true),
+            Ok(Entry::Burned(data)) => (data, false),
+            Ok(Entry::Expired) => return Err(Error::NotFound),
+            Err(Error::NoPassword) => {
+                return Ok(PasswordInput {
+                    page: page.clone(),
+                    id,
                 }
-
-                let accept_html = headers
-                    .get(header::ACCEPT)
-                    .and_then(|value| value.to_str().ok())
-                    .map_or(false, |value| value.contains("text/html"));
-
-                if accept_html {
-                    return Ok(get_html(
-                        page.clone(),
-                        cache,
-                        highlighter,
-                        key,
-                        entry,
-                        jar,
-                        password.is_some(),
-                    )
-                    .await
-                    .into_response());
-                }
-
-                Ok(entry.text.into_response())
+                .into_response())
             }
-            Err(Error::NoPassword) => Ok(PasswordInput {
-                page: page.clone(),
-                id,
-            }
-            .into_response()),
-            Err(err) => Err(err),
+            Err(err) => return Err(err),
+        };
+
+        let accept_html = headers
+            .get(header::ACCEPT)
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.contains("text/html"));
+
+        if accept_html {
+            return Ok(get_html(
+                page.clone(),
+                cache,
+                highlighter,
+                key,
+                data,
+                can_be_cached,
+                jar,
+                password.is_some(),
+            )
+            .await
+            .into_response());
         }
+
+        Ok(data.text.into_response())
     }
     .await
     .map_err(|err| make_error(err, page))
@@ -96,12 +97,14 @@ impl Paste {
     }
 }
 
+#[expect(clippy::too_many_arguments)]
 async fn get_html(
     page: Page,
     cache: Cache,
     highlighter: Highlighter,
     key: Key,
-    entry: Entry,
+    data: Data,
+    can_be_cached: bool,
     jar: SignedCookieJar,
     is_protected: bool,
 ) -> Result<impl IntoResponse, ErrorResponse> {
@@ -111,22 +114,21 @@ async fn get_html(
             .map(|cookie| cookie.value().parse::<i64>())
             .transpose()
             .map_err(|err| Error::CookieParsing(err.to_string()))?
-            .zip(entry.uid)
+            .zip(data.uid)
             .is_some_and(|(user_uid, owner_uid)| user_uid == owner_uid);
 
         if let Some(html) = cache.get(&key) {
             tracing::trace!(?key, "found cached item");
 
-            let title = entry.title.unwrap_or_default();
+            let title = data.title.unwrap_or_default();
             return Ok(Paste::new(key, html, can_delete, title, page.clone()).into_response());
         }
 
         // TODO: turn this upside-down, i.e. cache it but only return a cached version if we were able
         // to decrypt the content. Highlighting is probably still much slower than decryption.
-        let can_be_cached = !entry.must_be_deleted;
         let ext = key.ext.clone();
-        let title = entry.title.clone().unwrap_or_default();
-        let html = highlighter.highlight(entry, ext).await?;
+        let title = data.title.clone().unwrap_or_default();
+        let html = highlighter.highlight(data, ext).await?;
 
         if can_be_cached && !is_protected {
             tracing::trace!(?key, "cache item");

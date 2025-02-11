@@ -155,6 +155,7 @@ pub mod read {
     use tokio::io::{AsyncReadExt, BufReader};
 
     /// A raw entry as read from the database.
+    #[derive(Debug)]
     pub struct DatabaseEntry {
         /// Compressed and potentially encrypted data
         pub data: Vec<u8>,
@@ -171,6 +172,7 @@ pub mod read {
     }
 
     /// Potentially decrypted but still compressed entry
+    #[derive(Debug)]
     pub struct CompressedReadEntry {
         /// Compressed data
         data: Vec<u8>,
@@ -182,16 +184,51 @@ pub mod read {
         title: Option<String>,
     }
 
-    /// An entry read from the database.
-    pub struct Entry {
+    /// Uncompressed entry
+    #[derive(Debug)]
+    pub struct UmcompressedEntry {
         /// Content
         pub text: String,
-        /// Delete if read
+        /// Entry must be deleted
         pub must_be_deleted: bool,
         /// User identifier that inserted the entry
         pub uid: Option<i64>,
         /// Title
         pub title: Option<String>,
+    }
+
+    /// Uncompressed, decrypted data read from the database.
+    #[derive(Debug)]
+    pub struct Data {
+        /// Content
+        pub text: String,
+        /// User identifier that inserted the entry
+        pub uid: Option<i64>,
+        /// Title
+        pub title: Option<String>,
+    }
+
+    /// Potentially deleted or non-existent expired entry.
+    #[derive(Debug)]
+    pub enum Entry {
+        /// Entry found and still available.
+        Regular(Data),
+        /// Entry burned.
+        Burned(Data),
+        /// Entry expired.
+        Expired,
+    }
+
+    #[cfg(test)]
+    impl Entry {
+        /// Unwrap inner data or panic.
+        pub fn unwrap_inner(self) -> Data {
+            match self {
+                Entry::Regular(data) => data,
+                Entry::Burned(data) => data,
+                Entry::Expired => panic!("no data"),
+            }
+        }
     }
 
     impl DatabaseEntry {
@@ -222,7 +259,7 @@ pub mod read {
     }
 
     impl CompressedReadEntry {
-        pub async fn decompress(self) -> Result<Entry, Error> {
+        pub async fn decompress(self) -> Result<UmcompressedEntry, Error> {
             let reader = BufReader::new(Cursor::new(self.data));
             let mut decoder = ZstdDecoder::new(reader);
             let mut text = String::new();
@@ -232,7 +269,7 @@ pub mod read {
                 .await
                 .map_err(|e| Error::Compression(e.to_string()))?;
 
-            Ok(Entry {
+            Ok(UmcompressedEntry {
                 text,
                 uid: self.uid,
                 must_be_deleted: self.must_be_deleted,
@@ -313,10 +350,23 @@ impl Database {
 
         if entry.expired {
             self.delete(id).await?;
-            return Err(Error::NotFound);
+            return Ok(read::Entry::Expired);
         }
 
-        entry.decrypt(password).await?.decompress().await
+        let entry = entry.decrypt(password).await?.decompress().await?;
+
+        let data = read::Data {
+            text: entry.text,
+            title: entry.title,
+            uid: entry.uid,
+        };
+
+        if entry.must_be_deleted {
+            self.delete(id).await?;
+            return Ok(read::Entry::Burned(data));
+        }
+
+        Ok(read::Entry::Regular(data))
     }
 
     /// Get optional `uid` for `id` if it exists but error with `Error::NotFound` if `id` is
@@ -417,7 +467,7 @@ mod tests {
         let id = Id::from(1234);
         db.insert(id, entry).await?;
 
-        let entry = db.get(id, None).await?;
+        let entry = db.get(id, None).await?.unwrap_inner();
         assert_eq!(entry.text, "hello world");
         assert!(entry.uid.is_some());
         assert_eq!(entry.uid.unwrap(), 10);
@@ -443,8 +493,7 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
         let result = db.get(id, None).await;
-        assert!(result.is_err());
-        assert!(matches!(result.err().unwrap(), Error::NotFound));
+        assert!(matches!(result, Ok(read::Entry::Expired)));
 
         Ok(())
     }

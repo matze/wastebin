@@ -88,6 +88,7 @@ to.
 ```
 services:
   wastebin:
+    restart: always
     environment:
       - WASTEBIN_DATABASE_PATH=/data/state.db
     ports:

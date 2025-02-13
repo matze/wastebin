@@ -1,4 +1,6 @@
-const textarea = document.getElementById('text');
+function $(id) {
+  return document.getElementById(id);
+}
 
 function dropHandler(ev) {
   ev.preventDefault();
@@ -7,43 +9,37 @@ function dropHandler(ev) {
     const item = ev.dataTransfer.items[0];
 
     if (item.kind === 'file') {
-      item.getAsFile().text().then((value) => textarea.value = value);
+      item.getAsFile().text().then((value) => $("text").value = value);
     }
   } else {
     const item = ev.dataTransfer.files[0];
-    item.text().then((value) => textarea.value = value);
+    item.text().then((value) => $("text").value = value);
   }
 }
-
-textarea.addEventListener('drop', dropHandler);
 
 function dragOverHandler(ev) {
   ev.preventDefault();
 }
 
-textarea.addEventListener('dragover', dragOverHandler);
-
 function keyDownHandler(ev) {
   if (ev.ctrlKey && ev.key == 's') {
     ev.preventDefault();
 
-    textarea.form.submit();
+    $("text").form.submit();
   }
 }
-
-textarea.addEventListener('keydown', keyDownHandler);
 
 function openFile() {
   let input = document.createElement("input");
   input.type = "file";
   input.onchange = ev => {
     const item = ev.target.files[0];
-    let titleInput = document.getElementById('title');
+    let titleInput = $("title");
 
     // Iterate through the `langs` <select> and
     // try to match the value with the extension. If we have one, select it.
     const extension = item.name.split(".").pop().toLowerCase();
-    const langSelect = document.getElementById('langs');
+    const langSelect = $("langs");
 
     for (i = 0; i < langSelect.length; i++) {
       if (langSelect[i].value == extension) {
@@ -55,21 +51,16 @@ function openFile() {
     titleInput.value = item.name;
 
     // Set <textarea> to file content.
-    item.text().then((value) => textarea.value = value);
+    item.text().then((value) => $("text").value = value);
   };
 
   input.click();
 }
 
-const openbutton = document.getElementById('open');
-openbutton.addEventListener('click', openFile);
-
-const filter = document.getElementById("filter");
-
 function filterLangs(ev) {
   ev.preventDefault();
-  let langs = document.getElementById("langs");
-  const term = filter.value.toLowerCase();
+  let langs = $("langs");
+  const term = $("filter").value.toLowerCase();
 
   for (option of langs) {
     if (option.innerText.toLowerCase().includes(term)) {
@@ -81,15 +72,14 @@ function filterLangs(ev) {
   }
 }
 
-filter.addEventListener('change', filterLangs);
-filter.addEventListener('keyup', filterLangs);
-
-function $(id) {
-  return document.getElementById(id);
-}
-
-function handleBurnCheckbox() {
+function burnCheckboxHandler() {
   $("expiration-list").disabled = $("burn-after-reading").checked;
 }
 
-$("burn-after-reading").addEventListener("click", handleBurnCheckbox);
+$("text").addEventListener("drop", dropHandler);
+$("text").addEventListener("dragover", dragOverHandler);
+$("text").addEventListener("keydown", keyDownHandler);
+$("open").addEventListener("click", openFile);
+$("filter").addEventListener("change", filterLangs);
+$("filter").addEventListener("keyup", filterLangs);
+$("burn-after-reading").addEventListener("click", burnCheckboxHandler);

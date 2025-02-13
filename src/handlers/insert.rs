@@ -129,12 +129,6 @@ pub mod form {
                 url = format!("burn/{url}");
             }
 
-            if let Some(max_exp) = state.max_expiration {
-                entry.expires = entry
-                    .expires
-                    .map_or_else(|| Some(max_exp), |value| Some(value.min(max_exp)));
-            }
-
             state.db.insert(id, entry).await?;
             let url = format!("/{url}");
 
@@ -271,14 +265,7 @@ mod json {
         .map_err(Error::from)?
         .into();
 
-        let mut entry: write::Entry = entry.into();
-
-        if let Some(max_exp) = state.max_expiration {
-            entry.expires = entry
-                .expires
-                .map_or_else(|| Some(max_exp), |value| Some(value.min(max_exp)));
-        }
-
+        let entry: write::Entry = entry.into();
         let path = format!("/raw/{}", id.to_url_path(&entry));
         state.db.insert(id, entry).await?;
 

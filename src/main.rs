@@ -14,7 +14,6 @@ use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
     X_XSS_PROTECTION,
 };
-use std::num::NonZeroU32;
 use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Duration;
@@ -42,22 +41,60 @@ pub mod page {
     use crate::Assets;
     use url::Url;
 
+    pub struct Expiration {
+        pub repr: &'static str,
+        pub seconds: u32,
+        pub selected: bool,
+    }
+
     pub struct Page {
         pub version: &'static str,
         pub title: String,
         pub assets: Assets,
         pub base_url: Url,
+        pub expirations: Vec<Expiration>,
+    }
+
+    impl Expiration {
+        const fn new(repr: &'static str, seconds: u32) -> Self {
+            Self {
+                repr,
+                seconds,
+                selected: false,
+            }
+        }
     }
 
     impl Page {
         /// Create new page meta data from generated  `assets`, `title` and optional `base_url`.
         #[must_use]
-        pub fn new(assets: Assets, title: String, base_url: Url) -> Self {
+        pub fn new(
+            assets: Assets,
+            title: String,
+            base_url: Url,
+            max_expiration: Option<u32>,
+        ) -> Self {
+            const OPTIONS: [Expiration; 7] = [
+                Expiration::new("never", u32::MAX),
+                Expiration::new("10 minutes", 600),
+                Expiration::new("1 hour", 3600),
+                Expiration::new("1 day", 86400),
+                Expiration::new("1 week", 604_800),
+                Expiration::new("1 month", 2_592_000),
+                Expiration::new("1 year", 31_536_000),
+            ];
+
+            let expirations = OPTIONS
+                .into_iter()
+                .filter(|expiration| max_expiration.map_or(true, |max| expiration.seconds <= max))
+                .collect();
+
             Self {
                 version: env!("CARGO_PKG_VERSION"),
                 title,
                 assets,
                 base_url,
+                expirations,
             }
         }
     }
@@ -81,7 +118,6 @@ pub struct AppState {
     db: Database,
     cache: Cache,
     key: Key,
-    max_expiration: Option<NonZeroU32>,
     page: Page,
     highlighter: Highlighter,
 }
@@ -295,13 +331,12 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("maximum expiration time of {max_expiration:?} seconds");
 
     let assets = Assets::new(theme);
-    let page = Arc::new(page::Page::new(assets, title, base_url));
+    let page = Arc::new(page::Page::new(assets, title, base_url, max_expiration));
     let highlighter = Arc::new(highlight::Highlighter::default());
     let state = AppState {
         db,
         cache,
         key,
-        max_expiration,
         page,
         highlighter,
     };

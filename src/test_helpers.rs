@@ -24,12 +24,12 @@ impl Client {
             Assets::new(Theme::Ayu),
             String::from("test"),
             url::Url::parse("https://localhost:8888").unwrap(),
+            None,
         ));
         let state = crate::AppState {
             db,
             cache,
             key,
-            max_expiration: None,
             page,
             highlighter: Arc::new(Highlighter::default()),
         };

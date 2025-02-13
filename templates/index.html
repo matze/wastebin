@@ -34,8 +34,12 @@
             </div>
           </div>
           <div class="controls-group">
-            <select name="expires" size="7" id="expiration-list">
-              {{- Self::expiry_options(self)|safe }}
+            <select name="expires" size="{{ page.expirations.len() }}" id="expiration-list">
+              {% for option in page.expirations %}
+              <option value="{{ option.seconds }}" {% if option.selected %}selected{% endif %}>
+              {{ option.repr }}
+              </option>
+              {% endfor %}
             </select>
           </div>
           <div class="controls-group">

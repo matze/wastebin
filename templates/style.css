@@ -237,7 +237,7 @@ a, a:visited, a:hover {
 .controls-group {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .controls-row {
@@ -248,6 +248,15 @@ a, a:visited, a:hover {
 
 .controls-row > input {
   width: 100%;
+}
+
+.controls-checkbox-group {
+  flex-direction: row;
+  width: 100%;
+}
+
+#expiration-list:disabled {
+  color: color-mix(in srgb, var(--main-fg-color) 50%, transparent);
 }
 
 td.line-number {

@@ -34,9 +34,15 @@
             </div>
           </div>
           <div class="controls-group">
-            <select name="expires" size="8">
+            <select name="expires" size="7" id="expiration-list">
               {{- Self::expiry_options(self)|safe }}
             </select>
+          </div>
+          <div class="controls-group">
+            <div class="controls-checkbox-group">
+              <input type="checkbox" name="burn-after-reading" id="burn-after-reading" />
+              <label for="burn-after-reading">🔥 after reading</label>
+            </div>
           </div>
           <div class="controls-group">
             <div class="controls-row">

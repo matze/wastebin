@@ -83,3 +83,13 @@ function filterLangs(ev) {
 
 filter.addEventListener('change', filterLangs);
 filter.addEventListener('keyup', filterLangs);
+
+function $(id) {
+  return document.getElementById(id);
+}
+
+function handleBurnCheckbox() {
+  $("expiration-list").disabled = $("burn-after-reading").checked;
+}
+
+$("burn-after-reading").addEventListener("click", handleBurnCheckbox);

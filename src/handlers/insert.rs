@@ -67,21 +67,21 @@ pub mod form {
     pub struct Entry {
         pub text: String,
         pub extension: Option<String>,
-        pub expires: String,
+        pub expires: Option<String>,
         pub password: String,
         pub title: String,
+        #[serde(rename = "burn-after-reading")]
+        pub burn_after_reading: Option<String>,
     }
 
     impl From<Entry> for write::Entry {
         fn from(entry: Entry) -> Self {
-            let burn_after_reading = Some(entry.expires == "burn");
+            let burn_after_reading = entry.burn_after_reading.map(|s| s == "on");
             let password = (!entry.password.is_empty()).then_some(entry.password);
             let title = (!entry.title.is_empty()).then_some(entry.title);
-
-            let expires = match entry.expires.parse::<NonZeroU32>() {
-                Err(_) => None,
-                Ok(secs) => Some(secs),
-            };
+            let expires = entry
+                .expires
+                .and_then(|expires| expires.parse::<NonZeroU32>().ok());
 
             Self {
                 text: entry.text,

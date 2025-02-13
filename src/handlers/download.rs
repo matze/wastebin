@@ -1,31 +1,25 @@
 use crate::cache::Key;
-use crate::crypto::Password;
 use crate::db::read::Entry;
+use crate::handlers::extract::Password;
 use crate::handlers::html::{make_error, ErrorResponse, PasswordInput};
 use crate::{Database, Error, Page};
-use axum::extract::{Form, Path, State};
+use axum::extract::{Path, State};
 use axum::http::header;
 use axum::response::{AppendHeaders, IntoResponse, Response};
 use axum_extra::headers::HeaderValue;
-use serde::Deserialize;
-
-#[derive(Deserialize, Debug)]
-pub struct PasswordForm {
-    password: String,
-}
 
 /// GET handler for raw content of a paste.
 pub async fn download(
     Path(id): Path<String>,
     State(db): State<Database>,
     State(page): State<Page>,
-    form: Option<Form<PasswordForm>>,
+    password: Option<Password>,
 ) -> Result<Response, ErrorResponse> {
     async {
-        let password = form.map(|form| Password::from(form.password.as_bytes().to_vec()));
         let key: Key = id.parse()?;
+        let password = password.map(|Password(password)| password);
 
-        match db.get(key.id, password.clone()).await {
+        match db.get(key.id, password).await {
             Ok(Entry::Regular(data) | Entry::Burned(data)) => {
                 Ok(get_download(data.text, &key.id(), &key.ext).into_response())
             }

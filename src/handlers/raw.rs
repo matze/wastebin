@@ -1,38 +1,23 @@
 use crate::cache::Key;
-use crate::crypto::Password;
 use crate::db::read::Entry;
+use crate::handlers::extract::Password;
 use crate::handlers::html::{make_error, ErrorResponse, PasswordInput};
 use crate::{Database, Error, Page};
-use axum::extract::{Form, Path, State};
+use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Response};
-use http::HeaderMap;
-use serde::Deserialize;
-
-#[derive(Deserialize, Debug)]
-pub struct PasswordForm {
-    password: String,
-}
 
 /// GET handler for raw content of a paste.
 pub async fn raw(
     Path(id): Path<String>,
     State(db): State<Database>,
     State(page): State<Page>,
-    headers: HeaderMap,
-    form: Option<Form<PasswordForm>>,
+    password: Option<Password>,
 ) -> Result<Response, ErrorResponse> {
     async {
-        let password = form
-            .map(|form| form.password.clone())
-            .or_else(|| {
-                headers
-                    .get("Wastebin-Password")
-                    .and_then(|header| header.to_str().ok().map(std::string::ToString::to_string))
-            })
-            .map(|password| Password::from(password.as_bytes().to_vec()));
+        let password = password.map(|Password(password)| password);
         let key: Key = id.parse()?;
 
-        match db.get(key.id, password.clone()).await {
+        match db.get(key.id, password).await {
             Ok(Entry::Regular(data) | Entry::Burned(data)) => Ok(data.text.into_response()),
             Ok(Entry::Expired) => Err(Error::NotFound),
             Err(Error::NoPassword) => Ok(PasswordInput {

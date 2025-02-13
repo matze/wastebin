@@ -284,13 +284,16 @@ td.line-number {
   user-select: text;
 }
 
-.center {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  flex-direction: column;
+  gap: 32px;
 }
 
-.text-center {
-  text-align: center;
+.text-link {
+  color: var(--main-accent-color);
+  font-weight: bold;
 }

@@ -45,9 +45,10 @@ mod tests {
         let data = crate::handlers::insert::form::Entry {
             text: "FooBarBaz".to_string(),
             extension: None,
-            expires: "0".to_string(),
+            expires: Some("0".to_string()),
             password: "".to_string(),
             title: "".to_string(),
+            burn_after_reading: None,
         };
 
         let res = client.post("/").form(&data).send().await?;

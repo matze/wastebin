@@ -157,9 +157,10 @@ pub mod form {
             let data = super::Entry {
                 text: "FooBarBaz".to_string(),
                 extension: Some("rs".to_string()),
-                expires: "0".to_string(),
+                expires: None,
                 password: "".to_string(),
                 title: "".to_string(),
+                burn_after_reading: None,
             };
 
             let res = client.post("/").form(&data).send().await?;

@@ -56,9 +56,10 @@ mod tests {
         let data = crate::handlers::insert::form::Entry {
             text: "FooBarBaz".to_string(),
             extension: None,
-            expires: "burn".to_string(),
+            expires: None,
             password: "".to_string(),
             title: "".to_string(),
+            burn_after_reading: Some(String::from("on")),
         };
 
         let res = client.post("/").form(&data).send().await?;
@@ -96,9 +97,10 @@ mod tests {
         let data = crate::handlers::insert::form::Entry {
             text: "FooBarBaz".to_string(),
             extension: None,
-            expires: "burn".to_string(),
+            expires: None,
             password: password.to_string(),
             title: "".to_string(),
+            burn_after_reading: Some(String::from("on")),
         };
 
         let res = client.post("/").form(&data).send().await?;

@@ -38,7 +38,6 @@ mod test_helpers;
 
 /// Maximum cache size for index and all QR pages. 1 MB ought to be enough.
 const PAGE_CACHE_SIZE: usize = 1024 * 1024;
-static PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 
 pub mod page {
     use crate::Assets;
@@ -157,8 +156,7 @@ impl FromRef<AppState> for Cache {
 
 async fn security_headers_layer(req: Request, next: Next) -> impl IntoResponse {
     const SECURITY_HEADERS: [(HeaderName, HeaderValue); 7] = [
-
-        (SERVER, HeaderValue::from_static(PACKAGE_NAME)),
+        (SERVER, HeaderValue::from_static(env!("CARGO_PKG_NAME"))),
         (CONTENT_SECURITY_POLICY, HeaderValue::from_static("default-src 'none'; script-src 'self'; img-src 'self' data: ; style-src 'self' data: ; font-src 'self' data: ; object-src 'none' ; base-uri 'none' ; frame-ancestors 'none' ; form-action 'self' ;")),
         (REFERRER_POLICY, HeaderValue::from_static("same-origin")),
         (X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff")),

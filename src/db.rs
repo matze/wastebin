@@ -397,7 +397,7 @@ impl Database {
     }
 
     /// Get title of a paste.
-    pub async fn get_title(&self, id: Id) -> Result<String, Error> {
+    pub async fn get_title(&self, id: Id) -> Result<Option<String>, Error> {
         let conn = self.conn.clone();
         let id = id.as_u32();
 

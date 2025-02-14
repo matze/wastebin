@@ -24,7 +24,7 @@ pub async fn qr(
         };
 
         let key: Key = id.parse()?;
-        let title = db.get_title(key.id).await?;
+        let title = db.get_title(key.id).await?.unwrap_or_default();
 
         Ok(Qr {
             page: page.clone(),

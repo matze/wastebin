@@ -12,6 +12,9 @@
 - **Breaking**: From now on, `WASTEBIN_BASE_URL` is only used for the QR code
   link but not for internal routing. Use a dedicated proxy server to do that if
   necessary.
+- **Breaking**: Always return HTML on `/:id` even if `text/html` is not in the
+  Accept header. On the other hand, `/raw/:id` must be used to retrieve raw
+  text.
 - Use the [two-face](https://docs.rs/two-face) crate for an extended syntax
   list.
 - Serve all CSS assets under hashed URL to avoid caching issues.

@@ -8,7 +8,6 @@ use askama::Template;
 use axum::extract::{Form, Path, State};
 use axum::response::{IntoResponse, Response};
 use axum_extra::extract::SignedCookieJar;
-use http::{header, HeaderMap};
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -34,7 +33,6 @@ pub async fn get(
     State(db): State<Database>,
     State(highlighter): State<Highlighter>,
     Path(id): Path<String>,
-    headers: HeaderMap,
     jar: SignedCookieJar,
     form: Option<Form<PasswordForm>>,
 ) -> Result<Response, ErrorResponse> {
@@ -56,27 +54,18 @@ pub async fn get(
             Err(err) => return Err(err),
         };
 
-        let accept_html = headers
-            .get(header::ACCEPT)
-            .and_then(|value| value.to_str().ok())
-            .is_some_and(|value| value.contains("text/html"));
-
-        if accept_html {
-            return Ok(get_html(
-                page.clone(),
-                cache,
-                highlighter,
-                key,
-                data,
-                can_be_cached,
-                jar,
-                password.is_some(),
-            )
-            .await
-            .into_response());
-        }
-
-        Ok(data.text.into_response())
+        Ok(get_html(
+            page.clone(),
+            cache,
+            highlighter,
+            key,
+            data,
+            can_be_cached,
+            jar,
+            password.is_some(),
+        )
+        .await
+        .into_response())
     }
     .await
     .map_err(|err| make_error(err, page))

@@ -73,7 +73,7 @@ mod tests {
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
-        let res = client.get(&format!("{location}?dl=cpp")).send().await?;
+        let res = client.get(&format!("/dl{location}.cpp")).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
 
         let content = res.text().await?;

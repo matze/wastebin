@@ -10,12 +10,17 @@ askama_axum = { version = "0.4" }
 async-compression = { version = "0.4", features = ["tokio", "zstd"] }
 axum = { version = "0.7", features = ["json", "query"] }
 axum-extra = { version = "0.9", features = ["cookie-signed", "typed-header"] }
+axum-response-cache = { version = "0.2.0", default-features = false, features = ["axum07"] }
 bytes = "1"
+cached = { version = "0.54.0", default-features = false }
 chacha20poly1305 = "0.10.1"
 hex = "0.4"
+hostname = "0.4.0"
+http = "1.1.0"
 lru = "0.12"
 mime = "0.3"
 qrcodegen = "1"
+parking_lot = "0.12.1"
 rand = "0.8"
 rusqlite = { version = "0.32", features = ["bundled"] }
 rusqlite_migration = { version = "1", default-features = false }
@@ -30,12 +35,9 @@ tower = { version = "0.5", default-features = false }
 tower-http = { version = "0.6", features = ["compression-full", "limit", "timeout", "trace"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
+two-face = { version = "0.4.2", default-features = false, features = ["syntect-fancy"] }
 url = "2"
 zstd = "0.13"
-parking_lot = "0.12.1"
-http = "1.1.0"
-two-face = { version = "0.4.2", default-features = false, features = ["syntect-fancy"] }
-hostname = "0.4.0"
 
 [dev-dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["cookies", "json"] }

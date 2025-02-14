@@ -9,6 +9,7 @@ use axum::middleware::{from_fn, from_fn_with_state, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, Router};
 use axum_extra::extract::cookie::Key;
+use axum_response_cache::CacheLayer;
 use highlight::Theme;
 use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
@@ -35,6 +36,8 @@ mod id;
 #[cfg(test)]
 mod test_helpers;
 
+/// Maximum cache size for index and all QR pages. 1 MB ought to be enough.
+const PAGE_CACHE_SIZE: usize = 1024 * 1024;
 static PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 
 pub mod page {
@@ -277,7 +280,6 @@ async fn serve(
         .route(state.page.assets.css.light.route(), get(light_css))
         .route(state.page.assets.index_js.route(), get(index_js))
         .route(state.page.assets.paste_js.route(), get(paste_js))
-        .route("/", get(html::index).post(insert::insert))
         .route(
             "/:id",
             get(html::paste::get)
@@ -285,10 +287,19 @@ async fn serve(
                 .delete(delete::delete),
         )
         .route("/dl/:id", get(download::download))
-        .route("/qr/:id", get(html::qr))
         .route("/raw/:id", get(raw::raw))
-        .route("/burn/:id", get(html::burn))
         .route("/delete/:id", get(delete::delete))
+        .merge(
+            // Cache the index page as well as the pages that contain a QR code. We cannot cache
+            // pastes themselves because invalidation only works client-side.
+            Router::new()
+                .route("/", get(html::index).post(insert::insert))
+                .route("/qr/:id", get(html::qr))
+                .route("/burn/:id", get(html::burn))
+                .layer(CacheLayer::with(
+                    cached::TimedCache::with_lifespan_and_capacity(u64::MAX, PAGE_CACHE_SIZE),
+                )),
+        )
         .layer(
             ServiceBuilder::new()
                 .layer(DefaultBodyLimit::max(max_body_size))

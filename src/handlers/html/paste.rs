@@ -1,6 +1,6 @@
 use crate::cache::Key;
 use crate::crypto::Password;
-use crate::db::read::{Data, Entry};
+use crate::db::read::Entry;
 use crate::handlers::html::{make_error, ErrorResponse, PasswordInput};
 use crate::highlight::Html;
 use crate::{Cache, Database, Error, Highlighter, Page};
@@ -26,7 +26,6 @@ pub struct Paste {
     title: String,
 }
 
-#[expect(clippy::too_many_arguments)]
 pub async fn get(
     State(cache): State<Cache>,
     State(page): State<Page>,
@@ -54,18 +53,32 @@ pub async fn get(
             Err(err) => return Err(err),
         };
 
-        Ok(get_html(
-            page.clone(),
-            cache,
-            highlighter,
-            key,
-            data,
-            can_be_cached,
-            jar,
-            password.is_some(),
-        )
-        .await
-        .into_response())
+        let can_be_deleted = jar
+            .get("uid")
+            .map(|cookie| cookie.value().parse::<i64>())
+            .transpose()
+            .map_err(|err| Error::CookieParsing(err.to_string()))?
+            .zip(data.uid)
+            .is_some_and(|(user_uid, owner_uid)| user_uid == owner_uid);
+
+        let title = data.title.clone().unwrap_or_default();
+
+        let html = if let Some(html) = cache.get(&key) {
+            tracing::trace!(?key, "found cached item");
+
+            html
+        } else {
+            let html = highlighter.highlight(data, key.ext.clone()).await?;
+
+            if can_be_cached && password.is_none() {
+                tracing::trace!(?key, "cache item");
+                cache.put(key.clone(), html.clone());
+            }
+
+            html
+        };
+
+        Ok(Paste::new(key, html, can_be_deleted, title, page.clone()).into_response())
     }
     .await
     .map_err(|err| make_error(err, page))
@@ -84,50 +97,6 @@ impl Paste {
             title,
         }
     }
-}
-
-#[expect(clippy::too_many_arguments)]
-async fn get_html(
-    page: Page,
-    cache: Cache,
-    highlighter: Highlighter,
-    key: Key,
-    data: Data,
-    can_be_cached: bool,
-    jar: SignedCookieJar,
-    is_protected: bool,
-) -> Result<impl IntoResponse, ErrorResponse> {
-    async {
-        let can_delete = jar
-            .get("uid")
-            .map(|cookie| cookie.value().parse::<i64>())
-            .transpose()
-            .map_err(|err| Error::CookieParsing(err.to_string()))?
-            .zip(data.uid)
-            .is_some_and(|(user_uid, owner_uid)| user_uid == owner_uid);
-
-        if let Some(html) = cache.get(&key) {
-            tracing::trace!(?key, "found cached item");
-
-            let title = data.title.unwrap_or_default();
-            return Ok(Paste::new(key, html, can_delete, title, page.clone()).into_response());
-        }
-
-        // TODO: turn this upside-down, i.e. cache it but only return a cached version if we were able
-        // to decrypt the content. Highlighting is probably still much slower than decryption.
-        let ext = key.ext.clone();
-        let title = data.title.clone().unwrap_or_default();
-        let html = highlighter.highlight(data, ext).await?;
-
-        if can_be_cached && !is_protected {
-            tracing::trace!(?key, "cache item");
-            cache.put(key.clone(), html.clone());
-        }
-
-        Ok(Paste::new(key, html, can_delete, title, page.clone()).into_response())
-    }
-    .await
-    .map_err(|err| make_error(err, page))
 }
 
 #[cfg(test)]

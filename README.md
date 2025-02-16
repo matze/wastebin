@@ -152,14 +152,16 @@ run-time behavior:
 
 ### API endpoints
 
-POST a new paste to the `/` endpoint with the following JSON payload:
+POST a new paste to the `/api` endpoint with the following JSON payload:
 
 ```
 {
   "text": "<paste content>",
   "extension": "<file extension, optional>",
+  "title": "<paste title, optional>",
   "expires": <number of seconds from now, optional>,
-  "burn_after_reading": <true/false, optional>
+  "burn_after_reading": <true/false, optional>,
+  "password": <password for encryption optional>,
 }
 ```
 
@@ -194,7 +196,7 @@ line using `xclip`, `curl` and `jq`. Define the following function in your
 function paste_from_clipboard() {
     local URL=$(\
         jq -n --arg t "$(xclip -selection clipboard -o)" '{text: $t}' | \
-            curl -s -H 'Content-Type: application/json' --data-binary @- https://wastebin.tld | \
+            curl -s -H 'Content-Type: application/json' --data-binary @- https://wastebin.tld/api | \
             jq -r '. | "https://wastebin.tld\(.path)"')
 
     xdg-open $URL
@@ -208,7 +210,7 @@ To paste from stdin use the following function in your `.bashrc`:
 ```bash
 function paste_from_stdin() {
     jq -Rns '{text: inputs}' | \
-        curl  -s -H 'Content-Type: application/json' --data-binary @- https://wastebin.tld | \
+        curl  -s -H 'Content-Type: application/json' --data-binary @- https://wastebin.tld/api | \
         jq -r '. | "wastebin.tld\(.path)"'
 }
 ```

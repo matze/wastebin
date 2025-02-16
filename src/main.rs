@@ -7,7 +7,7 @@ use axum::extract::{DefaultBodyLimit, FromRef, Request, State};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use axum::middleware::{from_fn, from_fn_with_state, Next};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, Router};
+use axum::routing::{get, post, Router};
 use axum_extra::extract::cookie::Key;
 use axum_response_cache::CacheLayer;
 use highlight::Theme;
@@ -287,11 +287,12 @@ async fn serve(
         .route("/dl/:id", get(download::download))
         .route("/raw/:id", get(raw::raw))
         .route("/delete/:id", get(delete::delete))
+        .route("/api", post(insert::api::insert))
         .merge(
             // Cache the index page as well as the pages that contain a QR code. We cannot cache
             // pastes themselves because invalidation only works client-side.
             Router::new()
-                .route("/", get(html::index).post(insert::insert))
+                .route("/", get(html::index).post(insert::form::insert))
                 .route("/qr/:id", get(html::qr))
                 .route("/burn/:id", get(html::burn))
                 .layer(CacheLayer::with(

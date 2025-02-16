@@ -12,14 +12,20 @@ A minimal pastebin with a design shamelessly copied from
 
 ## Features
 
-* axum and sqlite3 backend storing compressed paste data
-* single binary with low memory footprint
-* drag 'n' drop upload
-* deletion after expiration, reading or by owners
-* light/dark mode according to browser settings
-* highlightable line numbers
-* QR code to browse a paste's URL on mobile devices
-* optional encryption with argon2 hashing and ChaCha20Poly1305 encryption
+* [axum](https://github.com/tokio-rs/axum) and [sqlite3](https://www.sqlite.org) backend
+* comes as a single binary with low memory footprint
+* provides paste compression using [zstd](https://github.com/facebook/zstd)
+* highlights entries with [syntect](https://github.com/trishume/syntect)
+* has seven color themes in light and dark mode
+* encrypts entries using ChaCha20Poly1305 and argon2 hashed passwords
+* allows deletion after expiration, after reading or by anonymous owners
+* shows QR code to browse a paste's URL on mobile devices
+
+### Non-features
+
+* user authentication and admin functionality
+* arbitrary file uploads
+* mitigations for all kinds of DoS attack vectors
 
 
 ## Installation
@@ -145,9 +151,9 @@ run-time behavior:
 | `WASTEBIN_MAX_PASTE_EXPIRATION`   | Maximum allowed lifetime of a paste in seconds. Disable with 0. | `0`                 |
 | `WASTEBIN_PASSWORD_SALT`          | Salt used to hash user passwords used for encrypting pastes.  | `somesalt`            |
 | `WASTEBIN_SIGNING_KEY`            | Key to sign cookies. Must be at least 64 bytes long.          | Random key generated at startup, i.e. cookies will become invalid after restarts and paste creators will not be able to delete their pastes. |
-| `WASTEBIN_THEME`                  | Theme colors and one of `ayu`, `base16ocean`, `coldark`, `gruvbox`, `monokai`, `onehalf`, `solarized`. | `ayu` |
+| `WASTEBIN_THEME`                  | Theme colors, one of `ayu`, `base16ocean`, `coldark`, `gruvbox`, `monokai`, `onehalf`, `solarized`. | `ayu` |
 | `WASTEBIN_TITLE`                  | HTML page title.                                              | `wastebin`            |
-| `RUST_LOG`                        | Log level. Besides the typical `trace`, `debug`, `info` etc. keys, you can also set the `tower_http` key to a log level to get additional request and response logs. | --- |
+| `RUST_LOG`                        | Log level. Besides the typical `trace`, `debug`, `info` etc. keys, you can also set the `tower_http` key to a log level to get additional request and response logs. |  |
 
 
 ### API endpoints

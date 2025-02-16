@@ -8,7 +8,7 @@ use qrcodegen::QrCode;
 use url::Url;
 
 /// GET handler for a QR page.
-pub async fn qr(
+pub async fn get(
     Path(id): Path<String>,
     State(page): State<Page>,
     State(db): State<Database>,

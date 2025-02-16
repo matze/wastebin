@@ -188,19 +188,19 @@ async fn serve(
             "/:id",
             get(html::paste::get)
                 .post(html::paste::get)
-                .delete(delete::delete),
+                .delete(delete::get),
         )
-        .route("/dl/:id", get(download::download))
-        .route("/raw/:id", get(raw::raw))
-        .route("/delete/:id", get(delete::delete))
-        .route("/api", post(insert::api::insert))
+        .route("/dl/:id", get(download::get))
+        .route("/raw/:id", get(raw::get))
+        .route("/delete/:id", get(delete::get))
+        .route("/api", post(insert::api::post))
         .merge(
             // Cache the index page as well as the pages that contain a QR code. We cannot cache
             // pastes themselves because invalidation only works client-side.
             Router::new()
-                .route("/", get(html::index).post(insert::form::insert))
-                .route("/qr/:id", get(html::qr))
-                .route("/burn/:id", get(html::burn))
+                .route("/", get(html::index::get).post(insert::form::post))
+                .route("/qr/:id", get(html::qr::get))
+                .route("/burn/:id", get(html::burn::get))
                 .layer(CacheLayer::with(
                     cached::TimedCache::with_lifespan_and_capacity(u64::MAX, PAGE_CACHE_SIZE),
                 )),

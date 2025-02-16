@@ -42,7 +42,7 @@ impl From<Entry> for write::Entry {
     }
 }
 
-pub async fn insert(
+pub async fn post(
     state: State<AppState>,
     jar: SignedCookieJar,
     headers: HeaderMap,

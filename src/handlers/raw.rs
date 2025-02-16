@@ -7,7 +7,7 @@ use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Response};
 
 /// GET handler for raw content of a paste.
-pub async fn raw(
+pub async fn get(
     Path(id): Path<String>,
     State(db): State<Database>,
     State(page): State<Page>,

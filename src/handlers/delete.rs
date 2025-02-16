@@ -4,7 +4,7 @@ use axum::extract::{Path, State};
 use axum::response::Redirect;
 use axum_extra::extract::SignedCookieJar;
 
-pub async fn delete(
+pub async fn get(
     Path(id): Path<String>,
     State(db): State<Database>,
     State(page): State<Page>,

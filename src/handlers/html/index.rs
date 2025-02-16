@@ -3,7 +3,7 @@ use askama::Template;
 use axum::extract::State;
 
 /// GET handler for the index page.
-pub async fn index(State(page): State<Page>, State(highlighter): State<Highlighter>) -> Index {
+pub async fn get(State(page): State<Page>, State(highlighter): State<Highlighter>) -> Index {
     Index { page, highlighter }
 }
 

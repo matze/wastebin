@@ -9,7 +9,7 @@ use axum::response::{AppendHeaders, IntoResponse, Response};
 use axum_extra::headers::HeaderValue;
 
 /// GET handler for raw content of a paste.
-pub async fn download(
+pub async fn get(
     Path(id): Path<String>,
     State(db): State<Database>,
     State(page): State<Page>,

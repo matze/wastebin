@@ -6,7 +6,7 @@ use askama::Template;
 use axum::extract::{Path, State};
 
 /// GET handler for the burn page.
-pub async fn burn(Path(id): Path<String>, State(page): State<Page>) -> Result<Burn, ErrorResponse> {
+pub async fn get(Path(id): Path<String>, State(page): State<Page>) -> Result<Burn, ErrorResponse> {
     async {
         let code = tokio::task::spawn_blocking({
             let page = page.clone();

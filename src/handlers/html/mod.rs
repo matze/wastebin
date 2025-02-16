@@ -3,10 +3,6 @@ pub mod index;
 pub mod paste;
 pub mod qr;
 
-pub use burn::burn;
-pub use index::index;
-pub use qr::qr;
-
 use crate::{errors, Page};
 use askama::Template;
 use axum::http::StatusCode;

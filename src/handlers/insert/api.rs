@@ -37,7 +37,7 @@ impl From<Entry> for write::Entry {
     }
 }
 
-pub async fn insert(
+pub async fn post(
     state: State<AppState>,
     Json(entry): Json<Entry>,
 ) -> Result<Json<RedirectResponse>, JsonErrorResponse> {

@@ -59,6 +59,7 @@ pub async fn insert(
 #[cfg(test)]
 mod tests {
     use crate::db::write::Entry;
+    use crate::handlers::extract::PASSWORD_HEADER_NAME;
     use crate::test_helpers::Client;
     use reqwest::StatusCode;
 
@@ -113,7 +114,7 @@ mod tests {
 
         let res = client
             .get(&format!("/raw{}", payload.path))
-            .header("Wastebin-Password", password)
+            .header(PASSWORD_HEADER_NAME, password)
             .send()
             .await?;
 

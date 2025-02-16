@@ -176,7 +176,7 @@ To retrieve the raw content, make a GET request on the `/raw/:id` route. If you
 use a client that is able to handle cookies you can delete the paste once again
 using the cookie in the `Set-Cookie` header set during redirect after creation.
 
-In case the paste was encrypted, pass the password via the `Wastebin-Password`
+In case the paste was encrypted, pass the password via the `wastebin-password`
 header.
 
 

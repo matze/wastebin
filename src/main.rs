@@ -1,4 +1,3 @@
-use crate::assets::{Asset, Css, Kind};
 use crate::cache::Cache;
 use crate::db::Database;
 use crate::errors::Error;
@@ -10,7 +9,6 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post, Router};
 use axum_extra::extract::cookie::Key;
 use axum_response_cache::CacheLayer;
-use highlight::Theme;
 use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
     X_XSS_PROTECTION,
@@ -42,13 +40,6 @@ const PAGE_CACHE_SIZE: usize = 1024 * 1024;
 
 /// Reference counted [`page::Page`] wrapper.
 pub type Page = Arc<page::Page>;
-
-pub struct Assets {
-    favicon: Asset,
-    css: Css,
-    index_js: Asset,
-    paste_js: Asset,
-}
 
 /// Reference counted [`highlight::Highlighter`] wrapper.
 pub type Highlighter = Arc<highlight::Highlighter>;
@@ -104,29 +95,6 @@ async fn security_headers_layer(req: Request, next: Next) -> impl IntoResponse {
     ];
 
     (SECURITY_HEADERS, next.run(req).await)
-}
-
-impl Assets {
-    fn new(theme: Theme) -> Self {
-        Self {
-            favicon: Asset::new(
-                "favicon.ico",
-                mime::IMAGE_PNG,
-                include_bytes!("../assets/favicon.png").to_vec(),
-            ),
-            css: Css::new(theme),
-            index_js: Asset::new_hashed(
-                "index",
-                Kind::Js,
-                include_bytes!("javascript/index.js").to_vec(),
-            ),
-            paste_js: Asset::new_hashed(
-                "paste",
-                Kind::Js,
-                include_bytes!("javascript/paste.js").to_vec(),
-            ),
-        }
-    }
 }
 
 async fn handle_service_errors(State(page): State<Page>, req: Request, next: Next) -> Response {
@@ -278,8 +246,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("enforcing a http timeout of {timeout:#?}");
     tracing::debug!("maximum expiration time of {max_expiration:?} seconds");
 
-    let assets = Assets::new(theme);
-    let page = Arc::new(page::Page::new(assets, title, base_url, max_expiration));
+    let page = Arc::new(page::Page::new(title, base_url, theme, max_expiration));
     let highlighter = Arc::new(highlight::Highlighter::default());
     let state = AppState {
         db,

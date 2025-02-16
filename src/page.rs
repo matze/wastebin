@@ -1,5 +1,14 @@
-use crate::Assets;
+use crate::assets::{Asset, Css, Kind};
+use crate::highlight::Theme;
 use url::Url;
+
+/// Static page assets.
+pub struct Assets {
+    pub favicon: Asset,
+    pub css: Css,
+    pub index_js: Asset,
+    pub paste_js: Asset,
+}
 
 pub struct Expiration {
     pub repr: &'static str,
@@ -29,7 +38,7 @@ impl Expiration {
 impl Page {
     /// Create new page meta data from generated  `assets`, `title` and optional `base_url`.
     #[must_use]
-    pub fn new(assets: Assets, title: String, base_url: Url, max_expiration: Option<u32>) -> Self {
+    pub fn new(title: String, base_url: Url, theme: Theme, max_expiration: Option<u32>) -> Self {
         const OPTIONS: [Expiration; 7] = [
             Expiration::new("never", u32::MAX),
             Expiration::new("10 minutes", 600),
@@ -39,6 +48,8 @@ impl Page {
             Expiration::new("1 month", 2_592_000),
             Expiration::new("1 year", 31_536_000),
         ];
+
+        let assets = Assets::new(theme);
 
         let expirations = OPTIONS
             .into_iter()
@@ -51,6 +62,30 @@ impl Page {
             assets,
             base_url,
             expirations,
+        }
+    }
+}
+
+impl Assets {
+    /// Create page [`Assets`] for the given `theme`.
+    fn new(theme: Theme) -> Self {
+        Self {
+            favicon: Asset::new(
+                "favicon.ico",
+                mime::IMAGE_PNG,
+                include_bytes!("../assets/favicon.png").to_vec(),
+            ),
+            css: Css::new(theme),
+            index_js: Asset::new_hashed(
+                "index",
+                Kind::Js,
+                include_bytes!("javascript/index.js").to_vec(),
+            ),
+            paste_js: Asset::new_hashed(
+                "paste",
+                Kind::Js,
+                include_bytes!("javascript/paste.js").to_vec(),
+            ),
         }
     }
 }

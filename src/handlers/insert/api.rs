@@ -50,7 +50,7 @@ pub async fn insert(
     .into();
 
     let entry: write::Entry = entry.into();
-    let path = format!("/raw/{}", id.to_url_path(&entry));
+    let path = format!("/{}", id.to_url_path(&entry));
     state.db.insert(id, entry).await?;
 
     Ok(Json::from(RedirectResponse { path }))
@@ -76,7 +76,7 @@ mod tests {
 
         let payload = res.json::<super::RedirectResponse>().await?;
 
-        let res = client.get(&payload.path).send().await?;
+        let res = client.get(&format!("/raw{}", payload.path)).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(res.text().await?, "FooBarBaz");
 
@@ -110,10 +110,9 @@ mod tests {
         assert_eq!(res.status(), StatusCode::OK);
 
         let payload = res.json::<super::RedirectResponse>().await?;
-        println!("{}", payload.path);
 
         let res = client
-            .get(&payload.path)
+            .get(&format!("/raw{}", payload.path))
             .header("Wastebin-Password", password)
             .send()
             .await?;

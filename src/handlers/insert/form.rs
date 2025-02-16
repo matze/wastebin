@@ -143,7 +143,7 @@ mod tests {
         assert!(content.contains("FooBarBaz"));
 
         let res = client
-            .get(&format!("/raw{location}"))
+            .get(&format!("{location}"))
             .header(header::ACCEPT, "text/html; charset=utf-8")
             .send()
             .await?;

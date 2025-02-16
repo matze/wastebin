@@ -166,9 +166,9 @@ POST a new paste to the `/api` endpoint with the following JSON payload:
 ```
 
 After successful insertion, you will receive a JSON response with the path to
-the newly created paste:
+the newly created paste for the browser:
 
-```
+```json
 {"path":"/Ibv9Fa.rs"}
 ```
 

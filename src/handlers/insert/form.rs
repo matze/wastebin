@@ -1,7 +1,7 @@
-use crate::db::write;
+use crate::db::{write, Database};
 use crate::handlers::html::make_error;
 use crate::id::Id;
-use crate::{AppState, Error};
+use crate::{Error, Page};
 use axum::extract::{Form, State};
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect};
@@ -43,7 +43,8 @@ impl From<Entry> for write::Entry {
 }
 
 pub async fn post(
-    state: State<AppState>,
+    State(page): State<Page>,
+    State(db): State<Database>,
     jar: SignedCookieJar,
     headers: HeaderMap,
     Form(entry): Form<Entry>,
@@ -77,7 +78,7 @@ pub async fn post(
                 .parse::<i64>()
                 .map_err(|err| Error::CookieParsing(err.to_string()))?
         } else {
-            state.db.next_uid().await?
+            db.next_uid().await?
         };
 
         let mut entry: write::Entry = entry.into();
@@ -89,7 +90,7 @@ pub async fn post(
             url = format!("burn/{url}");
         }
 
-        state.db.insert(id, entry).await?;
+        db.insert(id, entry).await?;
         let url = format!("/{url}");
 
         let cookie = Cookie::build(("uid", uid.to_string()))
@@ -101,7 +102,7 @@ pub async fn post(
         Ok((jar.add(cookie), Redirect::to(&url)))
     }
     .await
-    .map_err(|err| make_error(err, state.page.clone()))
+    .map_err(|err| make_error(err, page))
 }
 
 #[cfg(test)]

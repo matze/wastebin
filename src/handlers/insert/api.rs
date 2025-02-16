@@ -1,7 +1,6 @@
-use crate::db::write;
+use crate::db::{write, Database};
 use crate::errors::{Error, JsonErrorResponse};
 use crate::id::Id;
-use crate::AppState;
 use axum::extract::State;
 use axum::Json;
 use rand::Rng;
@@ -38,7 +37,7 @@ impl From<Entry> for write::Entry {
 }
 
 pub async fn post(
-    state: State<AppState>,
+    State(db): State<Database>,
     Json(entry): Json<Entry>,
 ) -> Result<Json<RedirectResponse>, JsonErrorResponse> {
     let id: Id = tokio::task::spawn_blocking(|| {
@@ -51,7 +50,7 @@ pub async fn post(
 
     let entry: write::Entry = entry.into();
     let path = format!("/{}", id.to_url_path(&entry));
-    state.db.insert(id, entry).await?;
+    db.insert(id, entry).await?;
 
     Ok(Json::from(RedirectResponse { path }))
 }

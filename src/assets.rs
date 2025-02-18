@@ -87,17 +87,6 @@ pub struct Css {
     pub dark: Asset,
 }
 
-trait ColorExt {
-    /// Construct some color from the given RGBA components.
-    fn new(r: u8, g: u8, b: u8, a: u8) -> Self;
-}
-
-impl ColorExt for Color {
-    fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Self { r, g, b, a }
-    }
-}
-
 impl Css {
     /// Create CSS assets for `theme`.
     pub fn new(theme: Theme) -> Self {
@@ -115,25 +104,11 @@ impl Css {
         let light_theme = light_theme(theme);
         let dark_theme = dark_theme(theme);
 
-        let light_foreground = light_theme
-            .settings
-            .foreground
-            .unwrap_or(Color::new(3, 3, 3, 100));
-
-        let light_background = light_theme
-            .settings
-            .background
-            .unwrap_or(Color::new(250, 250, 250, 100));
-
-        let dark_foreground = dark_theme
-            .settings
-            .foreground
-            .unwrap_or(Color::new(230, 225, 207, 100));
-
-        let dark_background = dark_theme
-            .settings
-            .background
-            .unwrap_or(Color::new(15, 20, 25, 100));
+        // SAFETY: all supported color themes have a defined foreground and background color.
+        let light_foreground = light_theme.settings.foreground.expect("existing color");
+        let light_background = light_theme.settings.background.expect("existing color");
+        let dark_foreground = dark_theme.settings.foreground.expect("existing color");
+        let dark_background = dark_theme.settings.background.expect("existing color");
 
         let light = Asset::new_hashed(
             "light",

@@ -1,5 +1,6 @@
 use crate::cache::Key;
 use crate::db::Database;
+use crate::handlers::extract::Theme;
 use crate::handlers::html::{make_error, ErrorResponse};
 use crate::{Error, Page};
 use askama::Template;
@@ -12,6 +13,7 @@ pub async fn get(
     Path(id): Path<String>,
     State(page): State<Page>,
     State(db): State<Database>,
+    theme: Option<Theme>,
 ) -> Result<Qr, ErrorResponse> {
     async {
         let code = {
@@ -28,6 +30,7 @@ pub async fn get(
 
         Ok(Qr {
             page: page.clone(),
+            theme: theme.clone(),
             key,
             can_delete: false,
             code,
@@ -35,7 +38,7 @@ pub async fn get(
         })
     }
     .await
-    .map_err(|err| make_error(err, page.clone()))
+    .map_err(|err| make_error(err, page, theme))
 }
 
 /// Paste view showing the formatted paste as well as a bunch of links.
@@ -43,6 +46,7 @@ pub async fn get(
 #[template(path = "qr.html", escape = "none")]
 pub struct Qr {
     page: Page,
+    theme: Option<Theme>,
     key: Key,
     can_delete: bool,
     code: qrcodegen::QrCode,

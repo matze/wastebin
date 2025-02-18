@@ -1,10 +1,9 @@
-use askama::Template;
 use axum::response::{IntoResponse, Response};
 use axum_extra::{headers, TypedHeader};
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
 use std::time::Duration;
-use syntect::highlighting::{Color, ThemeSet};
+use syntect::highlighting::{self, ThemeSet};
 use syntect::html::{css_for_theme_with_class_style, ClassStyle};
 use two_face::theme::EmbeddedThemeName;
 
@@ -87,59 +86,35 @@ pub struct Css {
     pub dark: Asset,
 }
 
+/// Generate the highlighting colors for `theme` and add main foreground and background colors
+/// based on the theme.
+fn combined_css(theme: &highlighting::Theme) -> Vec<u8> {
+    let fg = theme.settings.foreground.expect("existing color");
+    let bg = theme.settings.background.expect("existing color");
+
+    let main_colors = format!(
+        ":root {{
+  --main-bg-color: rgb({}, {}, {}, {});
+  --main-fg-color: rgb({}, {}, {}, {});
+}}",
+        bg.r, bg.g, bg.b, bg.a, fg.r, fg.g, fg.b, fg.a
+    );
+
+    format!(
+        "{main_colors} {}",
+        css_for_theme_with_class_style(theme, ClassStyle::Spaced).expect("generating CSS")
+    )
+    .into_bytes()
+}
+
 impl Css {
     /// Create CSS assets for `theme`.
     pub fn new(theme: Theme) -> Self {
-        #[derive(Template)]
-        #[template(path = "style.css", escape = "none")]
-        struct StyleCss {
-            light_background: Color,
-            light_foreground: Color,
-            dark_background: Color,
-            dark_foreground: Color,
-            light_asset: Asset,
-            dark_asset: Asset,
-        }
-
         let light_theme = light_theme(theme);
         let dark_theme = dark_theme(theme);
-
-        // SAFETY: all supported color themes have a defined foreground and background color.
-        let light_foreground = light_theme.settings.foreground.expect("existing color");
-        let light_background = light_theme.settings.background.expect("existing color");
-        let dark_foreground = dark_theme.settings.foreground.expect("existing color");
-        let dark_background = dark_theme.settings.background.expect("existing color");
-
-        let light = Asset::new_hashed(
-            "light",
-            Kind::Css,
-            css_for_theme_with_class_style(&light_theme, ClassStyle::Spaced)
-                .expect("generating CSS")
-                .into_bytes(),
-        );
-
-        let dark = Asset::new_hashed(
-            "dark",
-            Kind::Css,
-            css_for_theme_with_class_style(&dark_theme, ClassStyle::Spaced)
-                .expect("generating CSS")
-                .into_bytes(),
-        );
-
-        let style = StyleCss {
-            light_background,
-            light_foreground,
-            dark_background,
-            dark_foreground,
-            light_asset: light.clone(),
-            dark_asset: dark.clone(),
-        };
-
-        let style = Asset::new_hashed(
-            "style",
-            Kind::Css,
-            style.render().expect("rendering style css").into_bytes(),
-        );
+        let style = Asset::new_hashed("style", Kind::Css, include_str!("style.css").into());
+        let light = Asset::new_hashed("light", Kind::Css, combined_css(&light_theme));
+        let dark = Asset::new_hashed("dark", Kind::Css, combined_css(&dark_theme));
 
         Self { style, light, dark }
     }

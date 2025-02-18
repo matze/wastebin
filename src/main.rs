@@ -1,14 +1,14 @@
 use crate::cache::Cache;
 use crate::db::Database;
 use crate::errors::Error;
-use crate::handlers::{delete, download, html, insert, raw};
+use crate::handlers::extract::Theme;
+use crate::handlers::{delete, download, html, insert, raw, theme};
 use axum::extract::{DefaultBodyLimit, FromRef, Request, State};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use axum::middleware::{from_fn, from_fn_with_state, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post, Router};
 use axum_extra::extract::cookie::Key;
-use axum_response_cache::CacheLayer;
 use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
     X_XSS_PROTECTION,
@@ -34,9 +34,6 @@ mod id;
 mod page;
 #[cfg(test)]
 mod test_helpers;
-
-/// Maximum cache size for index and all QR pages. 1 MB ought to be enough.
-const PAGE_CACHE_SIZE: usize = 1024 * 1024;
 
 /// Reference counted [`page::Page`] wrapper.
 pub type Page = Arc<page::Page>;
@@ -97,7 +94,12 @@ async fn security_headers_layer(req: Request, next: Next) -> impl IntoResponse {
     (SECURITY_HEADERS, next.run(req).await)
 }
 
-async fn handle_service_errors(State(page): State<Page>, req: Request, next: Next) -> Response {
+async fn handle_service_errors(
+    State(page): State<Page>,
+    theme: Option<Theme>,
+    req: Request,
+    next: Next,
+) -> Response {
     let response = next.run(req).await;
 
     match response.status() {
@@ -105,6 +107,7 @@ async fn handle_service_errors(State(page): State<Page>, req: Request, next: Nex
             StatusCode::PAYLOAD_TOO_LARGE,
             html::Error {
                 page,
+                theme,
                 description: String::from("payload exceeded limit"),
             },
         )
@@ -113,6 +116,7 @@ async fn handle_service_errors(State(page): State<Page>, req: Request, next: Nex
             StatusCode::UNSUPPORTED_MEDIA_TYPE,
             html::Error {
                 page,
+                theme,
                 description: String::from("unsupported media type"),
             },
         )
@@ -163,6 +167,10 @@ async fn light_css(State(page): State<Page>) -> impl IntoResponse {
     page.assets.css.light.clone()
 }
 
+async fn base_js(State(page): State<Page>) -> impl IntoResponse {
+    page.assets.base_js.clone()
+}
+
 async fn index_js(State(page): State<Page>) -> impl IntoResponse {
     page.assets.index_js.clone()
 }
@@ -182,8 +190,13 @@ async fn serve(
         .route(state.page.assets.css.style.route(), get(style_css))
         .route(state.page.assets.css.dark.route(), get(dark_css))
         .route(state.page.assets.css.light.route(), get(light_css))
+        .route(state.page.assets.base_js.route(), get(base_js))
         .route(state.page.assets.index_js.route(), get(index_js))
         .route(state.page.assets.paste_js.route(), get(paste_js))
+        .route("/", get(html::index::get).post(insert::form::post))
+        .route("/qr/:id", get(html::qr::get))
+        .route("/burn/:id", get(html::burn::get))
+        .route("/theme", get(theme::get))
         .route(
             "/:id",
             get(html::paste::get)
@@ -194,17 +207,6 @@ async fn serve(
         .route("/raw/:id", get(raw::get))
         .route("/delete/:id", get(delete::get))
         .route("/api", post(insert::api::post))
-        .merge(
-            // Cache the index page as well as the pages that contain a QR code. We cannot cache
-            // pastes themselves because invalidation only works client-side.
-            Router::new()
-                .route("/", get(html::index::get).post(insert::form::post))
-                .route("/qr/:id", get(html::qr::get))
-                .route("/burn/:id", get(html::burn::get))
-                .layer(CacheLayer::with(
-                    cached::TimedCache::with_lifespan_and_capacity(u64::MAX, PAGE_CACHE_SIZE),
-                )),
-        )
         .layer(
             ServiceBuilder::new()
                 .layer(DefaultBodyLimit::max(max_body_size))
@@ -213,6 +215,7 @@ async fn serve(
                 .layer(TimeoutLayer::new(timeout))
                 .layer(from_fn_with_state(state.clone(), handle_service_errors))
                 .layer(from_fn(security_headers_layer)),
+            // .layer(from_fn(
         )
         .with_state(state);
 

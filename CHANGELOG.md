@@ -6,6 +6,8 @@
 
 - `WASTEBIN_THEME` configuration key to change the default theme from `ayu` to
   `base16ocean`, `coldark`, `gruvbox`, `monokai`, `onehalf` or `solarized`.
+- UI button to switch between light and dark mode and cookie to store the
+  preference. By default the system setting is used.
 
 ### Changed
 

@@ -1,4 +1,5 @@
 use crate::db::{write, Database};
+use crate::handlers::extract::Theme;
 use crate::handlers::html::make_error;
 use crate::id::Id;
 use crate::{Error, Page};
@@ -47,6 +48,7 @@ pub async fn post(
     State(db): State<Database>,
     jar: SignedCookieJar,
     headers: HeaderMap,
+    theme: Option<Theme>,
     Form(entry): Form<Entry>,
 ) -> Result<(SignedCookieJar, Redirect), impl IntoResponse> {
     // TODO: think about something more appropriate because those headers might be all messed up
@@ -102,7 +104,7 @@ pub async fn post(
         Ok((jar.add(cookie), Redirect::to(&url)))
     }
     .await
-    .map_err(|err| make_error(err, page))
+    .map_err(|err| make_error(err, page, theme))
 }
 
 #[cfg(test)]

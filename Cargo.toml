@@ -10,7 +10,6 @@ askama_axum = { version = "0.4" }
 async-compression = { version = "0.4", features = ["tokio", "zstd"] }
 axum = { version = "0.7", features = ["json", "query"] }
 axum-extra = { version = "0.9", features = ["cookie-signed", "typed-header"] }
-axum-response-cache = { version = "0.2.0", default-features = false, features = ["axum07"] }
 bytes = "1"
 cached = { version = "0.54.0", default-features = false }
 chacha20poly1305 = "0.10.1"

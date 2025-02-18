@@ -6,6 +6,7 @@ use url::Url;
 pub struct Assets {
     pub favicon: Asset,
     pub css: Css,
+    pub base_js: Asset,
     pub index_js: Asset,
     pub paste_js: Asset,
 }
@@ -76,6 +77,11 @@ impl Assets {
                 include_bytes!("../assets/favicon.png").to_vec(),
             ),
             css: Css::new(theme),
+            base_js: Asset::new_hashed(
+                "base",
+                Kind::Js,
+                include_bytes!("javascript/base.js").to_vec(),
+            ),
             index_js: Asset::new_hashed(
                 "index",
                 Kind::Js,

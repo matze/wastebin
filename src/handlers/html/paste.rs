@@ -1,6 +1,7 @@
 use crate::cache::Key;
 use crate::crypto::Password;
 use crate::db::read::Entry;
+use crate::handlers::extract::Theme;
 use crate::handlers::html::{make_error, ErrorResponse, PasswordInput};
 use crate::highlight::Html;
 use crate::{Cache, Database, Error, Highlighter, Page};
@@ -21,17 +22,20 @@ pub struct PasswordForm {
 pub struct Paste {
     page: Page,
     key: Key,
+    theme: Option<Theme>,
     can_delete: bool,
     html: String,
     title: String,
 }
 
+#[expect(clippy::too_many_arguments)]
 pub async fn get(
     State(cache): State<Cache>,
     State(page): State<Page>,
     State(db): State<Database>,
     State(highlighter): State<Highlighter>,
     Path(id): Path<String>,
+    theme: Option<Theme>,
     jar: SignedCookieJar,
     form: Option<Form<PasswordForm>>,
 ) -> Result<Response, ErrorResponse> {
@@ -46,6 +50,7 @@ pub async fn get(
             Err(Error::NoPassword) => {
                 return Ok(PasswordInput {
                     page: page.clone(),
+                    theme: theme.clone(),
                     id,
                 }
                 .into_response())
@@ -78,20 +83,36 @@ pub async fn get(
             html
         };
 
-        Ok(Paste::new(key, html, can_be_deleted, title, page.clone()).into_response())
+        Ok(Paste::new(
+            key,
+            html,
+            theme.clone(),
+            can_be_deleted,
+            title,
+            page.clone(),
+        )
+        .into_response())
     }
     .await
-    .map_err(|err| make_error(err, page))
+    .map_err(|err| make_error(err, page, theme))
 }
 
 impl Paste {
     /// Construct new paste view from cache `key` and paste `html`.
-    pub fn new(key: Key, html: Html, can_delete: bool, title: String, page: Page) -> Self {
+    pub fn new(
+        key: Key,
+        html: Html,
+        theme: Option<Theme>,
+        can_delete: bool,
+        title: String,
+        page: Page,
+    ) -> Self {
         let html = html.into_inner();
 
         Self {
             page,
             key,
+            theme,
             can_delete,
             html,
             title,

@@ -1,6 +1,7 @@
 use crate::cache::Cache;
 use crate::db::Database;
 use crate::errors::Error;
+use crate::handlers::extract::Theme;
 use crate::handlers::{delete, download, html, insert, raw};
 use axum::extract::{DefaultBodyLimit, FromRef, Request, State};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
@@ -97,7 +98,20 @@ async fn security_headers_layer(req: Request, next: Next) -> impl IntoResponse {
     (SECURITY_HEADERS, next.run(req).await)
 }
 
-async fn handle_service_errors(State(page): State<Page>, req: Request, next: Next) -> Response {
+/// If we find the `pref` query string or a cookie, we set a header value that we extract later
+/// using the [`crate::handlers::extract::Password`] extractor. In addition we set the cookie
+async fn handle_theme_preference(req: Request, next: Next) -> Response {
+    let response = next.run(req).await;
+
+    response
+}
+
+async fn handle_service_errors(
+    State(page): State<Page>,
+    theme: Option<Theme>,
+    req: Request,
+    next: Next,
+) -> Response {
     let response = next.run(req).await;
 
     match response.status() {
@@ -105,6 +119,7 @@ async fn handle_service_errors(State(page): State<Page>, req: Request, next: Nex
             StatusCode::PAYLOAD_TOO_LARGE,
             html::Error {
                 page,
+                theme,
                 description: String::from("payload exceeded limit"),
             },
         )
@@ -113,6 +128,7 @@ async fn handle_service_errors(State(page): State<Page>, req: Request, next: Nex
             StatusCode::UNSUPPORTED_MEDIA_TYPE,
             html::Error {
                 page,
+                theme,
                 description: String::from("unsupported media type"),
             },
         )
@@ -213,6 +229,7 @@ async fn serve(
                 .layer(TimeoutLayer::new(timeout))
                 .layer(from_fn_with_state(state.clone(), handle_service_errors))
                 .layer(from_fn(security_headers_layer)),
+            // .layer(from_fn(
         )
         .with_state(state);
 

@@ -5,8 +5,15 @@
     <meta name="generator" content="wastebin {{ page.version }}">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>{{ page.title }}{% block title_content %}{% endblock %}</title>
-    <link rel="preload" as="style" href="{{ page.assets.css.dark.route() }}">
-    <link rel="preload" as="style" href="{{ page.assets.css.light.route() }}">
+    {% match theme %}
+      {% when Some with (Theme::Dark) %}
+        <link rel="stylesheet" href="{{ page.assets.css.dark.route() }}">
+      {% when Some with (Theme::Light) %}
+        <link rel="stylesheet" href="{{ page.assets.css.light.route() }}">
+      {% when None %}
+        <link rel="stylesheet" href="{{ page.assets.css.dark.route() }}" media="(prefers-color-scheme: dark)">
+        <link rel="stylesheet" href="{{ page.assets.css.light.route() }}" media="(prefers-color-scheme: light)">
+    {% endmatch %}
     <link rel="stylesheet" href="{{ page.assets.css.style.route() }}">
     <link rel="icon" href="{{ page.assets.favicon.route() }}" type="image/png">
     {% block head %}{% endblock %}

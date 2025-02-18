@@ -1,4 +1,5 @@
 use crate::cache::Key;
+use crate::handlers::extract::Theme;
 use crate::handlers::html::qr::{code_from, dark_modules};
 use crate::handlers::html::{make_error, ErrorResponse};
 use crate::{Error, Page};
@@ -6,7 +7,11 @@ use askama::Template;
 use axum::extract::{Path, State};
 
 /// GET handler for the burn page.
-pub async fn get(Path(id): Path<String>, State(page): State<Page>) -> Result<Burn, ErrorResponse> {
+pub async fn get(
+    Path(id): Path<String>,
+    State(page): State<Page>,
+    theme: Option<Theme>,
+) -> Result<Burn, ErrorResponse> {
     async {
         let code = tokio::task::spawn_blocking({
             let page = page.clone();
@@ -22,10 +27,11 @@ pub async fn get(Path(id): Path<String>, State(page): State<Page>) -> Result<Bur
             page: page.clone(),
             key,
             code,
+            theme: theme.clone(),
         })
     }
     .await
-    .map_err(|err| make_error(err, page))
+    .map_err(|err| make_error(err, page, theme))
 }
 
 /// Burn page shown if "burn-after-reading" was selected during insertion.
@@ -35,6 +41,7 @@ pub struct Burn {
     page: Page,
     key: Key,
     code: qrcodegen::QrCode,
+    theme: Option<Theme>,
 }
 
 impl Burn {

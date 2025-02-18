@@ -3,6 +3,7 @@ pub mod index;
 pub mod paste;
 pub mod qr;
 
+use crate::handlers::extract::Theme;
 use crate::{errors, Page};
 use askama::Template;
 use axum::http::StatusCode;
@@ -12,6 +13,7 @@ use axum::http::StatusCode;
 #[template(path = "error.html")]
 pub struct Error {
     pub page: Page,
+    pub theme: Option<Theme>,
     pub description: String,
 }
 
@@ -20,6 +22,7 @@ pub struct Error {
 #[template(path = "encrypted.html")]
 pub struct PasswordInput {
     pub page: Page,
+    pub theme: Option<Theme>,
     pub id: String,
 }
 
@@ -28,7 +31,14 @@ pub type ErrorResponse = (StatusCode, Error);
 
 /// Create an error response from `error` consisting of [`StatusCode`] derive from `error` as well
 /// as a rendered page with a description.
-pub fn make_error(error: errors::Error, page: Page) -> ErrorResponse {
+pub fn make_error(error: errors::Error, page: Page, theme: Option<Theme>) -> ErrorResponse {
     let description = error.to_string();
-    (error.into(), Error { page, description })
+    (
+        error.into(),
+        Error {
+            page,
+            theme,
+            description,
+        },
+    )
 }

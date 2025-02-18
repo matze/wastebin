@@ -1,3 +1,4 @@
+use crate::handlers::extract::Theme;
 use crate::handlers::html::{make_error, ErrorResponse};
 use crate::{Database, Error, Page};
 use axum::extract::{Path, State};
@@ -8,6 +9,7 @@ pub async fn get(
     Path(id): Path<String>,
     State(db): State<Database>,
     State(page): State<Page>,
+    theme: Option<Theme>,
     jar: SignedCookieJar,
 ) -> Result<Redirect, ErrorResponse> {
     async {
@@ -30,7 +32,7 @@ pub async fn get(
         Ok(Redirect::to("/"))
     }
     .await
-    .map_err(|err| make_error(err, page.clone()))
+    .map_err(|err| make_error(err, page.clone(), theme))
 }
 
 #[cfg(test)]

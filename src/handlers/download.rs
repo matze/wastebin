@@ -1,6 +1,6 @@
 use crate::cache::Key;
 use crate::db::read::Entry;
-use crate::handlers::extract::Password;
+use crate::handlers::extract::{Password, Theme};
 use crate::handlers::html::{make_error, ErrorResponse, PasswordInput};
 use crate::{Database, Error, Page};
 use axum::extract::{Path, State};
@@ -13,6 +13,7 @@ pub async fn get(
     Path(id): Path<String>,
     State(db): State<Database>,
     State(page): State<Page>,
+    theme: Option<Theme>,
     password: Option<Password>,
 ) -> Result<Response, ErrorResponse> {
     async {
@@ -26,6 +27,7 @@ pub async fn get(
             Ok(Entry::Expired) => Err(Error::NotFound),
             Err(Error::NoPassword) => Ok(PasswordInput {
                 page: page.clone(),
+                theme: theme.clone(),
                 id: key.id.to_string(),
             }
             .into_response()),
@@ -33,7 +35,7 @@ pub async fn get(
         }
     }
     .await
-    .map_err(|err| make_error(err, page))
+    .map_err(|err| make_error(err, page, theme))
 }
 
 fn get_download(text: String, id: &str, extension: &str) -> impl IntoResponse {

@@ -54,7 +54,7 @@ impl Page {
 
         let expirations = OPTIONS
             .into_iter()
-            .filter(|expiration| max_expiration.map_or(true, |max| expiration.seconds <= max))
+            .filter(|expiration| max_expiration.is_none_or(|max| expiration.seconds <= max))
             .collect();
 
         Self {

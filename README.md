@@ -158,7 +158,8 @@ run-time behavior:
 
 ### API endpoints
 
-POST a new paste to the `/api` endpoint with the following JSON payload:
+POST a new paste to the `/` (up to 2.7.1) or `/api` (current HEAD) endpoint with
+the following JSON payload:
 
 ```
 {

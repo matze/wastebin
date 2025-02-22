@@ -1,6 +1,7 @@
 # <img width="24px" height="24px" style="position: relative; top: 2px;" src="assets/favicon.png"/> wastebin
-
 [![Rust](https://github.com/matze/wastebin/actions/workflows/rust.yml/badge.svg)](https://github.com/matze/wastebin/actions/workflows/rust.yml)
+
+## <strong><a href="https://war.ukraine.ua/support-ukraine/">support 🇺🇦</a> • <a href="https://state-of-the-union.ec.europa.eu/state-union-2022/state-union-achievements/defending-eu-values_en">defend 🇪🇺</a></strong>
 
 A minimal pastebin with a design shamelessly copied from
 [bin](https://github.com/WantGuns/bin).

@@ -15,7 +15,7 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@1.85.0
       with:
-        components: clippy
+        components: clippy,rustfmt
     - run: cargo clippy
     - run: cargo fmt --all --check
     - run: cargo test --all-targets

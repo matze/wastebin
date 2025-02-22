@@ -1,4 +1,4 @@
-use crate::db::{write, Database};
+use crate::db::{Database, write};
 use crate::handlers::extract::Theme;
 use crate::handlers::html::make_error;
 use crate::id::Id;
@@ -65,13 +65,10 @@ pub async fn post(
         .unwrap_or(false);
 
     async {
-        let id: Id = tokio::task::spawn_blocking(|| {
-            let mut rng = rand::thread_rng();
-            rng.gen::<u32>()
-        })
-        .await
-        .map_err(Error::from)?
-        .into();
+        let id: Id = tokio::task::spawn_blocking(|| rand::rng().random::<u32>())
+            .await
+            .map_err(Error::from)?
+            .into();
 
         // Retrieve uid from cookie or generate a new one.
         let uid = if let Some(cookie) = jar.get("uid") {
@@ -110,7 +107,7 @@ pub async fn post(
 #[cfg(test)]
 mod tests {
     use crate::test_helpers::Client;
-    use reqwest::{header, StatusCode};
+    use reqwest::{StatusCode, header};
     use std::collections::HashMap;
 
     #[tokio::test]

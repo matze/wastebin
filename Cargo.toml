@@ -1,8 +1,8 @@
 [package]
 name = "wastebin"
 version = "2.7.1"
-edition = "2021"
-rust-version = "1.83"
+edition = "2024"
+rust-version = "1.85"
 
 [dependencies]
 askama = { version = "0.12", default-features = false, features = ["with-axum"] }
@@ -19,7 +19,7 @@ http = "1.1.0"
 mime = "0.3"
 qrcodegen = "1"
 parking_lot = "0.12.1"
-rand = "0.8"
+rand = "0.9"
 rusqlite = { version = "0.32", features = ["bundled"] }
 rusqlite_migration = { version = "1", default-features = false }
 rust-argon2 = "2.0.0"

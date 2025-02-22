@@ -1,8 +1,8 @@
-use crate::db::{write, Database};
+use crate::db::{Database, write};
 use crate::errors::{Error, JsonErrorResponse};
 use crate::id::Id;
-use axum::extract::State;
 use axum::Json;
+use axum::extract::State;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
@@ -40,13 +40,10 @@ pub async fn post(
     State(db): State<Database>,
     Json(entry): Json<Entry>,
 ) -> Result<Json<RedirectResponse>, JsonErrorResponse> {
-    let id: Id = tokio::task::spawn_blocking(|| {
-        let mut rng = rand::thread_rng();
-        rng.gen::<u32>()
-    })
-    .await
-    .map_err(Error::from)?
-    .into();
+    let id: Id = tokio::task::spawn_blocking(|| rand::rng().random::<u32>())
+        .await
+        .map_err(Error::from)?
+        .into();
 
     let entry: write::Entry = entry.into();
     let path = format!("/{}", id.to_url_path(&entry));

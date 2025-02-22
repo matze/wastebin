@@ -4,7 +4,7 @@ pub mod paste;
 pub mod qr;
 
 use crate::handlers::extract::Theme;
-use crate::{errors, Page};
+use crate::{Page, errors};
 use askama::Template;
 use axum::http::StatusCode;
 

@@ -2,7 +2,7 @@ use crate::cache::Key;
 use crate::crypto::Password;
 use crate::db::read::Entry;
 use crate::handlers::extract::Theme;
-use crate::handlers::html::{make_error, ErrorResponse, PasswordInput};
+use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
 use crate::highlight::Html;
 use crate::{Cache, Database, Error, Highlighter, Page};
 use askama::Template;
@@ -53,7 +53,7 @@ pub async fn get(
                     theme: theme.clone(),
                     id,
                 }
-                .into_response())
+                .into_response());
             }
             Err(err) => return Err(err),
         };

@@ -1,10 +1,10 @@
 use axum::response::{IntoResponse, Response};
-use axum_extra::{headers, TypedHeader};
+use axum_extra::{TypedHeader, headers};
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
 use std::time::Duration;
 use syntect::highlighting::{self, ThemeSet};
-use syntect::html::{css_for_theme_with_class_style, ClassStyle};
+use syntect::html::{ClassStyle, css_for_theme_with_class_style};
 use two_face::theme::EmbeddedThemeName;
 
 use crate::highlight::Theme;

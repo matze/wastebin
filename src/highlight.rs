@@ -1,7 +1,7 @@
 use crate::db::read::Data;
 use crate::errors::Error;
 use std::cmp::Ordering;
-use syntect::html::{line_tokens_to_classed_spans, ClassStyle};
+use syntect::html::{ClassStyle, line_tokens_to_classed_spans};
 use syntect::parsing::{ParseState, ScopeStack, SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
 

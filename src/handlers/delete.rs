@@ -1,5 +1,5 @@
 use crate::handlers::extract::Theme;
-use crate::handlers::html::{make_error, ErrorResponse};
+use crate::handlers::html::{ErrorResponse, make_error};
 use crate::{Database, Error, Page};
 use axum::extract::{Path, State};
 use axum::response::Redirect;

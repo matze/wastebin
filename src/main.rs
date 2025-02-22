@@ -5,9 +5,9 @@ use crate::handlers::extract::Theme;
 use crate::handlers::{delete, download, html, insert, raw, theme};
 use axum::extract::{DefaultBodyLimit, FromRef, Request, State};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
-use axum::middleware::{from_fn, from_fn_with_state, Next};
+use axum::middleware::{Next, from_fn, from_fn_with_state};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post, Router};
+use axum::routing::{Router, get, post};
 use axum_extra::extract::cookie::Key;
 use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
@@ -83,11 +83,19 @@ impl FromRef<AppState> for Cache {
 async fn security_headers_layer(req: Request, next: Next) -> impl IntoResponse {
     const SECURITY_HEADERS: [(HeaderName, HeaderValue); 7] = [
         (SERVER, HeaderValue::from_static(env!("CARGO_PKG_NAME"))),
-        (CONTENT_SECURITY_POLICY, HeaderValue::from_static("default-src 'none'; script-src 'self'; img-src 'self' data: ; style-src 'self' data: ; font-src 'self' data: ; object-src 'none' ; base-uri 'none' ; frame-ancestors 'none' ; form-action 'self' ;")),
+        (
+            CONTENT_SECURITY_POLICY,
+            HeaderValue::from_static(
+                "default-src 'none'; script-src 'self'; img-src 'self' data: ; style-src 'self' data: ; font-src 'self' data: ; object-src 'none' ; base-uri 'none' ; frame-ancestors 'none' ; form-action 'self' ;",
+            ),
+        ),
         (REFERRER_POLICY, HeaderValue::from_static("same-origin")),
         (X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff")),
         (X_FRAME_OPTIONS, HeaderValue::from_static("SAMEORIGIN")),
-        (HeaderName::from_static("x-permitted-cross-domain-policies"), HeaderValue::from_static("none")),
+        (
+            HeaderName::from_static("x-permitted-cross-domain-policies"),
+            HeaderValue::from_static("none"),
+        ),
         (X_XSS_PROTECTION, HeaderValue::from_static("1; mode=block")),
     ];
 

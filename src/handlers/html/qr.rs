@@ -1,7 +1,7 @@
 use crate::cache::Key;
 use crate::db::Database;
 use crate::handlers::extract::Theme;
-use crate::handlers::html::{make_error, ErrorResponse};
+use crate::handlers::html::{ErrorResponse, make_error};
 use crate::{Error, Page};
 use askama::Template;
 use axum::extract::{Path, State};

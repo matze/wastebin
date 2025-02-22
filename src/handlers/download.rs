@@ -1,7 +1,7 @@
 use crate::cache::Key;
 use crate::db::read::Entry;
 use crate::handlers::extract::{Password, Theme};
-use crate::handlers::html::{make_error, ErrorResponse, PasswordInput};
+use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
 use crate::{Database, Error, Page};
 use axum::extract::{Path, State};
 use axum::http::header;

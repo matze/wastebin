@@ -1,7 +1,7 @@
 use crate::cache::Key;
 use crate::handlers::extract::Theme;
 use crate::handlers::html::qr::{code_from, dark_modules};
-use crate::handlers::html::{make_error, ErrorResponse};
+use crate::handlers::html::{ErrorResponse, make_error};
 use crate::{Error, Page};
 use askama::Template;
 use axum::extract::{Path, State};
@@ -53,7 +53,7 @@ impl Burn {
 #[cfg(test)]
 mod tests {
     use crate::test_helpers::Client;
-    use reqwest::{header, StatusCode};
+    use reqwest::{StatusCode, header};
     use serde::Serialize;
 
     #[tokio::test]

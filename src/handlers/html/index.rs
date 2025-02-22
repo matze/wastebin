@@ -1,4 +1,4 @@
-use crate::{handlers::extract::Theme, Highlighter, Page};
+use crate::{Highlighter, Page, handlers::extract::Theme};
 use askama::Template;
 use axum::extract::State;
 

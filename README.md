@@ -33,7 +33,7 @@ A minimal pastebin with a design shamelessly copied from
 
 ### Build from source
 
-Install a Rust 2021 toolchain containing Rust 1.70 with
+Install a Rust 2024 toolchain containing Rust 1.85 with
 [rustup](https://rustup.rs) and run the server binary with
 
     $ cargo run --release
@@ -44,6 +44,7 @@ Install a Rust 2021 toolchain containing Rust 1.70 with
 You can also download pre-built, statically compiled [Linux
 binaries](https://github.com/matze/wastebin/releases). After extraction run the
 contained `wastebin` binary.
+
 
 ### Build a container image
 
@@ -92,7 +93,8 @@ to.
 
 
 ### Run with docker-compose
-```
+
+```yaml
 services:
   wastebin:
     restart: always

@@ -13,6 +13,7 @@
 {% endblock %}
 
 {% block nav_common %}
+  {% if is_available %}
   {% if can_delete %}
     <div class="nav-item">
       <a href="/delete/{{ key.id() }}" class="nav-button" title="delete paste" aria-label="delete paste">
@@ -36,8 +37,10 @@
         </svg>
       </a>
     </div>
+  {% endif %}
 {% endblock %}
 {% block nav_specific %}
+  {% if is_available %}
     <div class="nav-item">
       <a href="/qr/{{ key }}" class="nav-button" title="qr code" aria-label="qr code">
         <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
@@ -46,4 +49,5 @@
         </svg>
       </a>
     </div>
+  {% endif %}
 {% endblock %}

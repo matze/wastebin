@@ -24,6 +24,8 @@ pub struct Paste {
     key: Key,
     theme: Option<Theme>,
     can_delete: bool,
+    /// If the paste still in the database and can be fetched with another request.
+    is_available: bool,
     html: String,
     title: String,
 }
@@ -43,7 +45,7 @@ pub async fn get(
         let password = form.map(|form| Password::from(form.password.as_bytes().to_vec()));
         let key: Key = id.parse()?;
 
-        let (data, can_be_cached) = match db.get(key.id, password.clone()).await {
+        let (data, is_available) = match db.get(key.id, password.clone()).await {
             Ok(Entry::Regular(data)) => (data, true),
             Ok(Entry::Burned(data)) => (data, false),
             Ok(Entry::Expired) => return Err(Error::NotFound),
@@ -75,7 +77,7 @@ pub async fn get(
         } else {
             let html = highlighter.highlight(data, key.ext.clone()).await?;
 
-            if can_be_cached && password.is_none() {
+            if is_available && password.is_none() {
                 tracing::trace!(?key, "cache item");
                 cache.put(key.clone(), html.clone());
             }
@@ -88,6 +90,7 @@ pub async fn get(
             html,
             theme.clone(),
             can_be_deleted,
+            is_available,
             title,
             page.clone(),
         )
@@ -104,6 +107,7 @@ impl Paste {
         html: Html,
         theme: Option<Theme>,
         can_delete: bool,
+        is_available: bool,
         title: String,
         page: Page,
     ) -> Self {
@@ -114,6 +118,7 @@ impl Paste {
             key,
             theme,
             can_delete,
+            is_available,
             html,
             title,
         }

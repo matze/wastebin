@@ -28,11 +28,13 @@ pub async fn get(
         let key: Key = id.parse()?;
         let title = db.get_title(key.id).await?.unwrap_or_default();
 
+        // TODO: fix the bogus hardcoded can_delete and is_deleted fields.
         Ok(Qr {
             page: page.clone(),
             theme: theme.clone(),
             key,
             can_delete: false,
+            is_available: false,
             code,
             title,
         })
@@ -49,6 +51,7 @@ pub struct Qr {
     theme: Option<Theme>,
     key: Key,
     can_delete: bool,
+    is_available: bool,
     code: qrcodegen::QrCode,
     title: String,
 }

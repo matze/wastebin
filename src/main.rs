@@ -36,13 +36,13 @@ mod page;
 mod test_helpers;
 
 /// Reference counted [`page::Page`] wrapper.
-pub type Page = Arc<page::Page>;
+pub(crate) type Page = Arc<page::Page>;
 
 /// Reference counted [`highlight::Highlighter`] wrapper.
-pub type Highlighter = Arc<highlight::Highlighter>;
+pub(crate) type Highlighter = Arc<highlight::Highlighter>;
 
 #[derive(Clone)]
-pub struct AppState {
+pub(crate) struct AppState {
     db: Database,
     cache: Cache,
     key: Key,

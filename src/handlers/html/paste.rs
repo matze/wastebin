@@ -12,14 +12,14 @@ use axum_extra::extract::SignedCookieJar;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
-pub struct PasswordForm {
+pub(crate) struct PasswordForm {
     password: String,
 }
 
 /// Paste view showing the formatted paste.
 #[derive(Template)]
 #[template(path = "formatted.html")]
-pub struct Paste {
+pub(crate) struct Paste {
     page: Page,
     key: Key,
     theme: Option<Theme>,

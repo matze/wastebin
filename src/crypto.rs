@@ -19,7 +19,7 @@ static CONFIG: LazyLock<argon2::Config> = LazyLock::new(|| argon2::Config {
 static SALT: LazyLock<String> = LazyLock::new(env::password_hash_salt);
 
 /// Encrypted data item.
-pub struct Encrypted {
+pub(crate) struct Encrypted {
     /// Encrypted ciphertext.
     pub ciphertext: Vec<u8>,
     /// Nonce used for encryption.
@@ -27,10 +27,10 @@ pub struct Encrypted {
 }
 
 #[derive(Clone)]
-pub struct Password(Vec<u8>);
+pub(crate) struct Password(Vec<u8>);
 
 /// Plaintext bytes to be encrypted.
-pub struct Plaintext(Vec<u8>);
+pub(crate) struct Plaintext(Vec<u8>);
 
 impl From<Vec<u8>> for Password {
     fn from(value: Vec<u8>) -> Self {

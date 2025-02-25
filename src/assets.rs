@@ -11,7 +11,7 @@ use crate::highlight::Theme;
 
 /// An asset associated with a MIME type.
 #[derive(Clone)]
-pub struct Asset {
+pub(crate) struct Asset {
     /// Route that this will be served under.
     pub route: String,
     /// MIME type of this asset determined for the `ContentType` response header.
@@ -22,7 +22,7 @@ pub struct Asset {
 
 /// Asset kind.
 #[derive(Copy, Clone)]
-pub enum Kind {
+pub(crate) enum Kind {
     Css,
     Js,
 }
@@ -77,7 +77,7 @@ impl Asset {
 }
 
 /// Collection of light and dark CSS and main UI style CSS derived from them.
-pub struct Css {
+pub(crate) struct Css {
     /// Main UI CSS stylesheet.
     pub style: Asset,
     /// Light theme colors.

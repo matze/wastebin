@@ -49,13 +49,13 @@ static MIGRATIONS: LazyLock<Migrations> = LazyLock::new(|| {
 
 /// Our main database and integrated cache.
 #[derive(Clone)]
-pub struct Database {
+pub(crate) struct Database {
     conn: Arc<Mutex<Connection>>,
 }
 
 /// Database opening modes
 #[derive(Debug)]
-pub enum Open {
+pub(crate) enum Open {
     /// Open in-memory database that is wiped after reload
     Memory,
     /// Open database from given path
@@ -63,7 +63,7 @@ pub enum Open {
 }
 
 /// Module with types for insertion.
-pub mod write {
+pub(crate) mod write {
     use crate::crypto::{Encrypted, Password, Plaintext};
     use crate::errors::Error;
     use async_compression::tokio::bufread::ZstdEncoder;
@@ -74,7 +74,7 @@ pub mod write {
 
     /// An uncompressed entry to be inserted into the database.
     #[derive(Default, Debug, Serialize, Deserialize)]
-    pub struct Entry {
+    pub(crate) struct Entry {
         /// Content
         pub text: String,
         /// File extension
@@ -92,7 +92,7 @@ pub mod write {
     }
 
     /// A compressed entry to be inserted.
-    pub struct CompressedEntry {
+    pub(crate) struct CompressedEntry {
         /// Original data
         entry: Entry,
         /// Compressed data
@@ -100,7 +100,7 @@ pub mod write {
     }
 
     /// An entry that might be encrypted.
-    pub struct DatabaseEntry {
+    pub(crate) struct DatabaseEntry {
         /// Original data
         pub entry: Entry,
         /// Compressed and potentially encrypted data
@@ -147,7 +147,7 @@ pub mod write {
 }
 
 /// Module with types for reading from the database.
-pub mod read {
+pub(crate) mod read {
     use crate::crypto::{Encrypted, Password};
     use crate::errors::Error;
     use async_compression::tokio::bufread::ZstdDecoder;
@@ -156,7 +156,7 @@ pub mod read {
 
     /// A raw entry as read from the database.
     #[derive(Debug)]
-    pub struct DatabaseEntry {
+    pub(crate) struct DatabaseEntry {
         /// Compressed and potentially encrypted data
         pub data: Vec<u8>,
         /// Entry is expired
@@ -173,7 +173,7 @@ pub mod read {
 
     /// Potentially decrypted but still compressed entry
     #[derive(Debug)]
-    pub struct CompressedReadEntry {
+    pub(crate) struct CompressedReadEntry {
         /// Compressed data
         data: Vec<u8>,
         /// Entry must be deleted
@@ -186,7 +186,7 @@ pub mod read {
 
     /// Uncompressed entry
     #[derive(Debug)]
-    pub struct UmcompressedEntry {
+    pub(crate) struct UmcompressedEntry {
         /// Content
         pub text: String,
         /// Entry must be deleted
@@ -199,7 +199,7 @@ pub mod read {
 
     /// Uncompressed, decrypted data read from the database.
     #[derive(Debug)]
-    pub struct Data {
+    pub(crate) struct Data {
         /// Content
         pub text: String,
         /// User identifier that inserted the entry
@@ -210,7 +210,7 @@ pub mod read {
 
     /// Potentially deleted or non-existent expired entry.
     #[derive(Debug)]
-    pub enum Entry {
+    pub(crate) enum Entry {
         /// Entry found and still available.
         Regular(Data),
         /// Entry burned.

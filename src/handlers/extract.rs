@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 /// Theme extracted from the `pref` cookie.
 #[derive(Debug, Deserialize, Clone)]
-pub enum Theme {
+pub(crate) enum Theme {
     #[serde(rename = "dark")]
     Dark,
     #[serde(rename = "light")]
@@ -15,14 +15,14 @@ pub enum Theme {
 
 /// Theme preference for use in shared [`axum::extract::Query`]'s.
 #[derive(Debug, Deserialize)]
-pub struct Preference {
+pub(crate) struct Preference {
     pub pref: Theme,
 }
 
-pub struct Password(pub crypto::Password);
+pub(crate) struct Password(pub crypto::Password);
 
 /// Password header to encrypt a paste.
-pub const PASSWORD_HEADER_NAME: http::HeaderName =
+pub(crate) const PASSWORD_HEADER_NAME: http::HeaderName =
     http::HeaderName::from_static("wastebin-password");
 
 impl std::fmt::Display for Theme {

@@ -46,7 +46,7 @@ pub async fn get(
 /// Paste view showing the formatted paste as well as a bunch of links.
 #[derive(Template)]
 #[template(path = "qr.html", escape = "none")]
-pub struct Qr {
+pub(crate) struct Qr {
     page: Page,
     theme: Option<Theme>,
     key: Key,

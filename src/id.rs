@@ -12,7 +12,7 @@ const CHAR_TABLE: &[char; 64] = &[
 
 /// Represents a 32-bit integer either numerically or mapped to a 6 character string.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct Id {
+pub(crate) struct Id {
     n: u32,
 }
 

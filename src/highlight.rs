@@ -9,7 +9,7 @@ const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
 
 /// Supported themes.
 #[derive(Copy, Clone)]
-pub enum Theme {
+pub(crate) enum Theme {
     Ayu,
     Base16Ocean,
     Coldark,
@@ -20,10 +20,10 @@ pub enum Theme {
 }
 
 #[derive(Clone)]
-pub struct Html(String);
+pub(crate) struct Html(String);
 
 #[derive(Clone)]
-pub struct Highlighter {
+pub(crate) struct Highlighter {
     syntax_set: SyntaxSet,
     pub syntaxes: Vec<SyntaxReference>,
 }

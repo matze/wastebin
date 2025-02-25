@@ -37,7 +37,7 @@ pub async fn get(
 /// Burn page shown if "burn-after-reading" was selected during insertion.
 #[derive(Template)]
 #[template(path = "burn.html", escape = "none")]
-pub struct Burn {
+pub(crate) struct Burn {
     page: Page,
     key: Key,
     code: qrcodegen::QrCode,

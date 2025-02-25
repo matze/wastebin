@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Entry {
+pub(crate) struct Entry {
     pub text: String,
     pub extension: Option<String>,
     pub expires: Option<String>,

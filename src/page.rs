@@ -3,7 +3,7 @@ use crate::highlight::Theme;
 use url::Url;
 
 /// Static page assets.
-pub struct Assets {
+pub(crate) struct Assets {
     pub favicon: Asset,
     pub css: Css,
     pub base_js: Asset,
@@ -11,13 +11,13 @@ pub struct Assets {
     pub paste_js: Asset,
 }
 
-pub struct Expiration {
+pub(crate) struct Expiration {
     pub repr: &'static str,
     pub seconds: u32,
     pub selected: bool,
 }
 
-pub struct Page {
+pub(crate) struct Page {
     pub version: &'static str,
     pub title: String,
     pub assets: Assets,

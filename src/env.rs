@@ -20,7 +20,7 @@ const VAR_THEME: &str = "WASTEBIN_THEME";
 const VAR_PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
 
 #[derive(thiserror::Error, Debug)]
-pub enum Error {
+pub(crate) enum Error {
     #[error("failed to parse {VAR_CACHE_SIZE}, expected number of elements: {0}")]
     CacheSize(ParseIntError),
     #[error("failed to parse {VAR_DATABASE_PATH}, contains non-Unicode data")]

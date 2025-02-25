@@ -18,7 +18,7 @@ pub async fn get(
 /// Index page displaying a form for paste insertion and a selection box for languages.
 #[derive(Template)]
 #[template(path = "index.html")]
-pub struct Index {
+pub(crate) struct Index {
     page: Page,
     theme: Option<Theme>,
     highlighter: Highlighter,

@@ -9,14 +9,14 @@ use std::sync::{Arc, Mutex};
 
 /// Cache based on identifier and format.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Key {
+pub(crate) struct Key {
     pub id: Id,
     pub ext: String,
 }
 
 /// Stores formatted HTML.
 #[derive(Clone)]
-pub struct Cache {
+pub(crate) struct Cache {
     inner: Arc<Mutex<SizedCache<Key, Html>>>,
 }
 

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Entry {
+pub(crate) struct Entry {
     pub text: String,
     pub extension: Option<String>,
     pub expires: Option<NonZeroU32>,
@@ -18,7 +18,7 @@ pub struct Entry {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct RedirectResponse {
+pub(crate) struct RedirectResponse {
     pub path: String,
 }
 

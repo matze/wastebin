@@ -28,6 +28,7 @@ mod crypto;
 mod db;
 mod env;
 mod errors;
+mod expiration;
 mod handlers;
 mod highlight;
 mod id;
@@ -244,7 +245,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let max_body_size = env::max_body_size()?;
     let base_url = env::base_url()?;
     let timeout = env::http_timeout()?;
-    let max_expiration = env::max_paste_expiration()?;
+    let expirations = env::expiration_set()?;
     let theme = env::theme()?;
     let title = env::title();
 
@@ -255,9 +256,8 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
     tracing::debug!("enforcing a http timeout of {timeout:#?}");
-    tracing::debug!("maximum expiration time of {max_expiration:?} seconds");
 
-    let page = Arc::new(page::Page::new(title, base_url, theme, max_expiration));
+    let page = Arc::new(page::Page::new(title, base_url, theme, expirations));
     let highlighter = Arc::new(highlight::Highlighter::default());
     let state = AppState {
         db,

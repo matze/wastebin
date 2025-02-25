@@ -1,5 +1,6 @@
 use crate::cache::Cache;
 use crate::db::{self, Database};
+use crate::expiration::ExpirationSet;
 use crate::highlight::{Highlighter, Theme};
 use crate::page;
 use axum_extra::extract::cookie::Key;
@@ -20,11 +21,12 @@ impl Client {
         let db = Database::new(db::Open::Memory).expect("open memory database");
         let cache = Cache::new(NonZeroUsize::new(128).unwrap());
         let key = Key::generate();
+        let expirations = "0".parse::<ExpirationSet>().unwrap();
         let page = Arc::new(page::Page::new(
             String::from("test"),
             url::Url::parse("https://localhost:8888").unwrap(),
             Theme::Ayu,
-            None,
+            expirations,
         ));
         let state = crate::AppState {
             db,

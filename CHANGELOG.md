@@ -19,6 +19,8 @@
   text.
 - **Breaking**: `POST`ing new entries via the JSON API now have to go via the
   `/api` root endpoint.
+- **Breaking**: Replace `WASTEBIN_MAX_PASTE_EXPIRATION` with a customizable set
+  of expirations via the `WASTEBIN_PASTE_EXPIRATIONS` variable.
 - Use the [two-face](https://docs.rs/two-face) crate for an extended syntax
   list.
 - Serve all CSS assets under hashed URL to avoid caching issues.

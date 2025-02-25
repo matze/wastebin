@@ -1,4 +1,5 @@
 use crate::assets::{Asset, Css, Kind};
+use crate::expiration::{Expiration, ExpirationSet};
 use crate::highlight::Theme;
 use url::Url;
 
@@ -11,12 +12,6 @@ pub(crate) struct Assets {
     pub paste_js: Asset,
 }
 
-pub(crate) struct Expiration {
-    pub repr: &'static str,
-    pub seconds: u32,
-    pub selected: bool,
-}
-
 pub(crate) struct Page {
     pub version: &'static str,
     pub title: String,
@@ -25,37 +20,12 @@ pub(crate) struct Page {
     pub expirations: Vec<Expiration>,
 }
 
-impl Expiration {
-    /// Create a new [`Expiration`] from the human-readable `repr` and given seconds.
-    const fn new(repr: &'static str, seconds: u32) -> Self {
-        Self {
-            repr,
-            seconds,
-            selected: false,
-        }
-    }
-}
-
 impl Page {
     /// Create new page meta data from generated  `assets`, `title` and optional `base_url`.
     #[must_use]
-    pub fn new(title: String, base_url: Url, theme: Theme, max_expiration: Option<u32>) -> Self {
-        const OPTIONS: [Expiration; 7] = [
-            Expiration::new("never", u32::MAX),
-            Expiration::new("10 minutes", 600),
-            Expiration::new("1 hour", 3600),
-            Expiration::new("1 day", 86400),
-            Expiration::new("1 week", 604_800),
-            Expiration::new("1 month", 2_592_000),
-            Expiration::new("1 year", 31_536_000),
-        ];
-
+    pub fn new(title: String, base_url: Url, theme: Theme, expirations: ExpirationSet) -> Self {
         let assets = Assets::new(theme);
-
-        let expirations = OPTIONS
-            .into_iter()
-            .filter(|expiration| max_expiration.is_none_or(|max| expiration.seconds <= max))
-            .collect();
+        let expirations = expirations.into_inner();
 
         Self {
             version: env!("CARGO_PKG_VERSION"),

@@ -1,4 +1,4 @@
-use crate::{db, highlight};
+use crate::{db, expiration, highlight};
 use axum_extra::extract::cookie::Key;
 use std::env::VarError;
 use std::net::SocketAddr;
@@ -14,7 +14,7 @@ const VAR_CACHE_SIZE: &str = "WASTEBIN_CACHE_SIZE";
 const VAR_DATABASE_PATH: &str = "WASTEBIN_DATABASE_PATH";
 const VAR_HTTP_TIMEOUT: &str = "WASTEBIN_HTTP_TIMEOUT";
 const VAR_MAX_BODY_SIZE: &str = "WASTEBIN_MAX_BODY_SIZE";
-const VAR_MAX_PASTE_EXPIRATION: &str = "WASTEBIN_MAX_PASTE_EXPIRATION";
+const VAR_PASTE_EXPIRATIONS: &str = "WASTEBIN_PASTE_EXPIRATIONS";
 const VAR_SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
 const VAR_THEME: &str = "WASTEBIN_THEME";
 const VAR_PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
@@ -35,8 +35,8 @@ pub(crate) enum Error {
     SigningKey(String),
     #[error("failed to parse {VAR_HTTP_TIMEOUT}: {0}")]
     HttpTimeout(ParseIntError),
-    #[error("failed to parse {VAR_MAX_PASTE_EXPIRATION}: {0}")]
-    MaxPasteExpiration(ParseIntError),
+    #[error("failed to parse {VAR_PASTE_EXPIRATIONS}: {0}")]
+    ParsePasteExpiration(#[from] expiration::Error),
     #[error("unknown theme {0}")]
     UnknownTheme(String),
 }
@@ -139,9 +139,12 @@ pub fn http_timeout() -> Result<Duration, Error> {
         .map_err(Error::HttpTimeout)
 }
 
-pub fn max_paste_expiration() -> Result<Option<u32>, Error> {
-    std::env::var(VAR_MAX_PASTE_EXPIRATION)
-        .ok()
-        .map(|value| value.parse::<u32>().map_err(Error::MaxPasteExpiration))
-        .transpose()
+/// Parse [`expiration::ExpirationSet`] from environment or return default.
+pub fn expiration_set() -> Result<expiration::ExpirationSet, Error> {
+    let set = std::env::var(VAR_PASTE_EXPIRATIONS).map_or_else(
+        |_| "0,600,3600=d,86400,604800,2419200,29030400".parse::<expiration::ExpirationSet>(),
+        |value| value.parse::<expiration::ExpirationSet>(),
+    )?;
+
+    Ok(set)
 }

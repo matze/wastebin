@@ -280,3 +280,23 @@ td.line-number {
   color: var(--main-accent-color);
   font-weight: bold;
 }
+
+.toast {
+  position: fixed;
+  bottom: 2em;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--main-fg-color);
+  color: var(--main-bg-color);
+  padding: .6em 1em;
+  border-radius: 8px;
+  z-index: 1000;
+}
+
+.hidden {
+  display: none;
+}
+
+.shown {
+  display: block;
+}

@@ -8,6 +8,7 @@
   `base16ocean`, `coldark`, `gruvbox`, `monokai`, `onehalf` or `solarized`.
 - UI button to switch between light and dark mode and cookie to store the
   preference. By default the system setting is used.
+- UI button and <kbd>c</kbd> to copy content to clipboard. Thanks @limitcool.
 
 ### Changed
 

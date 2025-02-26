@@ -130,6 +130,7 @@ When viewing a paste, you can use
 * <kbd>r</kbd> to view the raw paste,
 * <kbd>n</kbd> to go the index page,
 * <kbd>y</kbd> to copy the current URL to the clipboard,
+* <kbd>c</kbd> to copy the content to the clipboard,
 * <kbd>q</kbd> to display the current URL as a QR code and
 * <kbd>p</kbd> to view the formatted paste,
 * <kbd>?</kbd> to view the list of keybindings.

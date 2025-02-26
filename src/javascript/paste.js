@@ -1,4 +1,32 @@
+function $(id) {
+  return document.getElementById(id);
+}
+
 document.addEventListener('keydown', onKey);
+$("copy-button").addEventListener("click", copy);
+
+function copy() {
+  const lines = document.querySelectorAll('td.line');
+  const content = Array.from(lines)
+    .map(line => line.textContent)
+    .join('')
+    .trim();
+
+  navigator.clipboard.writeText(content)
+    .then(() => {
+        let toast = $("toast");
+
+        toast.classList.toggle("hidden");
+        toast.classList.toggle("shown");
+
+        setTimeout(() => {
+          toast.classList.toggle("hidden");
+          toast.classList.toggle("shown");
+        }, 1500);
+    }, function(err) {
+      console.error("failed to copy content", err);
+    });
+}
 
 function onKey(e) {
   if (e.key == 'n') {
@@ -18,6 +46,9 @@ function onKey(e) {
   }
   else if (e.key == 'p') {
     window.location.href = window.location.href.split("?")[0];
+  }
+  else if (e.key == 'c') {
+    copy();
   }
   else if (e.key == '?') {
     var overlay = document.getElementById("overlay");

@@ -10,6 +10,9 @@ A minimal pastebin with a design shamelessly copied from
 
 <p align="center"><strong><a href="https://bin.bloerg.net">DEMO</a></strong> (resets every day)</p>
 
+You are reading the documentation for an **unreleased version**. You can refer
+to earlier versions here: [2.7.1](https://github.com/matze/wastebin/tree/85a519ef9079c4618f851cce575b5a84334a6f42)
+
 
 ## Features
 
@@ -131,8 +134,8 @@ When viewing a paste, you can use
 * <kbd>n</kbd> to go the index page,
 * <kbd>y</kbd> to copy the current URL to the clipboard,
 * <kbd>c</kbd> to copy the content to the clipboard,
-* <kbd>q</kbd> to display the current URL as a QR code and
-* <kbd>p</kbd> to view the formatted paste,
+* <kbd>q</kbd> to display the current URL as a QR code,
+* <kbd>p</kbd> to view the formatted paste and
 * <kbd>?</kbd> to view the list of keybindings.
 
 To paste some text you can also use the <kbd>ctrl</kbd>+<kbd>s</kbd> key
@@ -147,13 +150,13 @@ run-time behavior:
 | Variable                          | Description                                                   | Default               |
 | --------------------------------- | ------------------------------------------------------------- | --------------------- |
 | `WASTEBIN_ADDRESS_PORT`           | Address and port to bind the server to.                       | `0.0.0.0:8088`        |
-| `WASTEBIN_BASE_URL`               | Base URL for the QR code display.                             | User agent's `Host` header field used as an approximation. |
+| `WASTEBIN_BASE_URL`               | Base URL for the QR code display.                             |                       |
 | `WASTEBIN_CACHE_SIZE`             | Number of rendered items to cache. Disable with 0.            | `128`                 |
 | `WASTEBIN_DATABASE_PATH`          | Path to the sqlite3 database file.                            | `:memory:`            |
 | `WASTEBIN_HTTP_TIMEOUT`           | Maximum number of seconds a request is processed until wastebin responds with 408. | `5` |
 | `WASTEBIN_MAX_BODY_SIZE`          | Number of bytes to accept for POST requests.                  | `1048576`, i.e. 1 MB  |
 | `WASTEBIN_PASSWORD_SALT`          | Salt used to hash user passwords used for encrypting pastes.  | `somesalt`            |
-| `WASTEBIN_PASTE_EXPIRATIONS`      | Possible paste expirations as a comma-separated list of seconds. Appending `=d` to one of the value makes it the default selection. |  |
+| `WASTEBIN_PASTE_EXPIRATIONS`      | Possible paste expirations as a comma-separated list of seconds. Appending `=d` to one of the value makes it the default selection. | `0,600,3600=d,86400,604800,2419200,29030400` |
 | `WASTEBIN_SIGNING_KEY`            | Key to sign cookies. Must be at least 64 bytes long.          | Random key generated at startup, i.e. cookies will become invalid after restarts and paste creators will not be able to delete their pastes. |
 | `WASTEBIN_THEME`                  | Theme colors, one of `ayu`, `base16ocean`, `coldark`, `gruvbox`, `monokai`, `onehalf`, `solarized`. | `ayu` |
 | `WASTEBIN_TITLE`                  | HTML page title.                                              | `wastebin`            |
@@ -162,8 +165,7 @@ run-time behavior:
 
 ### API endpoints
 
-POST a new paste to the `/` (up to 2.7.1) or `/api` (current HEAD) endpoint with
-the following JSON payload:
+POST a new paste to the `/api` endpoint with the following JSON payload:
 
 ```
 {

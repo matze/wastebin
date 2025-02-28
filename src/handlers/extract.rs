@@ -1,10 +1,11 @@
 use crate::crypto;
-use axum::extract::{Form, FromRequest, FromRequestParts, Request};
+use axum::extract::{Form, FromRef, FromRequest, FromRequestParts, Request};
 use axum::http::request::Parts;
-use axum_extra::extract::CookieJar;
+use axum_extra::extract::cookie::Key;
+use axum_extra::extract::{CookieJar, SignedCookieJar};
 use serde::Deserialize;
 
-/// Theme extracted from the `pref` cookie.
+/// Theme extractor, extracted from the `pref` cookie.
 #[derive(Debug, Deserialize, Clone)]
 pub(crate) enum Theme {
     #[serde(rename = "dark")]
@@ -19,7 +20,11 @@ pub(crate) struct Preference {
     pub pref: Theme,
 }
 
+/// Password extractor.
 pub(crate) struct Password(pub crypto::Password);
+
+/// Uid cookie value extractor, extracted from the `uid` cookie.
+pub(crate) struct Uid(pub i64);
 
 /// Password header to encrypt a paste.
 pub(crate) const PASSWORD_HEADER_NAME: http::HeaderName =
@@ -63,6 +68,31 @@ where
             .map(|cookie| cookie.value_trimmed().parse())
             .transpose()?
             .ok_or(())
+    }
+}
+
+#[axum::async_trait]
+impl<S> FromRequestParts<S> for Uid
+where
+    S: Send + Sync,
+    Key: FromRef<S>,
+{
+    type Rejection = ();
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let jar: SignedCookieJar<crate::Key> = SignedCookieJar::from_request_parts(parts, state)
+            .await
+            .map_err(|_| ())?;
+
+        let uid = jar
+            .get("uid")
+            .map(|cookie| cookie.value_trimmed().parse::<i64>())
+            .transpose()
+            .map_err(|_| ())?
+            .map(Uid)
+            .ok_or(())?;
+
+        Ok(uid)
     }
 }
 

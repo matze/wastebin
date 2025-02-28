@@ -1,27 +1,22 @@
-use crate::handlers::extract::Theme;
+use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::{ErrorResponse, make_error};
 use crate::{Database, Error, Page};
 use axum::extract::{Path, State};
 use axum::response::Redirect;
-use axum_extra::extract::SignedCookieJar;
 
 pub async fn get(
     Path(id): Path<String>,
     State(db): State<Database>,
     State(page): State<Page>,
+    uid: Option<Uid>,
     theme: Option<Theme>,
-    jar: SignedCookieJar,
 ) -> Result<Redirect, ErrorResponse> {
     async {
         let id = id.parse()?;
-        let uid = db.get_uid(id).await?;
-        let can_delete = jar
-            .get("uid")
-            .map(|cookie| cookie.value().parse::<i64>())
-            .transpose()
-            .map_err(|err| Error::CookieParsing(err.to_string()))?
-            .zip(uid)
-            .is_some_and(|(user_uid, db_uid)| user_uid == db_uid);
+        let db_uid = db.get_uid(id).await?;
+        let can_delete = uid
+            .zip(db_uid)
+            .is_some_and(|(Uid(user_uid), db_uid)| user_uid == db_uid);
 
         if !can_delete {
             Err(Error::Delete)?;

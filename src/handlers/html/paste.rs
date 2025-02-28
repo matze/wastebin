@@ -1,14 +1,13 @@
 use crate::cache::Key;
 use crate::crypto::Password;
 use crate::db::read::Entry;
-use crate::handlers::extract::Theme;
+use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
 use crate::highlight::Html;
 use crate::{Cache, Database, Error, Highlighter, Page};
 use askama::Template;
 use axum::extract::{Form, Path, State};
 use axum::response::{IntoResponse, Response};
-use axum_extra::extract::SignedCookieJar;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -37,8 +36,8 @@ pub async fn get(
     State(db): State<Database>,
     State(highlighter): State<Highlighter>,
     Path(id): Path<String>,
+    uid: Option<Uid>,
     theme: Option<Theme>,
-    jar: SignedCookieJar,
     form: Option<Form<PasswordForm>>,
 ) -> Result<Response, ErrorResponse> {
     async {
@@ -60,13 +59,9 @@ pub async fn get(
             Err(err) => return Err(err),
         };
 
-        let can_be_deleted = jar
-            .get("uid")
-            .map(|cookie| cookie.value().parse::<i64>())
-            .transpose()
-            .map_err(|err| Error::CookieParsing(err.to_string()))?
+        let can_be_deleted = uid
             .zip(data.uid)
-            .is_some_and(|(user_uid, owner_uid)| user_uid == owner_uid);
+            .is_some_and(|(Uid(user_uid), owner_uid)| user_uid == owner_uid);
 
         let title = data.title.clone().unwrap_or_default();
 

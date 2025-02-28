@@ -1,5 +1,5 @@
 use crate::db::{Database, write};
-use crate::handlers::extract::Theme;
+use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::make_error;
 use crate::id::Id;
 use crate::{Error, Page};
@@ -48,6 +48,7 @@ pub async fn post(
     State(db): State<Database>,
     jar: SignedCookieJar,
     headers: HeaderMap,
+    uid: Option<Uid>,
     theme: Option<Theme>,
     Form(entry): Form<Entry>,
 ) -> Result<(SignedCookieJar, Redirect), impl IntoResponse> {
@@ -70,12 +71,9 @@ pub async fn post(
             .map_err(Error::from)?
             .into();
 
-        // Retrieve uid from cookie or generate a new one.
-        let uid = if let Some(cookie) = jar.get("uid") {
-            cookie
-                .value()
-                .parse::<i64>()
-                .map_err(|err| Error::CookieParsing(err.to_string()))?
+        // Use cookie uid or generate a new one.
+        let uid = if let Some(Uid(uid)) = uid {
+            uid
         } else {
             db.next_uid().await?
         };

@@ -29,8 +29,6 @@ pub(crate) enum Error {
     SyntaxHighlighting(#[from] syntect::Error),
     #[error("syntax parsing error: {0}")]
     SyntaxParsing(#[from] syntect::parsing::ParsingError),
-    #[error("could not parse cookie: {0}")]
-    CookieParsing(String),
     #[error("could not generate QR code: {0}")]
     QrCode(#[from] qrcodegen::DataTooLong),
     #[error("could not parse URL: {0}")]
@@ -60,8 +58,7 @@ impl From<Error> for StatusCode {
             Error::IllegalCharacters
             | Error::WrongSize
             | Error::UrlParsing(_)
-            | Error::NoPassword
-            | Error::CookieParsing(_) => StatusCode::BAD_REQUEST,
+            | Error::NoPassword => StatusCode::BAD_REQUEST,
             Error::Join(_)
             | Error::QrCode(_)
             | Error::Compression(_)

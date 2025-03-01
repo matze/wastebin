@@ -33,7 +33,9 @@ impl IntoResponse for Asset {
 
         let headers = (
             TypedHeader(content_type_header),
-            TypedHeader(headers::CacheControl::new().with_max_age(Duration::from_secs(100))),
+            TypedHeader(
+                headers::CacheControl::new().with_max_age(Duration::from_secs(60 * 60 * 24 * 30)),
+            ),
         );
 
         (headers, self.content).into_response()

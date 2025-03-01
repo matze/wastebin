@@ -25,7 +25,7 @@
 - Use the [two-face](https://docs.rs/two-face) crate for an extended syntax
   list.
 - Serve all CSS assets under hashed URL to avoid caching issues and set
-  cache-control header to one month.
+  cache-control header to one month and the `immutable` attribute.
 - Do not offer any interactions for burn-after-reading pastes that will end up
   with a 404 anyway.
 

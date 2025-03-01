@@ -26,7 +26,7 @@ pub(crate) struct Paste {
     /// If the paste still in the database and can be fetched with another request.
     is_available: bool,
     html: String,
-    title: String,
+    title: Option<String>,
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -63,7 +63,7 @@ pub async fn get(
             .zip(data.uid)
             .is_some_and(|(Uid(user_uid), owner_uid)| user_uid == owner_uid);
 
-        let title = data.title.clone().unwrap_or_default();
+        let title = data.title.clone();
 
         let html = if let Some(html) = cache.get(&key) {
             tracing::trace!(?key, "found cached item");
@@ -103,7 +103,7 @@ impl Paste {
         theme: Option<Theme>,
         can_delete: bool,
         is_available: bool,
-        title: String,
+        title: Option<String>,
         page: Page,
     ) -> Self {
         let html = html.into_inner();

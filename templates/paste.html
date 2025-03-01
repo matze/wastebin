@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
 {% block title %}
-  {% if !title.is_empty() %}
+  {% if let Some(title) = title %}
     <div class="nav-title">{{ title }}</div>
   {% endif %}
 {% endblock %}
 
-{% block title_content %}{% if title.len() > 0 %}: {{ title }}{% endif %}{% endblock %}
+{% block title_content %}{% if let Some(title) = title %}: {{ title }}{% endif %}{% endblock %}
 
 {% block head %}
 <script defer src="{{ page.assets.paste_js.route() }}"></script>

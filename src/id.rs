@@ -107,10 +107,20 @@ mod tests {
     }
 
     #[test]
-    fn convert_id_from_string() {
+    fn convert_string_to_id_and_back() {
+        let id = Id::from_str("bJZCna").unwrap();
+        assert_eq!(id, Id { n: 104651828 });
+        assert_eq!(id.to_string(), "bJZCna");
+    }
+
+    #[test]
+    fn conversion_failures() {
         assert!(Id::from_str("abDE+-").is_ok());
-        assert!(Id::from_str("#bDE+-").is_err());
-        assert!(Id::from_str("abDE+-1").is_err());
-        assert!(Id::from_str("abDE+").is_err());
+        assert!(matches!(
+            Id::from_str("#bDE+-"),
+            Err(Error::IllegalCharacters)
+        ));
+        assert!(matches!(Id::from_str("abDE+-1"), Err(Error::WrongSize)));
+        assert!(matches!(Id::from_str("abDE+"), Err(Error::WrongSize)));
     }
 }

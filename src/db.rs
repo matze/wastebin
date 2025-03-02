@@ -287,18 +287,17 @@ impl Database {
     /// Insert `entry` under `id` into the database and optionally set owner to `uid`.
     pub async fn insert(&self, id: Id, entry: write::Entry) -> Result<(), Error> {
         let conn = self.conn.clone();
-        let id = id.to_i64();
         let write::DatabaseEntry { entry, data, nonce } = entry.compress().await?.encrypt().await?;
 
         spawn_blocking(move || match entry.expires {
             None => conn.lock().execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, title) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                params![id, entry.uid, data, entry.burn_after_reading, nonce, entry.title],
+                params![id.to_i64(), entry.uid, data, entry.burn_after_reading, nonce, entry.title],
             ),
             Some(expires) => conn.lock().execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, expires, title) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now', ?6), ?7)",
                 params![
-                    id,
+                    id.to_i64(),
                     entry.uid,
                     data,
                     entry.burn_after_reading,
@@ -316,12 +315,11 @@ impl Database {
     /// Get entire entry for `id`.
     pub async fn get(&self, id: Id, password: Option<Password>) -> Result<read::Entry, Error> {
         let conn = self.conn.clone();
-        let id_as_u32 = id.to_i64();
 
         let entry = spawn_blocking(move || {
             conn.lock().query_row(
                 "SELECT data, burn_after_reading, uid, nonce, expires < datetime('now'), title FROM entries WHERE id=?1",
-                params![id_as_u32],
+                params![id.to_i64()],
                 |row| {
                     Ok(read::DatabaseEntry {
                         data: row.get(0)?,
@@ -361,12 +359,11 @@ impl Database {
     /// expired or does not exist.
     pub async fn get_uid(&self, id: Id) -> Result<Option<i64>, Error> {
         let conn = self.conn.clone();
-        let id_as_u32 = id.to_i64();
 
         let (uid, expired) = spawn_blocking(move || {
             conn.lock().query_row(
                 "SELECT uid, expires < datetime('now') FROM entries WHERE id=?1",
-                params![id_as_u32],
+                params![id.to_i64()],
                 |row| {
                     let uid: Option<i64> = row.get(0)?;
                     let expired: Option<bool> = row.get(1)?;
@@ -387,12 +384,11 @@ impl Database {
     /// Get title of a paste.
     pub async fn get_title(&self, id: Id) -> Result<Option<String>, Error> {
         let conn = self.conn.clone();
-        let id = id.to_i64();
 
         let title = spawn_blocking(move || {
             conn.lock().query_row(
                 "SELECT title FROM entries WHERE id=?1",
-                params![id],
+                params![id.to_i64()],
                 |row| row.get(0),
             )
         })
@@ -404,11 +400,10 @@ impl Database {
     /// Delete `id`.
     pub async fn delete(&self, id: Id) -> Result<(), Error> {
         let conn = self.conn.clone();
-        let id = id.to_i64();
 
         spawn_blocking(move || {
             conn.lock()
-                .execute("DELETE FROM entries WHERE id=?1", params![id])
+                .execute("DELETE FROM entries WHERE id=?1", params![id.to_i64()])
         })
         .await??;
 

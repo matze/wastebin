@@ -1,13 +1,12 @@
+use crate::Page;
 use crate::db::{Database, write};
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::make_error;
 use crate::id::Id;
-use crate::{Error, Page};
 use axum::extract::{Form, State};
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::cookie::{Cookie, SameSite, SignedCookieJar};
-use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
 
@@ -66,11 +65,6 @@ pub async fn post(
         .unwrap_or(false);
 
     async {
-        let id: Id = tokio::task::spawn_blocking(|| rand::rng().random::<u32>())
-            .await
-            .map_err(Error::from)?
-            .into();
-
         // Use cookie uid or generate a new one.
         let uid = if let Some(Uid(uid)) = uid {
             uid
@@ -81,6 +75,7 @@ pub async fn post(
         let mut entry: write::Entry = entry.into();
         entry.uid = Some(uid);
 
+        let id = Id::new();
         let mut url = id.to_url_path(&entry);
 
         if entry.burn_after_reading.unwrap_or(false) {

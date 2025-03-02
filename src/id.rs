@@ -1,5 +1,6 @@
 use crate::db::write::Entry;
 use crate::errors::Error;
+use rand::Rng;
 use std::fmt;
 use std::str::FromStr;
 
@@ -17,6 +18,13 @@ pub(crate) struct Id {
 }
 
 impl Id {
+    /// Generate a new random [`Id`]. According to the [`rand::rng()`] documentation this should be
+    /// fast and not require additional an `spawn_blocking()` call.
+    pub fn new() -> Self {
+        let n = rand::rng().random::<u32>();
+        Self { n }
+    }
+
     /// Return i64 representation for database storage purposes.
     pub fn to_i64(self) -> i64 {
         self.n.into()

@@ -24,6 +24,9 @@
   of expirations via the `WASTEBIN_PASTE_EXPIRATIONS` variable.
 - Use the [two-face](https://docs.rs/two-face) crate for an extended syntax
   list.
+- Use 64-bit integers that render as 11-character identifier from now on.
+  Existing 32-bit/6-character identifiers continue to work. Based on a PR #71 by
+  @cgzones.
 - Serve all CSS assets under hashed URL to avoid caching issues and set
   cache-control header to one month and the `immutable` attribute.
 - Do not offer any interactions for burn-after-reading pastes that will end up

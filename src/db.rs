@@ -458,7 +458,7 @@ mod tests {
             ..Default::default()
         };
 
-        let id = Id::from(1234);
+        let id = Id::from(1234u32);
         db.insert(id, entry).await?;
 
         let entry = db.get(id, None).await?.unwrap_inner();
@@ -466,7 +466,7 @@ mod tests {
         assert!(entry.uid.is_some());
         assert_eq!(entry.uid.unwrap(), 10);
 
-        let result = db.get(Id::from(5678), None).await;
+        let result = db.get(Id::from(5678u32), None).await;
         assert!(result.is_err());
 
         Ok(())
@@ -481,7 +481,7 @@ mod tests {
             ..Default::default()
         };
 
-        let id = Id::from(1234);
+        let id = Id::from(1234u32);
         db.insert(id, entry).await?;
 
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
@@ -496,7 +496,7 @@ mod tests {
     async fn delete() -> Result<(), Box<dyn std::error::Error>> {
         let db = new_db()?;
 
-        let id = Id::from(1234);
+        let id = Id::from(1234u32);
         db.insert(id, write::Entry::default()).await?;
 
         assert!(db.get(id, None).await.is_ok());

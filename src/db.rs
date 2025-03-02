@@ -299,7 +299,7 @@ impl Database {
     /// Insert `entry` under `id` into the database and optionally set owner to `uid`.
     pub async fn insert(&self, id: Id, entry: write::Entry) -> Result<(), Error> {
         let conn = self.conn.clone();
-        let id = id.as_u32();
+        let id = id.to_i64();
         let write::DatabaseEntry { entry, data, nonce } = entry.compress().await?.encrypt().await?;
 
         spawn_blocking(move || match entry.expires {
@@ -328,7 +328,7 @@ impl Database {
     /// Get entire entry for `id`.
     pub async fn get(&self, id: Id, password: Option<Password>) -> Result<read::Entry, Error> {
         let conn = self.conn.clone();
-        let id_as_u32 = id.as_u32();
+        let id_as_u32 = id.to_i64();
 
         let entry = spawn_blocking(move || {
             conn.lock().query_row(
@@ -373,7 +373,7 @@ impl Database {
     /// expired or does not exist.
     pub async fn get_uid(&self, id: Id) -> Result<Option<i64>, Error> {
         let conn = self.conn.clone();
-        let id_as_u32 = id.as_u32();
+        let id_as_u32 = id.to_i64();
 
         let (uid, expired) = spawn_blocking(move || {
             conn.lock().query_row(
@@ -399,7 +399,7 @@ impl Database {
     /// Get title of a paste.
     pub async fn get_title(&self, id: Id) -> Result<Option<String>, Error> {
         let conn = self.conn.clone();
-        let id = id.as_u32();
+        let id = id.to_i64();
 
         let title = spawn_blocking(move || {
             conn.lock().query_row(
@@ -416,7 +416,7 @@ impl Database {
     /// Delete `id`.
     pub async fn delete(&self, id: Id) -> Result<(), Error> {
         let conn = self.conn.clone();
-        let id = id.as_u32();
+        let id = id.to_i64();
 
         spawn_blocking(move || {
             conn.lock()

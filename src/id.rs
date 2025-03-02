@@ -17,9 +17,9 @@ pub(crate) struct Id {
 }
 
 impl Id {
-    /// Return the value itself.
-    pub fn as_u32(self) -> u32 {
-        self.n
+    /// Return i64 representation for database storage purposes.
+    pub fn to_i64(self) -> i64 {
+        self.n.into()
     }
 
     /// Generate a URL path from the string representation and `entry`'s extension.
@@ -88,14 +88,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn convert_u32_to_id_and_back() {
+    fn convert_i64_to_id_and_back() {
         let id = Id::from(0);
         assert_eq!(id.to_string(), "aaaaaa");
-        assert_eq!(id.as_u32(), 0);
+        assert_eq!(id.to_i64(), 0);
 
         let id = Id::from(0xffffffff);
         assert_eq!(id.to_string(), "+++++d");
-        assert_eq!(id.as_u32(), 0xffffffff);
+        assert_eq!(id.to_i64(), 0xffffffff);
     }
 
     #[test]

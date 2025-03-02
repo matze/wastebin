@@ -219,18 +219,6 @@ pub(crate) mod read {
         Expired,
     }
 
-    #[cfg(test)]
-    impl Entry {
-        /// Unwrap inner data or panic.
-        pub fn unwrap_inner(self) -> Data {
-            match self {
-                Entry::Regular(data) => data,
-                Entry::Burned(data) => data,
-                Entry::Expired => panic!("no data"),
-            }
-        }
-    }
-
     impl DatabaseEntry {
         pub async fn decrypt(
             self,
@@ -449,6 +437,17 @@ mod tests {
     use std::num::NonZero;
 
     use super::*;
+
+    impl read::Entry {
+        /// Unwrap inner data or panic.
+        pub fn unwrap_inner(self) -> read::Data {
+            match self {
+                read::Entry::Regular(data) => data,
+                read::Entry::Burned(data) => data,
+                read::Entry::Expired => panic!("no data"),
+            }
+        }
+    }
 
     fn new_db() -> Result<Database, Box<dyn std::error::Error>> {
         Ok(Database::new(Open::Memory)?)

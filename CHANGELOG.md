@@ -27,12 +27,13 @@
 - Use 64-bit integers that render as 11-character identifier from now on.
   Existing 32-bit/6-character identifiers continue to work. Based on a PR #71 by
   @cgzones.
+- Use title as downloaded filename instead of identifier if one is available.
 - Serve all CSS assets under hashed URL to avoid caching issues and set
   cache-control header to one month and the `immutable` attribute.
 - Do not offer any interactions for burn-after-reading pastes that will end up
   with a 404 anyway.
 
-### Fixes
+### Fixed
 
 - Sort syntax list in case insensitive manner.
 - Wrong background color for inline code in Markdown.

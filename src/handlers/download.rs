@@ -1,11 +1,11 @@
 use crate::cache::Key;
-use crate::db::read::Entry;
+use crate::db::read::{Data, Entry};
 use crate::handlers::extract::{Password, Theme};
 use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
 use crate::{Database, Error, Page};
 use axum::extract::{Path, State};
 use axum::http::header;
-use axum::response::{AppendHeaders, IntoResponse, Response};
+use axum::response::{IntoResponse, Response};
 use axum_extra::headers::HeaderValue;
 
 /// GET handler for raw content of a paste.
@@ -22,7 +22,7 @@ pub async fn get(
 
         match db.get(key.id, password).await {
             Ok(Entry::Regular(data) | Entry::Burned(data)) => {
-                Ok(get_download(data.text, &key.id(), &key.ext).into_response())
+                Ok(get_download(&key, data).into_response())
             }
             Ok(Entry::Expired) => Err(Error::NotFound),
             Err(Error::NoPassword) => Ok(PasswordInput {
@@ -38,18 +38,22 @@ pub async fn get(
     .map_err(|err| make_error(err, page, theme))
 }
 
-fn get_download(text: String, id: &str, extension: &str) -> impl IntoResponse {
+fn get_download(key: &Key, data: Data) -> impl IntoResponse {
+    let filename = data
+        .title
+        .unwrap_or_else(|| format!("{}.{}", key.id(), key.ext));
+
     let content_type = "text; charset=utf-8";
     let content_disposition =
-        HeaderValue::from_str(&format!(r#"attachment; filename="{id}.{extension}"#))
+        HeaderValue::from_str(&format!(r#"attachment; filename="{filename}"#))
             .expect("constructing valid header value");
 
     (
-        AppendHeaders([
+        [
             (header::CONTENT_TYPE, HeaderValue::from_static(content_type)),
             (header::CONTENT_DISPOSITION, content_disposition),
-        ]),
-        text,
+        ],
+        data.text,
     )
 }
 

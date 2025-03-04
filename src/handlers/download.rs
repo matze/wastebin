@@ -75,7 +75,7 @@ mod tests {
             burn_after_reading: None,
         };
 
-        let res = client.post("/").form(&data).send().await?;
+        let res = client.post_form().form(&data).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;

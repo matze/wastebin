@@ -63,7 +63,7 @@ mod tests {
             ..Default::default()
         };
 
-        let res = client.post("/api").json(&entry).send().await?;
+        let res = client.post_json().json(&entry).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
 
         let payload = res.json::<super::RedirectResponse>().await?;
@@ -81,7 +81,7 @@ mod tests {
 
         let entry = "Hello World";
 
-        let res = client.post("/api").json(&entry).send().await?;
+        let res = client.post_json().json(&entry).send().await?;
         assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
 
         Ok(())
@@ -98,7 +98,7 @@ mod tests {
             ..Default::default()
         };
 
-        let res = client.post("/api").json(&entry).send().await?;
+        let res = client.post_json().json(&entry).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
 
         let payload = res.json::<super::RedirectResponse>().await?;

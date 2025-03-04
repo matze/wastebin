@@ -48,7 +48,7 @@ mod tests {
             burn_after_reading: None,
         };
 
-        let res = client.post("/").form(&data).send().await?;
+        let res = client.post_form().form(&data).send().await?;
         let uid_cookie = res.cookies().find(|cookie| cookie.name() == "uid").unwrap();
         assert_eq!(uid_cookie.name(), "uid");
         assert!(uid_cookie.value().len() > 40);

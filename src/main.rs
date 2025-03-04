@@ -202,7 +202,8 @@ async fn serve(
         .route(state.page.assets.base_js.route(), get(base_js))
         .route(state.page.assets.index_js.route(), get(index_js))
         .route(state.page.assets.paste_js.route(), get(paste_js))
-        .route("/", get(html::index::get).post(insert::form::post))
+        .route("/", get(html::index::get).post(insert::api::post))
+        .route("/new", post(insert::form::post))
         .route("/qr/:id", get(html::qr::get))
         .route("/burn/:id", get(html::burn::get))
         .route("/theme", get(theme::get))
@@ -215,7 +216,6 @@ async fn serve(
         .route("/dl/:id", get(download::get))
         .route("/raw/:id", get(raw::get))
         .route("/delete/:id", get(delete::get))
-        .route("/api", post(insert::api::post))
         .layer(
             ServiceBuilder::new()
                 .layer(DefaultBodyLimit::max(max_body_size))

@@ -64,4 +64,12 @@ impl Client {
     pub(crate) fn post(&self, url: &str) -> RequestBuilder {
         self.client.post(format!("http://{}{}", self.addr, url))
     }
+
+    pub(crate) fn post_form(&self) -> RequestBuilder {
+        self.client.post(format!("http://{}/new", self.addr))
+    }
+
+    pub(crate) fn post_json(&self) -> RequestBuilder {
+        self.client.post(format!("http://{}/", self.addr))
+    }
 }

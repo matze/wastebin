@@ -224,7 +224,6 @@ async fn serve(
                 .layer(TimeoutLayer::new(timeout))
                 .layer(from_fn_with_state(state.clone(), handle_service_errors))
                 .layer(from_fn(security_headers_layer)),
-            // .layer(from_fn(
         )
         .with_state(state);
 

@@ -211,11 +211,11 @@ async fn serve(
             "/:id",
             get(html::paste::get)
                 .post(html::paste::get)
-                .delete(delete::form::get),
+                .delete(delete::api::delete),
         )
         .route("/dl/:id", get(download::get))
         .route("/raw/:id", get(raw::get))
-        .route("/delete/:id", get(delete::form::get))
+        .route("/delete/:id", get(delete::form::delete))
         .layer(
             ServiceBuilder::new()
                 .layer(DefaultBodyLimit::max(max_body_size))

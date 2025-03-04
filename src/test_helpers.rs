@@ -72,4 +72,8 @@ impl Client {
     pub(crate) fn post_json(&self) -> RequestBuilder {
         self.client.post(format!("http://{}/", self.addr))
     }
+
+    pub(crate) fn delete(&self, url: &str) -> RequestBuilder {
+        self.client.delete(format!("http://{}{}", self.addr, url))
+    }
 }

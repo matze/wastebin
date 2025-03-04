@@ -186,7 +186,7 @@ the newly created paste for the browser:
 ```
 
 To retrieve the raw content, make a GET request on the `/raw/:id` route. If you
-use a client that is able to handle cookies you can delete the paste once again
+use a client that is able to handle cookies you make a DELETE request on `/:id`
 using the cookie in the `Set-Cookie` header set during redirect after creation.
 
 In case the paste was encrypted, pass the password via the `wastebin-password`

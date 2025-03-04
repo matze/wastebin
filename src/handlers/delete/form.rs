@@ -4,7 +4,7 @@ use crate::{Database, Error, Page};
 use axum::extract::{Path, State};
 use axum::response::Redirect;
 
-pub async fn get(
+pub async fn delete(
     Path(id): Path<String>,
     State(db): State<Database>,
     State(page): State<Page>,

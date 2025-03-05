@@ -24,12 +24,12 @@ pub async fn delete(
 #[cfg(test)]
 mod tests {
     use crate::handlers::insert::form::Entry;
-    use crate::test_helpers::Client;
+    use crate::test_helpers::{Client, StoreCookies};
     use reqwest::StatusCode;
 
     #[tokio::test]
     async fn delete() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new().await;
+        let client = Client::new(StoreCookies(true)).await;
 
         let res = client.post_form().form(&Entry::default()).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);

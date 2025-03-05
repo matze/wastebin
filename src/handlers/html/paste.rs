@@ -122,12 +122,12 @@ impl Paste {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_helpers::Client;
+    use crate::test_helpers::{Client, StoreCookies};
     use reqwest::StatusCode;
 
     #[tokio::test]
     async fn unknown_paste() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new().await;
+        let client = Client::new(StoreCookies(false)).await;
 
         let res = client.get("/000000").send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);

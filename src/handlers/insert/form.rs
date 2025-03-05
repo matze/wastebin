@@ -100,13 +100,13 @@ pub async fn post(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_helpers::Client;
+    use crate::test_helpers::{Client, StoreCookies};
     use reqwest::{StatusCode, header};
     use std::collections::HashMap;
 
     #[tokio::test]
     async fn insert() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new().await;
+        let client = Client::new(StoreCookies(false)).await;
         let data = Entry {
             text: String::from("FooBarBaz"),
             ..Default::default()
@@ -150,7 +150,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_fail() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new().await;
+        let client = Client::new(StoreCookies(false)).await;
 
         let mut data = HashMap::new();
         data.insert("Hello", "World");
@@ -163,7 +163,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_sets_uid_cookie() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new().await;
+        let client = Client::new(StoreCookies(true)).await;
         let res = client.post_form().form(&Entry::default()).send().await?;
         let cookie = res.cookies().find(|cookie| cookie.name() == "uid").unwrap();
         assert_eq!(cookie.name(), "uid");

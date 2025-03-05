@@ -60,12 +60,12 @@ fn get_download(key: &Key, data: Data) -> impl IntoResponse {
 #[cfg(test)]
 mod tests {
     use crate::handlers::insert::form::Entry;
-    use crate::test_helpers::Client;
+    use crate::test_helpers::{Client, StoreCookies};
     use reqwest::StatusCode;
 
     #[tokio::test]
     async fn download() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new().await;
+        let client = Client::new(StoreCookies(false)).await;
         let data = Entry {
             text: String::from("FooBarBaz"),
             ..Default::default()

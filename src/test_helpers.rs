@@ -16,8 +16,11 @@ pub(crate) struct Client {
     addr: SocketAddr,
 }
 
+/// Determine if the client should store cookies.
+pub(crate) struct StoreCookies(pub bool);
+
 impl Client {
-    pub(crate) async fn new() -> Self {
+    pub(crate) async fn new(store_cookies: StoreCookies) -> Self {
         let db = Database::new(db::Open::Memory).expect("open memory database");
         let cache = Cache::new(NonZeroUsize::new(128).unwrap());
         let key = Key::generate();
@@ -50,7 +53,7 @@ impl Client {
 
         let client = reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
-            .cookie_store(true)
+            .cookie_store(store_cookies.0)
             .build()
             .unwrap();
 

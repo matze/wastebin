@@ -52,14 +52,14 @@ impl Burn {
 
 #[cfg(test)]
 mod tests {
-    use crate::handlers::insert::form::Entry;
     use crate::test_helpers::Client;
+    use crate::{handlers::insert::form::Entry, test_helpers::StoreCookies};
     use reqwest::{StatusCode, header};
     use serde::Serialize;
 
     #[tokio::test]
     async fn burn() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new().await;
+        let client = Client::new(StoreCookies(false)).await;
         let data = Entry {
             burn_after_reading: Some(String::from("on")),
             ..Default::default()
@@ -94,7 +94,7 @@ mod tests {
 
     #[tokio::test]
     async fn burn_encrypted() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new().await;
+        let client = Client::new(StoreCookies(false)).await;
         let password = "asd";
         let data = Entry {
             password: password.to_string(),

@@ -51,12 +51,12 @@ pub async fn post(
 mod tests {
     use crate::db::write::Entry;
     use crate::handlers::extract::PASSWORD_HEADER_NAME;
-    use crate::test_helpers::Client;
+    use crate::test_helpers::{Client, StoreCookies};
     use reqwest::StatusCode;
 
     #[tokio::test]
     async fn insert() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new().await;
+        let client = Client::new(StoreCookies(false)).await;
 
         let entry = Entry {
             text: "FooBarBaz".to_string(),
@@ -77,7 +77,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_fail() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new().await;
+        let client = Client::new(StoreCookies(false)).await;
 
         let entry = "Hello World";
 
@@ -89,7 +89,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_encrypted() -> Result<(), Box<dyn std::error::Error>> {
-        let client = Client::new().await;
+        let client = Client::new(StoreCookies(false)).await;
         let password = "SuperSecretPassword";
 
         let entry = Entry {

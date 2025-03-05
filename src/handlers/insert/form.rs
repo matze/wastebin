@@ -164,4 +164,31 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn insert_sets_uid_cookie() -> Result<(), Box<dyn std::error::Error>> {
+        let data = super::Entry {
+            text: "FooBarBaz".to_string(),
+            extension: None,
+            expires: Some("0".to_string()),
+            password: "".to_string(),
+            title: "".to_string(),
+            burn_after_reading: None,
+        };
+
+        let client = Client::new().await;
+        let res = client.post_form().form(&data).send().await?;
+        let cookie = res.cookies().find(|cookie| cookie.name() == "uid").unwrap();
+        assert_eq!(cookie.name(), "uid");
+        assert!(cookie.value().len() > 40);
+        assert!(cookie.path().is_none());
+        assert!(cookie.http_only());
+        assert!(cookie.same_site_strict());
+        assert!(cookie.domain().is_none());
+        assert!(cookie.expires().is_none());
+        assert!(cookie.max_age().is_none());
+        assert!(!cookie.secure());
+
+        Ok(())
+    }
 }

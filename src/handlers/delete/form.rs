@@ -49,17 +49,6 @@ mod tests {
         };
 
         let res = client.post_form().form(&data).send().await?;
-        let uid_cookie = res.cookies().find(|cookie| cookie.name() == "uid").unwrap();
-        assert_eq!(uid_cookie.name(), "uid");
-        assert!(uid_cookie.value().len() > 40);
-        assert_eq!(uid_cookie.path(), None);
-        assert!(uid_cookie.http_only());
-        assert!(uid_cookie.same_site_strict());
-        assert!(!uid_cookie.secure());
-        assert_eq!(uid_cookie.domain(), None);
-        assert_eq!(uid_cookie.expires(), None);
-        assert_eq!(uid_cookie.max_age(), None);
-
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;

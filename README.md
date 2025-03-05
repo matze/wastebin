@@ -11,14 +11,14 @@ A minimal pastebin with a design shamelessly copied from
 <p align="center"><strong><a href="https://bin.bloerg.net">DEMO</a></strong> (resets every day)</p>
 
 You are reading the documentation for an **unreleased version**. You can refer
-to earlier versions here: [2.7.1](https://github.com/matze/wastebin/tree/85a519ef9079c4618f851cce575b5a84334a6f42)
+to earlier versions here: [2.7.1](https://github.com/matze/wastebin/tree/85a519ef9079c4618f851cce575b5a84334a6f42) • [3.0.0](https://github.com/matze/wastebin/tree/14a30bb540110e76da6a6045cd0e83fd2218cdd7)
 
 
 ## Features
 
 * [axum](https://github.com/tokio-rs/axum) and [sqlite3](https://www.sqlite.org) backend
 * comes as a single binary with low memory footprint
-* provides paste compression using [zstd](https://github.com/facebook/zstd)
+* compresses pastes using [zstd](https://github.com/facebook/zstd)
 * highlights entries with [syntect](https://github.com/trishume/syntect)
 * has seven color themes in light and dark mode
 * encrypts entries using ChaCha20Poly1305 and argon2 hashed passwords
@@ -53,11 +53,11 @@ contained `wastebin` binary.
 
 It's possible to build a container image using Docker or Podman. Assuming you're in the root directory of repository run
 ```bash
-$ sudo docker build -t wastebin:v2.4.3 -f Dockerfile .
+$ sudo docker build -t wastebin:v3.0.0 -f Dockerfile .
 ```
 for Docker or
 ```bash
-$ podman build -t wastebin:v2.4.3 -f Dockerfile
+$ podman build -t wastebin:v3.0.0 -f Dockerfile
 ```
 for Podman.
 
@@ -73,11 +73,11 @@ default*      docker
 
 To build an arm64 image on an x86_64 host run
 ```bash
-$ sudo docker build --platform linux/arm64 -t wastebin:v2.4.3-arm64 -f Dockerfile.arm .
+$ sudo docker build --platform linux/arm64 -t wastebin:v3.0.0-arm64 -f Dockerfile.arm .
 ```
 or
 ```bash
-$ podman build --arch=arm64 -t wastebin:v2.4.3-arm64 -f Dockerfile.arm
+$ podman build --arch=arm64 -t wastebin:v3.0.0-arm64 -f Dockerfile.arm
 ```
 
 ### Run a Docker image

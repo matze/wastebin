@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 3.0.0
+
+**2025-03-05**
+
 ### Added
 
 - `WASTEBIN_THEME` configuration key to change the default theme from `ayu` to
@@ -16,8 +21,7 @@
   link but not for internal routing. Use a dedicated proxy server to do that if
   necessary.
 - **Breaking**: Always return HTML on `/:id` even if `text/html` is not in the
-  Accept header. On the other hand, `/raw/:id` must be used to retrieve raw
-  text.
+  Accept header. Use the `/raw/:id` endpoint to retrieve raw text.
 - **Breaking**: Replace `WASTEBIN_MAX_PASTE_EXPIRATION` with a customizable set
   of expirations via the `WASTEBIN_PASTE_EXPIRATIONS` variable.
 - Use the [two-face](https://docs.rs/two-face) crate for an extended syntax

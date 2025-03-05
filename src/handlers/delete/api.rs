@@ -23,6 +23,7 @@ pub async fn delete(
 
 #[cfg(test)]
 mod tests {
+    use crate::handlers::insert::form::Entry;
     use crate::test_helpers::Client;
     use reqwest::StatusCode;
 
@@ -30,16 +31,7 @@ mod tests {
     async fn delete() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new().await;
 
-        let data = crate::handlers::insert::form::Entry {
-            text: "FooBarBaz".to_string(),
-            extension: None,
-            expires: Some("0".to_string()),
-            password: "".to_string(),
-            title: "".to_string(),
-            burn_after_reading: None,
-        };
-
-        let res = client.post_form().form(&data).send().await?;
+        let res = client.post_form().form(&Entry::default()).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;

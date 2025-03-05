@@ -10,7 +10,7 @@ use axum_extra::extract::cookie::{Cookie, SameSite, SignedCookieJar};
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub(crate) struct Entry {
     pub text: String,
     pub extension: Option<String>,
@@ -99,6 +99,7 @@ pub async fn post(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::test_helpers::Client;
     use reqwest::{StatusCode, header};
     use std::collections::HashMap;
@@ -106,14 +107,9 @@ mod tests {
     #[tokio::test]
     async fn insert() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new().await;
-
-        let data = super::Entry {
-            text: "FooBarBaz".to_string(),
-            extension: Some("rs".to_string()),
-            expires: None,
-            password: "".to_string(),
-            title: "".to_string(),
-            burn_after_reading: None,
+        let data = Entry {
+            text: String::from("FooBarBaz"),
+            ..Default::default()
         };
 
         let res = client.post_form().form(&data).send().await?;
@@ -167,17 +163,8 @@ mod tests {
 
     #[tokio::test]
     async fn insert_sets_uid_cookie() -> Result<(), Box<dyn std::error::Error>> {
-        let data = super::Entry {
-            text: "FooBarBaz".to_string(),
-            extension: None,
-            expires: Some("0".to_string()),
-            password: "".to_string(),
-            title: "".to_string(),
-            burn_after_reading: None,
-        };
-
         let client = Client::new().await;
-        let res = client.post_form().form(&data).send().await?;
+        let res = client.post_form().form(&Entry::default()).send().await?;
         let cookie = res.cookies().find(|cookie| cookie.name() == "uid").unwrap();
         assert_eq!(cookie.name(), "uid");
         assert!(cookie.value().len() > 40);

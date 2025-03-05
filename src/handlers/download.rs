@@ -59,20 +59,16 @@ fn get_download(key: &Key, data: Data) -> impl IntoResponse {
 
 #[cfg(test)]
 mod tests {
+    use crate::handlers::insert::form::Entry;
     use crate::test_helpers::Client;
     use reqwest::StatusCode;
 
     #[tokio::test]
     async fn download() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new().await;
-
-        let data = crate::handlers::insert::form::Entry {
-            text: "FooBarBaz".to_string(),
-            extension: None,
-            expires: Some("0".to_string()),
-            password: "".to_string(),
-            title: "".to_string(),
-            burn_after_reading: None,
+        let data = Entry {
+            text: String::from("FooBarBaz"),
+            ..Default::default()
         };
 
         let res = client.post_form().form(&data).send().await?;

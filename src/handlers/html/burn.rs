@@ -52,6 +52,7 @@ impl Burn {
 
 #[cfg(test)]
 mod tests {
+    use crate::handlers::insert::form::Entry;
     use crate::test_helpers::Client;
     use reqwest::{StatusCode, header};
     use serde::Serialize;
@@ -59,14 +60,9 @@ mod tests {
     #[tokio::test]
     async fn burn() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new().await;
-
-        let data = crate::handlers::insert::form::Entry {
-            text: "FooBarBaz".to_string(),
-            extension: None,
-            expires: None,
-            password: "".to_string(),
-            title: "".to_string(),
+        let data = Entry {
             burn_after_reading: Some(String::from("on")),
+            ..Default::default()
         };
 
         let res = client.post_form().form(&data).send().await?;
@@ -100,14 +96,10 @@ mod tests {
     async fn burn_encrypted() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new().await;
         let password = "asd";
-
-        let data = crate::handlers::insert::form::Entry {
-            text: "FooBarBaz".to_string(),
-            extension: None,
-            expires: None,
+        let data = Entry {
             password: password.to_string(),
-            title: "".to_string(),
             burn_after_reading: Some(String::from("on")),
+            ..Default::default()
         };
 
         let res = client.post_form().form(&data).send().await?;

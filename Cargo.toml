@@ -11,7 +11,7 @@ async-compression = { version = "0.4", features = ["tokio", "zstd"] }
 axum = { version = "0.7", features = ["json", "query"] }
 axum-extra = { version = "0.9", features = ["cookie-signed", "typed-header"] }
 bytes = "1"
-cached = { version = "0.54.0", default-features = false }
+cached = { version = "0.55.0", default-features = false }
 chacha20poly1305 = "0.10.1"
 hex = "0.4"
 hostname = "0.4.0"

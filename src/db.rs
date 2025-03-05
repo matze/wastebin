@@ -355,32 +355,6 @@ impl Database {
         Ok(read::Entry::Regular(data))
     }
 
-    /// Get optional `uid` for `id` if it exists but error with `Error::NotFound` if `id` is
-    /// expired or does not exist.
-    pub async fn get_uid(&self, id: Id) -> Result<Option<i64>, Error> {
-        let conn = self.conn.clone();
-
-        let (uid, expired) = spawn_blocking(move || {
-            conn.lock().query_row(
-                "SELECT uid, expires < datetime('now') FROM entries WHERE id=?1",
-                params![id.to_i64()],
-                |row| {
-                    let uid: Option<i64> = row.get(0)?;
-                    let expired: Option<bool> = row.get(1)?;
-                    Ok((uid, expired))
-                },
-            )
-        })
-        .await??;
-
-        if expired.unwrap_or(false) {
-            self.delete(id).await?;
-            return Err(Error::NotFound);
-        }
-
-        Ok(uid)
-    }
-
     /// Get title of a paste.
     pub async fn get_title(&self, id: Id) -> Result<Option<String>, Error> {
         let conn = self.conn.clone();
@@ -397,8 +371,8 @@ impl Database {
         Ok(title)
     }
 
-    /// Delete `id`.
-    pub async fn delete(&self, id: Id) -> Result<(), Error> {
+    /// Delete paste with `id`.
+    async fn delete(&self, id: Id) -> Result<(), Error> {
         let conn = self.conn.clone();
 
         spawn_blocking(move || {
@@ -408,6 +382,34 @@ impl Database {
         .await??;
 
         Ok(())
+    }
+
+    /// Delete paste with `id` for user `uid`.
+    pub async fn delete_for(&self, id: Id, uid: i64) -> Result<(), Error> {
+        let conn = self.conn.clone();
+
+        let exists: Option<i64> = spawn_blocking(move || {
+            let mut conn = conn.lock();
+            let tx = conn.transaction()?;
+
+            let exists = tx.query_row(
+                "SELECT 1 FROM entries WHERE (id=?1 AND uid=?2)",
+                params![id.to_i64(), uid],
+                |row| Ok(row.get(0)),
+            )?;
+
+            tx.execute(
+                "DELETE FROM entries WHERE (id=?1 AND uid=?2)",
+                params![id.to_i64(), uid],
+            )?;
+
+            tx.commit()?;
+
+            exists
+        })
+        .await??;
+
+        exists.map(|_| ()).ok_or(Error::Delete)
     }
 
     /// Retrieve next monotonically increasing uid.

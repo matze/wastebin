@@ -104,13 +104,13 @@ cargo run --release
 It's possible to build a container image using Docker or Podman. Assuming you're in the root directory of repository run
 
 ```bash
-$ sudo docker build -t wastebin:v3.0.0 -f Dockerfile .
+sudo docker build -t wastebin:v3.0.0 -f Dockerfile .
 ```
 
 for Docker or
 
 ```bash
-$ podman build -t wastebin:v3.0.0 -f Dockerfile
+podman build -t wastebin:v3.0.0 -f Dockerfile
 ```
 
 for Podman.
@@ -119,7 +119,7 @@ To cross-compile, make sure that your container engine of choice supports it,
 e.g. Docker:
 
 ```bash
-$ sudo docker buildx ls
+sudo docker buildx ls
 NAME/NODE     DRIVER/ENDPOINT   STATUS    BUILDKIT   PLATFORMS
 default*      docker
  \_ default    \_ default       running   v0.14.1    linux/amd64, linux/amd64/v2, linux/386, linux/arm64, linux/riscv64, linux/ppc64, linux/ppc64le, linux/s390x, linux/mips64le, linux/mips64, linux/loong64, linux/arm/v7, linux/arm/v6
@@ -128,13 +128,13 @@ default*      docker
 To build an arm64 image on an x86_64 host run
 
 ```bash
-$ sudo docker build --platform linux/arm64 -t wastebin:v3.0.0-arm64 -f Dockerfile.arm .
+sudo docker build --platform linux/arm64 -t wastebin:v3.0.0-arm64 -f Dockerfile.arm .
 ```
 
 or
 
 ```bash
-$ podman build --arch=arm64 -t wastebin:v3.0.0-arm64 -f Dockerfile.arm
+podman build --arch=arm64 -t wastebin:v3.0.0-arm64 -f Dockerfile.arm
 ```
 
 

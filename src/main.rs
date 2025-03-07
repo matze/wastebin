@@ -2,7 +2,7 @@ use crate::cache::Cache;
 use crate::db::Database;
 use crate::errors::Error;
 use crate::handlers::extract::Theme;
-use crate::handlers::{delete, download, html, insert, raw, theme};
+use crate::handlers::{delete, download, html, insert, raw, robots, theme};
 use axum::extract::{DefaultBodyLimit, FromRef, Request, State};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use axum::middleware::{Next, from_fn, from_fn_with_state};
@@ -203,10 +203,11 @@ async fn serve(
         .route(state.page.assets.index_js.route(), get(index_js))
         .route(state.page.assets.paste_js.route(), get(paste_js))
         .route("/", get(html::index::get).post(insert::api::post))
+        .route("/robots.txt", get(robots::get))
+        .route("/theme", get(theme::get))
         .route("/new", post(insert::form::post))
         .route("/qr/:id", get(html::qr::get))
         .route("/burn/:id", get(html::burn::get))
-        .route("/theme", get(theme::get))
         .route(
             "/:id",
             get(html::paste::get)

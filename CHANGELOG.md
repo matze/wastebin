@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- `/robots.txt` disallowing any crawling.
+
 ### Changed
 
 - Enclose Markdown links in anchor tags to make them clickable. Thansk for

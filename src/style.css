@@ -242,6 +242,14 @@ a, a:visited, a:hover {
   color: color-mix(in srgb, var(--main-fg-color) 50%, transparent);
 }
 
+.markup.underline.link > a, .markup.underline.link > a:visited {
+  color: inherit;
+}
+
+.markup.underline.link > a:hover {
+  font-weight: bold;
+}
+
 td.line-number {
   user-select: none;
 }

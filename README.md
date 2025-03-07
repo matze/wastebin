@@ -11,7 +11,9 @@ A minimal pastebin with a design shamelessly copied from
 <p align="center"><strong><a href="https://bin.bloerg.net">DEMO</a></strong> (resets every day)</p>
 
 You are reading the documentation for an **unreleased version**. You can refer
-to earlier versions here: [2.7.1](https://github.com/matze/wastebin/tree/85a519ef9079c4618f851cce575b5a84334a6f42) • [3.0.0](https://github.com/matze/wastebin/tree/14a30bb540110e76da6a6045cd0e83fd2218cdd7)
+to earlier versions here:
+
+[2.7.1](https://github.com/matze/wastebin/tree/85a519ef9079c4618f851cce575b5a84334a6f42) • [3.0.0](https://github.com/matze/wastebin/tree/14a30bb540110e76da6a6045cd0e83fd2218cdd7)
 
 
 ## Features
@@ -51,7 +53,7 @@ To persist the database as `state.db` via the
 docker run -e WASTEBIN_DATABASE_PATH=/data/state.db -v /path/for/storage:/data quxfoo/wastebin:latest
 ```
 
-> **Note**
+> [!NOTE]
 > The image is based on scratch which means it neither comes with a shell nor
 > with `TMPDIR` being set. If database migrations fail with an extended sqlite
 > error code 6410, pass `TMPDIR` pointing to a location, sqlite can write to.

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Enclose Markdown links in anchor tags to make them clickable. Thansk for
+  preliminary work done in #85 by @FliegendeWurst.
+
 
 ## 3.0.0
 

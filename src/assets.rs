@@ -172,4 +172,22 @@ mod tests {
         let asset = Asset::new_hashed("main", Kind::Js, String::from("1 + 1").into_bytes());
         assert_eq!(asset.route, "/main.72fce59447a01f48.js");
     }
+
+    #[test]
+    fn asset_response() {
+        let asset = Asset::new(
+            "foo.css",
+            mime::TEXT_CSS,
+            String::from("body {}").into_bytes(),
+        );
+
+        let response = asset.into_response();
+        let headers = response.headers();
+
+        assert_eq!(headers.get(http::header::CONTENT_TYPE).unwrap(), "text/css");
+        assert_eq!(
+            headers.get(http::header::CACHE_CONTROL).unwrap(),
+            "immutable, max-age=2592000"
+        );
+    }
 }

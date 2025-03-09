@@ -83,20 +83,13 @@ fn escape(s: &str, buf: &mut String) -> std::fmt::Result {
 }
 
 /// Transform `scope` atoms to CSS style classes and write output to `s`.
-fn scope_to_classes(s: &mut String, scope: Scope, style: ClassStyle) {
+fn scope_to_classes(s: &mut String, scope: Scope) {
     let repo = SCOPE_REPO.lock().expect("lock");
     for i in 0..(scope.len()) {
         let atom = scope.atom_at(i as usize);
         let atom_s = repo.atom_str(atom);
         if i != 0 {
             s.push(' ');
-        }
-        match style {
-            ClassStyle::Spaced => {}
-            ClassStyle::SpacedPrefixed { prefix } => {
-                s.push_str(prefix);
-            }
-            _ => todo!("new variant"),
         }
         s.push_str(atom_s);
     }
@@ -117,7 +110,6 @@ fn is_markdown_link(scope: Scope) -> bool {
 fn line_tokens_to_classed_spans_md(
     line: &str,
     ops: &[(usize, ScopeStackOp)],
-    style: ClassStyle,
     stack: &mut ScopeStack,
 ) -> Result<(String, isize), syntect::Error> {
     let mut s = String::with_capacity(line.len() + ops.len() * 8); // a guess
@@ -147,7 +139,7 @@ fn line_tokens_to_classed_spans_md(
                 span_start = s.len();
                 span_empty = true;
                 s.push_str("<span class=\"");
-                scope_to_classes(&mut s, scope, style);
+                scope_to_classes(&mut s, scope);
                 s.push_str("\">");
                 span_delta += 1;
 
@@ -199,12 +191,7 @@ impl Highlighter {
                 let parsed = parse_state.parse_line(line, &self.syntax_set)?;
 
                 if is_markdown {
-                    line_tokens_to_classed_spans_md(
-                        line,
-                        parsed.as_slice(),
-                        ClassStyle::Spaced,
-                        &mut scope_stack,
-                    )?
+                    line_tokens_to_classed_spans_md(line, parsed.as_slice(), &mut scope_stack)?
                 } else {
                     line_tokens_to_classed_spans(
                         line,
@@ -259,5 +246,21 @@ impl Highlighter {
 impl Html {
     pub fn into_inner(self) -> String {
         self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn markdown_links() -> Result<(), Box<dyn std::error::Error>> {
+        let highlighter = Highlighter::default();
+        let html = highlighter
+            .highlight_inner("[hello](https://github.com/matze/wastebin)", Some("md"))?;
+
+        assert!(html.contains("<span class=\"markup underline link markdown\"><a href=\"https://github.com/matze/wastebin\">https://github.com/matze/wastebin</span></a>"));
+
+        Ok(())
     }
 }

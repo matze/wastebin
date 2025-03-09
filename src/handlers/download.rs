@@ -43,7 +43,7 @@ fn get_download(key: &Key, data: Data) -> impl IntoResponse {
 
     let content_type = "text; charset=utf-8";
     let content_disposition =
-        HeaderValue::from_str(&format!(r#"attachment; filename="{filename}"#))
+        HeaderValue::from_str(&format!(r#"attachment; filename="{filename}""#))
             .expect("constructing valid header value");
 
     (
@@ -59,6 +59,7 @@ fn get_download(key: &Key, data: Data) -> impl IntoResponse {
 mod tests {
     use crate::handlers::insert::form::Entry;
     use crate::test_helpers::{Client, StoreCookies};
+    use http::header;
     use reqwest::StatusCode;
 
     #[tokio::test]
@@ -73,11 +74,25 @@ mod tests {
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
-        let res = client.get(&format!("/dl{location}.cpp")).send().await?;
+        let filename = &location[1..];
+        let res = client.get(&format!("/dl/{filename}.cpp")).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
+
+        let content_disposition = res.headers().get(header::CONTENT_DISPOSITION).unwrap();
+        assert_eq!(
+            content_disposition.to_str()?,
+            format!(r#"attachment; filename="{filename}.cpp""#),
+        );
 
         let content = res.text().await?;
         assert_eq!(content, "FooBarBaz");
+
+        let res = client.get(&format!("/dl{location}")).send().await?;
+        let content_disposition = res.headers().get(header::CONTENT_DISPOSITION).unwrap();
+        assert_eq!(
+            content_disposition.to_str()?,
+            format!(r#"attachment; filename="{filename}""#),
+        );
 
         Ok(())
     }

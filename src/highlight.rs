@@ -177,10 +177,10 @@ fn line_tokens_to_classed_spans_md(
 }
 
 impl Highlighter {
-    fn highlight_inner(&self, source: &str, ext: &str) -> Result<String, Error> {
+    fn highlight_inner(&self, source: &str, ext: Option<&str>) -> Result<String, Error> {
         let syntax_ref = self
             .syntax_set
-            .find_syntax_by_extension(ext)
+            .find_syntax_by_extension(ext.unwrap_or("txt"))
             .unwrap_or_else(|| {
                 self.syntax_set
                     .find_syntax_by_extension("txt")
@@ -244,12 +244,14 @@ impl Highlighter {
     }
 
     /// Highlight `data` with the given file extension.
-    pub async fn highlight(&self, data: Data, ext: String) -> Result<Html, Error> {
+    pub async fn highlight(&self, data: Data, ext: Option<String>) -> Result<Html, Error> {
         let highlighter = self.clone();
 
         Ok(Html(
-            tokio::task::spawn_blocking(move || highlighter.highlight_inner(&data.text, &ext))
-                .await??,
+            tokio::task::spawn_blocking(move || {
+                highlighter.highlight_inner(&data.text, ext.as_deref())
+            })
+            .await??,
         ))
     }
 }

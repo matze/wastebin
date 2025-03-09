@@ -39,9 +39,7 @@ pub async fn get(
 }
 
 fn get_download(key: &Key, data: Data) -> impl IntoResponse {
-    let filename = data
-        .title
-        .unwrap_or_else(|| format!("{}.{}", key.id(), key.ext));
+    let filename = data.title.unwrap_or_else(|| format!("{key}"));
 
     let content_type = "text; charset=utf-8";
     let content_disposition =

@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex};
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Key {
     pub id: Id,
-    pub ext: String,
+    pub ext: Option<String>,
 }
 
 /// Stores formatted HTML.
@@ -52,10 +52,10 @@ impl Key {
 
 impl Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.ext.is_empty() {
-            write!(f, "{}", self.id)
+        if let Some(ext) = &self.ext {
+            write!(f, "{}.{}", self.id, ext)
         } else {
-            write!(f, "{}.{}", self.id, self.ext)
+            write!(f, "{}", self.id)
         }
     }
 }
@@ -65,8 +65,8 @@ impl FromStr for Key {
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let (id, ext) = match value.split_once('.') {
-            None => (value.parse()?, "txt".to_string()),
-            Some((id, ext)) => (id.parse()?, ext.to_string()),
+            None => (value.parse()?, None),
+            Some((id, ext)) => (id.parse()?, Some(ext.to_string())),
         };
 
         Ok(Self { id, ext })
@@ -82,12 +82,12 @@ mod tests {
         let key = Key::from_str("bJZCna").unwrap();
         assert_eq!(key.id(), "bJZCna");
         assert_eq!(key.id, 104651828u32.into());
-        assert_eq!(key.ext, "txt");
+        assert_eq!(key.ext, None);
 
         let key = Key::from_str("sIiFec.rs").unwrap();
         assert_eq!(key.id(), "sIiFec");
         assert_eq!(key.id, 1243750162u32.into());
-        assert_eq!(key.ext, "rs");
+        assert_eq!(key.ext.unwrap(), "rs");
 
         assert!(Key::from_str("foo").is_err());
         assert!(Key::from_str("bar.rs").is_err());

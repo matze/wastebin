@@ -14,6 +14,7 @@
 ### Fixed
 
 - Content disposition header value was wrongly constructed.
+- Download appended `txt` extension even if paste was uploaded without an extension.
 
 
 ## 3.0.0

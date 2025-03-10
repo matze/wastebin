@@ -13,3 +13,30 @@ pub async fn get(headers: HeaderMap, Query(pref): Query<Preference>) -> impl Int
 
     ([(SET_COOKIE, format!("pref={}", pref.pref))], response)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test_helpers::{Client, StoreCookies};
+
+    #[tokio::test]
+    async fn redirect_with_cookie() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(true)).await;
+
+        let response = client
+            .get("/theme")
+            .query(&[("pref", "dark")])
+            .send()
+            .await?;
+
+        assert!(response.status().is_redirection());
+
+        let cookie = response
+            .cookies()
+            .find(|cookie| cookie.name() == "pref")
+            .unwrap();
+
+        assert_eq!(cookie.value(), "dark");
+
+        Ok(())
+    }
+}

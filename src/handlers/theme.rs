@@ -17,6 +17,7 @@ pub async fn get(headers: HeaderMap, Query(pref): Query<Preference>) -> impl Int
 #[cfg(test)]
 mod tests {
     use crate::test_helpers::{Client, StoreCookies};
+    use http::header::REFERER;
 
     #[tokio::test]
     async fn redirect_with_cookie() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,11 +25,15 @@ mod tests {
 
         let response = client
             .get("/theme")
+            .header(REFERER, "/foo")
             .query(&[("pref", "dark")])
             .send()
             .await?;
 
         assert!(response.status().is_redirection());
+
+        let location = response.headers().get("location").unwrap().to_str()?;
+        assert_eq!(location, "/foo");
 
         let cookie = response
             .cookies()

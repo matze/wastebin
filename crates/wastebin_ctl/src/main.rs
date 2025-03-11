@@ -85,6 +85,7 @@ impl From<ListEntry> for Entry {
     }
 }
 
+#[allow(clippy::print_stdout)]
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let db = Database::new(Open::Path(cli.database))?;

@@ -44,7 +44,7 @@ impl Assets {
             favicon: Asset::new(
                 "favicon.ico",
                 mime::IMAGE_PNG,
-                include_bytes!("../assets/favicon.png").to_vec(),
+                include_bytes!("../../../assets/favicon.png").to_vec(),
             ),
             css: Css::new(theme),
             base_js: Asset::new_hashed(

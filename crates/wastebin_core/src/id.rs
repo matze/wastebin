@@ -1,5 +1,4 @@
 use crate::db::write::Entry;
-use crate::errors::Error;
 use rand::Rng;
 use std::fmt;
 use std::str::FromStr;
@@ -11,8 +10,16 @@ const CHAR_TABLE: &[char; 64] = &[
     '5', '6', '7', '8', '9', '-', '+',
 ];
 
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("illegal characters")]
+    IllegalCharacters,
+    #[error("wrong size")]
+    WrongSize,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub(crate) enum Id {
+pub enum Id {
     /// Six-character identifiers.
     Id32(u32),
     /// Eleven-character identifiers.
@@ -22,11 +29,13 @@ pub(crate) enum Id {
 impl Id {
     /// Generate a new random [`Id`]. According to the [`rand::rng()`] documentation this should be
     /// fast and not require additional an `spawn_blocking()` call.
-    pub fn new() -> Self {
+    #[must_use]
+    pub fn rand() -> Self {
         Self::Id64(rand::rng().random::<i64>())
     }
 
     /// Return i64 representation for database storage purposes.
+    #[must_use]
     pub fn to_i64(self) -> i64 {
         match self {
             Self::Id32(n) => n.into(),
@@ -35,6 +44,7 @@ impl Id {
     }
 
     /// Generate a URL path from the string representation and `entry`'s extension.
+    #[must_use]
     pub fn to_url_path(self, entry: &Entry) -> String {
         entry
             .extension
@@ -127,15 +137,15 @@ impl FromStr for Id {
     }
 }
 
+impl From<u32> for Id {
+    fn from(n: u32) -> Self {
+        Self::Id32(n)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    impl From<u32> for Id {
-        fn from(n: u32) -> Self {
-            Self::Id32(n)
-        }
-    }
 
     impl From<i64> for Id {
         fn from(n: i64) -> Self {

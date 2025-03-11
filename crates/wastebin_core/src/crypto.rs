@@ -1,5 +1,4 @@
 use crate::env;
-use crate::errors::Error;
 use chacha20poly1305::aead::{Aead, AeadCore, KeyInit, OsRng};
 use chacha20poly1305::{Key, XChaCha20Poly1305, XNonce};
 use std::sync::LazyLock;
@@ -18,6 +17,19 @@ static CONFIG: LazyLock<argon2::Config> = LazyLock::new(|| argon2::Config {
 
 static SALT: LazyLock<String> = LazyLock::new(env::password_hash_salt);
 
+/// Encryption or decryption errors.
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("failed to hash with argon2: {0}")]
+    Argon2(#[from] argon2::Error),
+    #[error("failed to encrypt")]
+    ChaCha20Poly1305Encrypt,
+    #[error("failed to decrypt")]
+    ChaCha20Poly1305Decrypt,
+    #[error("join error: {0}")]
+    Join(#[from] tokio::task::JoinError),
+}
+
 /// Encrypted data item.
 pub(crate) struct Encrypted {
     /// Encrypted ciphertext.
@@ -27,7 +39,7 @@ pub(crate) struct Encrypted {
 }
 
 #[derive(Clone)]
-pub(crate) struct Password(Vec<u8>);
+pub struct Password(Vec<u8>);
 
 /// Plaintext bytes to be encrypted.
 pub(crate) struct Plaintext(Vec<u8>);

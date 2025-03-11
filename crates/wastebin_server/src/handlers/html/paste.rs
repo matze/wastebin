@@ -1,14 +1,15 @@
 use crate::cache::Key;
-use crate::crypto::Password;
-use crate::db::read::Entry;
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
 use crate::highlight::Html;
-use crate::{Cache, Database, Error, Highlighter, Page};
+use crate::{Cache, Database, Highlighter, Page};
 use askama::Template;
 use axum::extract::{Form, Path, State};
 use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
+use wastebin_core::crypto::Password;
+use wastebin_core::db;
+use wastebin_core::db::read::Entry;
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct PasswordForm {
@@ -47,8 +48,7 @@ pub async fn get(
         let (data, is_available) = match db.get(key.id, password.clone()).await {
             Ok(Entry::Regular(data)) => (data, true),
             Ok(Entry::Burned(data)) => (data, false),
-            Ok(Entry::Expired) => return Err(Error::NotFound),
-            Err(Error::NoPassword) => {
+            Err(db::Error::NoPassword) => {
                 return Ok(PasswordInput {
                     page: page.clone(),
                     theme: theme.clone(),
@@ -56,7 +56,7 @@ pub async fn get(
                 }
                 .into_response());
             }
-            Err(err) => return Err(err),
+            Err(err) => return Err(err.into()),
         };
 
         let can_be_deleted = uid

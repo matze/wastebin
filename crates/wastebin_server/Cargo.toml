@@ -3,39 +3,33 @@ name = "wastebin"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+publish = false
 
 [dependencies]
 askama = { version = "0.12", default-features = false, features = ["with-axum"] }
 askama_axum = { version = "0.4" }
-async-compression = { version = "0.4", features = ["tokio", "zstd"] }
 axum = { version = "0.7", features = ["json", "query"] }
 axum-extra = { version = "0.9", features = ["cookie-signed", "typed-header"] }
 bytes = "1"
 cached = { version = "0.55.0", default-features = false }
-chacha20poly1305 = "0.10.1"
 hex = "0.4"
 hostname = "0.4.0"
 http = "1.1.0"
 mime = "0.3"
 qrcodegen = "1"
-parking_lot = "0.12.1"
-rand = "0.9"
-rusqlite = { version = "0.32", features = ["bundled"] }
-rusqlite_migration = { version = "1", default-features = false }
-rust-argon2 = "2.0.0"
 sha2 = "0.10"
-serde = { version = "1", features = ["derive"] }
+serde = { workspace = true }
 syntect = { version = "5", default-features = false, features = ["html", "plist-load", "regex-fancy"] }
-thiserror = "2"
+thiserror = { workspace = true }
 time = { version = "0.3", features = ["macros", "serde"] }
-tokio = { version = "1", features = ["full"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "signal"] }
 tower = { version = "0.5", default-features = false }
 tower-http = { version = "0.6", features = ["compression-full", "limit", "timeout", "trace"] }
-tracing = "0.1"
+tracing = { workspace = true }
 tracing-subscriber = "0.3"
 two-face = { version = "0.4.2", default-features = false, features = ["syntect-fancy"] }
 url = "2"
-zstd = "0.13"
+wastebin_core = { path = "../wastebin_core/" }
 
 [dev-dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["cookies", "json"] }

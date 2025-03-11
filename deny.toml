@@ -8,5 +8,8 @@ allow = [
     "Zlib",
 ]
 
+[licenses.private]
+ignore = true
+
 [bans]
 multiple-versions = "allow"

@@ -1,5 +1,5 @@
 use crate::Database;
-use crate::errors::JsonErrorResponse;
+use crate::errors::{Error, JsonErrorResponse};
 use crate::handlers::extract::Uid;
 use axum::extract::{Path, State};
 
@@ -8,8 +8,8 @@ pub async fn delete(
     State(db): State<Database>,
     Uid(uid): Uid,
 ) -> Result<(), JsonErrorResponse> {
-    let id = id.parse()?;
-    db.delete_for(id, uid).await?;
+    let id = id.parse().map_err(Error::Id)?;
+    db.delete_for(id, uid).await.map_err(Error::Database)?;
     Ok(())
 }
 

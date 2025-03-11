@@ -1,5 +1,4 @@
 use crate::cache::Cache;
-use crate::db::{self, Database};
 use crate::expiration::ExpirationSet;
 use crate::highlight::{Highlighter, Theme};
 use crate::page;
@@ -10,6 +9,7 @@ use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::TcpListener;
+use wastebin_core::db::{self, Database};
 
 pub(crate) struct Client {
     client: reqwest::Client,

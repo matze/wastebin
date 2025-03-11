@@ -3,8 +3,8 @@ pub mod index;
 pub mod paste;
 pub mod qr;
 
+use crate::Page;
 use crate::handlers::extract::Theme;
-use crate::{Page, errors};
 use askama::Template;
 use axum::http::StatusCode;
 
@@ -31,7 +31,7 @@ pub(crate) type ErrorResponse = (StatusCode, Error);
 
 /// Create an error response from `error` consisting of [`StatusCode`] derive from `error` as well
 /// as a rendered page with a description.
-pub fn make_error(error: errors::Error, page: Page, theme: Option<Theme>) -> ErrorResponse {
+pub fn make_error(error: crate::Error, page: Page, theme: Option<Theme>) -> ErrorResponse {
     let description = error.to_string();
     (
         error.into(),

@@ -7,6 +7,12 @@ version = "3.0.0"
 edition = "2024"
 rust-version = "1.85"
 
+[workspace.dependencies]
+tokio = { version = "1", default-features = false }
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+tracing = "0.1"
+
 [workspace.lints.rust]
 unsafe_code = "forbid"
 
@@ -17,9 +23,9 @@ cast_sign_loss = "deny"
 enum_glob_use = "deny"
 if_not_else = "deny"
 items_after_statements = "deny"
+missing_errors_doc = "allow"
 mut_mut = "deny"
 panic = "deny"
-pedantic = "deny"
 print_stdout = "deny"
 similar_names = "deny"
 unicode_not_nfc = "deny"

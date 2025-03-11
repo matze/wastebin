@@ -1861,7 +1861,6 @@ dependencies = [
  "bytes",
  "libc",
  "mio",
- "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",
@@ -2197,23 +2196,16 @@ version = "3.0.0"
 dependencies = [
  "askama",
  "askama_axum",
- "async-compression",
  "axum",
  "axum-extra",
  "bytes",
  "cached",
- "chacha20poly1305",
  "hex",
  "hostname",
  "http",
  "mime",
- "parking_lot",
  "qrcodegen",
- "rand 0.9.0",
  "reqwest",
- "rusqlite",
- "rusqlite_migration",
- "rust-argon2",
  "serde",
  "sha2",
  "syntect",
@@ -2227,6 +2219,24 @@ dependencies = [
  "tracing-subscriber",
  "two-face",
  "url",
+ "wastebin_core",
+]
+
+[[package]]
+name = "wastebin_core"
+version = "3.0.0"
+dependencies = [
+ "async-compression",
+ "chacha20poly1305",
+ "parking_lot",
+ "rand 0.9.0",
+ "rusqlite",
+ "rusqlite_migration",
+ "rust-argon2",
+ "serde",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
  "zstd",
 ]
 

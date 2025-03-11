@@ -1,0 +1,23 @@
+[package]
+name = "wastebin_core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+async-compression = { version = "0.4", features = ["tokio", "zstd"] }
+chacha20poly1305 = "0.10.1"
+parking_lot = "0.12.1"
+rand = "0.9"
+rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite_migration = { version = "1", default-features = false }
+rust-argon2 = "2.0.0"
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["io-util"] }
+tracing = { workspace = true }
+zstd = "0.13"
+
+[lints]
+workspace = true

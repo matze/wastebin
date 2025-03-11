@@ -1,52 +1,46 @@
-use crate::{db, expiration, highlight};
+use crate::{expiration, highlight};
 use axum_extra::extract::cookie::Key;
 use std::env::VarError;
 use std::net::SocketAddr;
 use std::num::{NonZeroUsize, ParseIntError};
 use std::path::PathBuf;
 use std::time::Duration;
+use wastebin_core::db;
+use wastebin_core::env::vars::{
+    self, ADDRESS_PORT, BASE_URL, CACHE_SIZE, DATABASE_PATH, HTTP_TIMEOUT, MAX_BODY_SIZE,
+    PASTE_EXPIRATIONS, SIGNING_KEY,
+};
 
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
-const VAR_ADDRESS_PORT: &str = "WASTEBIN_ADDRESS_PORT";
-const VAR_BASE_URL: &str = "WASTEBIN_BASE_URL";
-const VAR_CACHE_SIZE: &str = "WASTEBIN_CACHE_SIZE";
-const VAR_DATABASE_PATH: &str = "WASTEBIN_DATABASE_PATH";
-const VAR_HTTP_TIMEOUT: &str = "WASTEBIN_HTTP_TIMEOUT";
-const VAR_MAX_BODY_SIZE: &str = "WASTEBIN_MAX_BODY_SIZE";
-const VAR_PASTE_EXPIRATIONS: &str = "WASTEBIN_PASTE_EXPIRATIONS";
-const VAR_SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
-const VAR_THEME: &str = "WASTEBIN_THEME";
-const VAR_PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
-
 #[derive(thiserror::Error, Debug)]
 pub(crate) enum Error {
-    #[error("failed to parse {VAR_CACHE_SIZE}, expected number of elements: {0}")]
+    #[error("failed to parse {CACHE_SIZE}, expected number of elements: {0}")]
     CacheSize(ParseIntError),
-    #[error("failed to parse {VAR_DATABASE_PATH}, contains non-Unicode data")]
+    #[error("failed to parse {DATABASE_PATH}, contains non-Unicode data")]
     DatabasePath,
-    #[error("failed to parse {VAR_MAX_BODY_SIZE}, expected number of bytes: {0}")]
+    #[error("failed to parse {MAX_BODY_SIZE}, expected number of bytes: {0}")]
     MaxBodySize(ParseIntError),
-    #[error("failed to parse {VAR_ADDRESS_PORT}, expected `host:port`")]
+    #[error("failed to parse {ADDRESS_PORT}, expected `host:port`")]
     AddressPort,
-    #[error("failed to parse {VAR_BASE_URL}: {0}")]
+    #[error("failed to parse {BASE_URL}: {0}")]
     BaseUrl(String),
-    #[error("failed to generate key from {VAR_SIGNING_KEY}: {0}")]
+    #[error("failed to generate key from {SIGNING_KEY}: {0}")]
     SigningKey(String),
-    #[error("failed to parse {VAR_HTTP_TIMEOUT}: {0}")]
+    #[error("failed to parse {HTTP_TIMEOUT}: {0}")]
     HttpTimeout(ParseIntError),
-    #[error("failed to parse {VAR_PASTE_EXPIRATIONS}: {0}")]
+    #[error("failed to parse {PASTE_EXPIRATIONS}: {0}")]
     ParsePasteExpiration(#[from] expiration::Error),
     #[error("unknown theme {0}")]
     UnknownTheme(String),
 }
 
 pub fn title() -> String {
-    std::env::var("WASTEBIN_TITLE").unwrap_or_else(|_| "wastebin".to_string())
+    std::env::var(vars::TITLE).unwrap_or_else(|_| "wastebin".to_string())
 }
 
 pub fn theme() -> Result<highlight::Theme, Error> {
-    std::env::var(VAR_THEME).map_or_else(
+    std::env::var(vars::THEME).map_or_else(
         |_| Ok(highlight::Theme::Ayu),
         |var| match var.as_str() {
             "ayu" => Ok(highlight::Theme::Ayu),
@@ -62,7 +56,7 @@ pub fn theme() -> Result<highlight::Theme, Error> {
 }
 
 pub fn cache_size() -> Result<NonZeroUsize, Error> {
-    std::env::var(VAR_CACHE_SIZE)
+    std::env::var(vars::CACHE_SIZE)
         .map_or_else(
             |_| Ok(NonZeroUsize::new(128).expect("128 is non-zero")),
             |s| s.parse::<NonZeroUsize>(),
@@ -71,7 +65,7 @@ pub fn cache_size() -> Result<NonZeroUsize, Error> {
 }
 
 pub fn database_method() -> Result<db::Open, Error> {
-    match std::env::var(VAR_DATABASE_PATH) {
+    match std::env::var(vars::DATABASE_PATH) {
         Ok(path) => Ok(db::Open::Path(PathBuf::from(path))),
         Err(VarError::NotUnicode(_)) => Err(Error::DatabasePath),
         Err(VarError::NotPresent) => Ok(db::Open::Memory),
@@ -79,14 +73,14 @@ pub fn database_method() -> Result<db::Open, Error> {
 }
 
 pub fn signing_key() -> Result<Key, Error> {
-    std::env::var(VAR_SIGNING_KEY).map_or_else(
+    std::env::var(vars::SIGNING_KEY).map_or_else(
         |_| Ok(Key::generate()),
         |s| Key::try_from(s.as_bytes()).map_err(|err| Error::SigningKey(err.to_string())),
     )
 }
 
 pub fn addr() -> Result<SocketAddr, Error> {
-    std::env::var(VAR_ADDRESS_PORT)
+    std::env::var(vars::ADDRESS_PORT)
         .as_ref()
         .map(String::as_str)
         .unwrap_or("0.0.0.0:8088")
@@ -95,17 +89,17 @@ pub fn addr() -> Result<SocketAddr, Error> {
 }
 
 pub fn max_body_size() -> Result<usize, Error> {
-    std::env::var(VAR_MAX_BODY_SIZE)
+    std::env::var(vars::MAX_BODY_SIZE)
         .map_or_else(|_| Ok(1024 * 1024), |s| s.parse::<usize>())
         .map_err(Error::MaxBodySize)
 }
 
 /// Read base URL either from the environment variable or fallback to the hostname.
 pub fn base_url() -> Result<url::Url, Error> {
-    if let Some(base_url) = std::env::var(VAR_BASE_URL).map_or_else(
+    if let Some(base_url) = std::env::var(vars::BASE_URL).map_or_else(
         |err| {
             if matches!(err, VarError::NotUnicode(_)) {
-                Err(Error::BaseUrl(format!("{VAR_BASE_URL} is not unicode")))
+                Err(Error::BaseUrl(format!("{BASE_URL} is not unicode")))
             } else {
                 Ok(None)
             }
@@ -126,12 +120,8 @@ pub fn base_url() -> Result<url::Url, Error> {
         .map_err(|err| Error::BaseUrl(err.to_string()))
 }
 
-pub fn password_hash_salt() -> String {
-    std::env::var(VAR_PASSWORD_SALT).unwrap_or_else(|_| "somesalt".to_string())
-}
-
 pub fn http_timeout() -> Result<Duration, Error> {
-    std::env::var(VAR_HTTP_TIMEOUT)
+    std::env::var(vars::HTTP_TIMEOUT)
         .map_or_else(
             |_| Ok(DEFAULT_HTTP_TIMEOUT),
             |s| s.parse::<u64>().map(|v| Duration::new(v, 0)),
@@ -141,7 +131,7 @@ pub fn http_timeout() -> Result<Duration, Error> {
 
 /// Parse [`expiration::ExpirationSet`] from environment or return default.
 pub fn expiration_set() -> Result<expiration::ExpirationSet, Error> {
-    let set = std::env::var(VAR_PASTE_EXPIRATIONS).map_or_else(
+    let set = std::env::var(vars::PASTE_EXPIRATIONS).map_or_else(
         |_| "0,600,3600=d,86400,604800,2419200,29030400".parse::<expiration::ExpirationSet>(),
         |value| value.parse::<expiration::ExpirationSet>(),
     )?;

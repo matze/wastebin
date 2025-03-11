@@ -1,5 +1,4 @@
-use crate::crypto::Password;
-use crate::errors::Error;
+use crate::crypto::{self, Password};
 use crate::id::Id;
 use parking_lot::Mutex;
 use rusqlite::{Connection, Transaction, params};
@@ -47,15 +46,36 @@ static MIGRATIONS: LazyLock<Migrations> = LazyLock::new(|| {
     ])
 });
 
+/// Database related errors.
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("not allowed to delete")]
+    Delete,
+    #[error("sqlite error: {0}")]
+    Sqlite(rusqlite::Error),
+    #[error("migrations error: {0}")]
+    Migration(#[from] rusqlite_migration::Error),
+    #[error("failed to compress: {0}")]
+    Compression(String),
+    #[error("password not given")]
+    NoPassword,
+    #[error("entry not found")]
+    NotFound,
+    #[error("join error: {0}")]
+    Join(#[from] tokio::task::JoinError),
+    #[error("crypto error: {0}")]
+    Crypto(#[from] crypto::Error),
+}
+
 /// Our main database and integrated cache.
 #[derive(Clone)]
-pub(crate) struct Database {
+pub struct Database {
     conn: Arc<Mutex<Connection>>,
 }
 
 /// Database opening modes
 #[derive(Debug)]
-pub(crate) enum Open {
+pub enum Open {
     /// Open in-memory database that is wiped after reload
     Memory,
     /// Open database from given path
@@ -63,9 +83,9 @@ pub(crate) enum Open {
 }
 
 /// Module with types for insertion.
-pub(crate) mod write {
+pub mod write {
     use crate::crypto::{Encrypted, Password, Plaintext};
-    use crate::errors::Error;
+    use crate::db::Error;
     use async_compression::tokio::bufread::ZstdEncoder;
     use serde::{Deserialize, Serialize};
     use std::io::Cursor;
@@ -74,7 +94,7 @@ pub(crate) mod write {
 
     /// An uncompressed entry to be inserted into the database.
     #[derive(Default, Debug, Serialize, Deserialize)]
-    pub(crate) struct Entry {
+    pub struct Entry {
         /// Content
         pub text: String,
         /// File extension
@@ -92,7 +112,7 @@ pub(crate) mod write {
     }
 
     /// A compressed entry to be inserted.
-    pub(crate) struct CompressedEntry {
+    pub struct CompressedEntry {
         /// Original data
         entry: Entry,
         /// Compressed data
@@ -100,7 +120,7 @@ pub(crate) mod write {
     }
 
     /// An entry that might be encrypted.
-    pub(crate) struct DatabaseEntry {
+    pub struct DatabaseEntry {
         /// Original data
         pub entry: Entry,
         /// Compressed and potentially encrypted data
@@ -147,9 +167,9 @@ pub(crate) mod write {
 }
 
 /// Module with types for reading from the database.
-pub(crate) mod read {
+pub mod read {
     use crate::crypto::{Encrypted, Password};
-    use crate::errors::Error;
+    use crate::db::Error;
     use async_compression::tokio::bufread::ZstdDecoder;
     use std::io::Cursor;
     use tokio::io::{AsyncReadExt, BufReader};
@@ -199,7 +219,7 @@ pub(crate) mod read {
 
     /// Uncompressed, decrypted data read from the database.
     #[derive(Debug)]
-    pub(crate) struct Data {
+    pub struct Data {
         /// Content
         pub text: String,
         /// User identifier that inserted the entry
@@ -210,13 +230,11 @@ pub(crate) mod read {
 
     /// Potentially deleted or non-existent expired entry.
     #[derive(Debug)]
-    pub(crate) enum Entry {
+    pub enum Entry {
         /// Entry found and still available.
         Regular(Data),
         /// Entry burned.
         Burned(Data),
-        /// Entry expired.
-        Expired,
     }
 
     impl DatabaseEntry {
@@ -263,6 +281,15 @@ pub(crate) mod read {
                 must_be_deleted: self.must_be_deleted,
                 title: self.title,
             })
+        }
+    }
+}
+
+impl From<rusqlite::Error> for Error {
+    fn from(err: rusqlite::Error) -> Self {
+        match err {
+            rusqlite::Error::QueryReturnedNoRows => Error::NotFound,
+            _ => Error::Sqlite(err),
         }
     }
 }
@@ -336,7 +363,7 @@ impl Database {
 
         if entry.expired {
             self.delete(id).await?;
-            return Ok(read::Entry::Expired);
+            return Err(Error::NotFound);
         }
 
         let entry = entry.decrypt(password).await?.decompress().await?;
@@ -441,7 +468,6 @@ mod tests {
             match self {
                 read::Entry::Regular(data) => data,
                 read::Entry::Burned(data) => data,
-                read::Entry::Expired => panic!("no data"),
             }
         }
     }
@@ -489,7 +515,7 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
         let result = db.get(id, None).await;
-        assert!(matches!(result, Ok(read::Entry::Expired)));
+        assert!(matches!(result, Err(Error::NotFound)));
 
         Ok(())
     }

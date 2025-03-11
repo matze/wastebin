@@ -1,14 +1,14 @@
 use crate::Page;
-use crate::db::{Database, write};
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::make_error;
-use crate::id::Id;
 use axum::extract::{Form, State};
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::cookie::{Cookie, SameSite, SignedCookieJar};
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
+use wastebin_core::db::{Database, write};
+use wastebin_core::id::Id;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub(crate) struct Entry {
@@ -75,7 +75,7 @@ pub async fn post(
         let mut entry: write::Entry = entry.into();
         entry.uid = Some(uid);
 
-        let id = Id::new();
+        let id = Id::rand();
         let mut url = id.to_url_path(&entry);
 
         if entry.burn_after_reading.unwrap_or(false) {

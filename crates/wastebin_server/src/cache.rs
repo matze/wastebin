@@ -1,11 +1,11 @@
 use crate::errors::Error;
 use crate::highlight::Html;
-use crate::id::Id;
 use cached::{Cached, SizedCache};
 use std::fmt::Display;
 use std::num::NonZeroUsize;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
+use wastebin_core::id::Id;
 
 /// Cache based on identifier and format.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -66,7 +66,7 @@ impl FromStr for Key {
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let (id, ext) = match value.split_once('.') {
             None => (value.parse()?, None),
-            Some((id, ext)) => (id.parse()?, Some(ext.to_string())),
+            Some((id, ext)) => (id.parse().map_err(Error::Id)?, Some(ext.to_string())),
         };
 
         Ok(Self { id, ext })
@@ -81,7 +81,7 @@ mod tests {
     fn cache_key() {
         let key = Key::from_str("bJZCna").unwrap();
         assert_eq!(key.id(), "bJZCna");
-        assert_eq!(key.id, 104651828u32.into());
+        assert_eq!(key.id, Id::from(104651828u32));
         assert_eq!(key.ext, None);
 
         let key = Key::from_str("sIiFec.rs").unwrap();

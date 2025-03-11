@@ -1,10 +1,11 @@
 use crate::cache::Key;
-use crate::db::read::Entry;
 use crate::handlers::extract::{Password, Theme};
 use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
-use crate::{Database, Error, Page};
+use crate::{Database, Page};
 use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Response};
+use wastebin_core::db;
+use wastebin_core::db::read::Entry;
 
 /// GET handler for raw content of a paste.
 pub async fn get(
@@ -20,14 +21,13 @@ pub async fn get(
 
         match db.get(key.id, password).await {
             Ok(Entry::Regular(data) | Entry::Burned(data)) => Ok(data.text.into_response()),
-            Ok(Entry::Expired) => Err(Error::NotFound),
-            Err(Error::NoPassword) => Ok(PasswordInput {
+            Err(db::Error::NoPassword) => Ok(PasswordInput {
                 page: page.clone(),
                 theme: theme.clone(),
                 id: key.id.to_string(),
             }
             .into_response()),
-            Err(err) => Err(err),
+            Err(err) => Err(err.into()),
         }
     }
     .await

@@ -1,4 +1,3 @@
-use crate::db::read::Data;
 use crate::errors::Error;
 use std::cmp::Ordering;
 use std::fmt::Write;
@@ -8,6 +7,7 @@ use syntect::parsing::{
     SyntaxSet,
 };
 use syntect::util::LinesWithEndings;
+use wastebin_core::db::read::Data;
 
 const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
 

@@ -1,10 +1,10 @@
-use crate::db::{Database, write};
-use crate::errors::JsonErrorResponse;
-use crate::id::Id;
+use crate::errors::{Error, JsonErrorResponse};
 use axum::Json;
 use axum::extract::State;
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
+use wastebin_core::db::{Database, write};
+use wastebin_core::id::Id;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Entry {
@@ -39,20 +39,20 @@ pub async fn post(
     State(db): State<Database>,
     Json(entry): Json<Entry>,
 ) -> Result<Json<RedirectResponse>, JsonErrorResponse> {
-    let id = Id::new();
+    let id = Id::rand();
     let entry: write::Entry = entry.into();
     let path = format!("/{}", id.to_url_path(&entry));
-    db.insert(id, entry).await?;
+    db.insert(id, entry).await.map_err(Error::Database)?;
 
     Ok(Json::from(RedirectResponse { path }))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::db::write::Entry;
     use crate::handlers::extract::PASSWORD_HEADER_NAME;
     use crate::test_helpers::{Client, StoreCookies};
     use reqwest::StatusCode;
+    use wastebin_core::db::write::Entry;
 
     #[tokio::test]
     async fn insert() -> Result<(), Box<dyn std::error::Error>> {

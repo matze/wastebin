@@ -2,25 +2,12 @@ use axum::Json;
 use axum::http::StatusCode;
 use serde::Serialize;
 use std::num::TryFromIntError;
+use wastebin_core::{crypto, db, id};
 
 #[derive(thiserror::Error, Debug)]
 pub(crate) enum Error {
     #[error("axum http error: {0}")]
     Axum(#[from] axum::http::Error),
-    #[error("not allowed to delete")]
-    Delete,
-    #[error("compression error: {0}")]
-    Compression(String),
-    #[error("entry not found")]
-    NotFound,
-    #[error("sqlite error: {0}")]
-    Sqlite(rusqlite::Error),
-    #[error("migrations error: {0}")]
-    Migration(#[from] rusqlite_migration::Error),
-    #[error("wrong size")]
-    WrongSize,
-    #[error("illegal characters")]
-    IllegalCharacters,
     #[error("integer conversion error: {0}")]
     IntConversion(#[from] TryFromIntError),
     #[error("join error: {0}")]
@@ -33,14 +20,10 @@ pub(crate) enum Error {
     QrCode(#[from] qrcodegen::DataTooLong),
     #[error("could not parse URL: {0}")]
     UrlParsing(#[from] url::ParseError),
-    #[error("argon2 error: {0}")]
-    Argon2(#[from] argon2::Error),
-    #[error("encryption failed")]
-    ChaCha20Poly1305Encrypt,
-    #[error("decryption failed")]
-    ChaCha20Poly1305Decrypt,
-    #[error("password not given")]
-    NoPassword,
+    #[error("database error: {0}")]
+    Database(#[from] db::Error),
+    #[error("id error: {0}")]
+    Id(#[from] id::Error),
 }
 
 #[derive(Serialize)]
@@ -54,23 +37,20 @@ pub(crate) type JsonErrorResponse = (StatusCode, Json<JsonError>);
 impl From<Error> for StatusCode {
     fn from(err: Error) -> Self {
         match err {
-            Error::NotFound => StatusCode::NOT_FOUND,
-            Error::IllegalCharacters
-            | Error::WrongSize
-            | Error::UrlParsing(_)
-            | Error::NoPassword => StatusCode::BAD_REQUEST,
+            Error::Database(db::Error::NoPassword) => StatusCode::BAD_REQUEST,
+            Error::Database(db::Error::NotFound) => StatusCode::NOT_FOUND,
+            Error::Database(db::Error::Delete)
+            | Error::Database(db::Error::Crypto(crypto::Error::ChaCha20Poly1305Decrypt)) => {
+                StatusCode::FORBIDDEN
+            }
+            Error::Id(_) | Error::UrlParsing(_) => StatusCode::BAD_REQUEST,
             Error::Join(_)
             | Error::QrCode(_)
-            | Error::Compression(_)
+            | Error::Database(_)
             | Error::IntConversion(_)
-            | Error::Migration(_)
-            | Error::Sqlite(_)
             | Error::SyntaxHighlighting(_)
             | Error::SyntaxParsing(_)
-            | Error::Argon2(_)
-            | Error::ChaCha20Poly1305Encrypt
             | Error::Axum(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Error::Delete | Error::ChaCha20Poly1305Decrypt => StatusCode::FORBIDDEN,
         }
     }
 }
@@ -82,14 +62,5 @@ impl From<Error> for JsonErrorResponse {
         });
 
         (err.into(), payload)
-    }
-}
-
-impl From<rusqlite::Error> for Error {
-    fn from(err: rusqlite::Error) -> Self {
-        match err {
-            rusqlite::Error::QueryReturnedNoRows => Error::NotFound,
-            _ => Error::Sqlite(err),
-        }
     }
 }

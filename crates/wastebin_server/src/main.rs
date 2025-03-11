@@ -1,5 +1,4 @@
 use crate::cache::Cache;
-use crate::db::Database;
 use crate::errors::Error;
 use crate::handlers::extract::Theme;
 use crate::handlers::{delete, download, html, insert, raw, robots, theme};
@@ -21,17 +20,15 @@ use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
+use wastebin_core::db::Database;
 
 mod assets;
 mod cache;
-mod crypto;
-mod db;
 mod env;
 mod errors;
 mod expiration;
 mod handlers;
 mod highlight;
-mod id;
 mod page;
 #[cfg(test)]
 mod test_helpers;

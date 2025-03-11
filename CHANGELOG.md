@@ -4,6 +4,8 @@
 
 ### Added
 
+- `wastebin-ctl` command line tool to list all existing entries and purge
+  expired ones.
 - `/robots.txt` disallowing any crawling.
 
 ### Changed

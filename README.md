@@ -207,6 +207,14 @@ In case the paste was encrypted, pass the password via the `wastebin-password`
 header.
 
 
+### wastebin-ctl command line tool
+
+`wastebin-ctl` is a command line tool to interact directly with the wastebin
+database. It can be used to `list` all entries or `purge` entries which have
+expired. To specify the database either use the `--database` option or set the
+`WASTEBIN_DATABASE_PATH` environment variable as usual.
+
+
 ### Paste from neovim
 
 Use the [wastebin.nvim](https://github.com/matze/wastebin.nvim) plugin and paste

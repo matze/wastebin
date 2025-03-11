@@ -1,6 +1,7 @@
 use crate::crypto::{self, Password};
 use crate::id::Id;
 use parking_lot::Mutex;
+use read::ListEntry;
 use rusqlite::{Connection, Transaction, params};
 use rusqlite_migration::{HookError, M, Migrations};
 use std::io::Cursor;
@@ -170,6 +171,7 @@ pub mod write {
 pub mod read {
     use crate::crypto::{Encrypted, Password};
     use crate::db::Error;
+    use crate::id::Id;
     use async_compression::tokio::bufread::ZstdDecoder;
     use std::io::Cursor;
     use tokio::io::{AsyncReadExt, BufReader};
@@ -235,6 +237,19 @@ pub mod read {
         Regular(Data),
         /// Entry burned.
         Burned(Data),
+    }
+
+    /// A simple entry as read from the database for listing purposes.
+    #[derive(Debug)]
+    pub struct ListEntry {
+        /// Identifier
+        pub id: Id,
+        /// Optional title
+        pub title: Option<String>,
+        /// If entry is encrypted
+        pub is_encrypted: bool,
+        /// If entry is expired
+        pub is_expired: bool,
     }
 
     impl DatabaseEntry {
@@ -454,6 +469,37 @@ impl Database {
 
         Ok(uid)
     }
+
+    /// List all entries.
+    pub fn list(&self) -> Result<Vec<ListEntry>, Error> {
+        let entries = self
+            .conn
+            .lock()
+            .prepare("SELECT id, title, nonce, expires < datetime('now') FROM entries")?
+            .query_map([], |row| {
+                Ok(ListEntry {
+                    id: Id::from(row.get::<_, i64>(0)?),
+                    title: row.get(1)?,
+                    is_encrypted: row.get::<_, Option<Vec<u8>>>(2)?.is_some(),
+                    is_expired: row.get::<_, Option<bool>>(3)?.unwrap_or_default(),
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+
+        Ok(entries)
+    }
+
+    /// Purge all expired entries and return their [`Id`]s
+    pub fn purge(&self) -> Result<Vec<Id>, Error> {
+        let ids = self
+            .conn
+            .lock()
+            .prepare("DELETE FROM entries WHERE expires < datetime('now') RETURNING id")?
+            .query_map([], |row| Ok(Id::from(row.get::<_, i64>(0)?)))?
+            .collect::<Result<_, _>>()?;
+
+        Ok(ids)
+    }
 }
 
 #[cfg(test)]
@@ -530,6 +576,27 @@ mod tests {
         assert!(db.get(id, None).await.is_ok());
         assert!(db.delete(id).await.is_ok());
         assert!(db.get(id, None).await.is_err());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn purge() -> Result<(), Box<dyn std::error::Error>> {
+        let db = new_db()?;
+
+        let entry = write::Entry {
+            expires: Some(NonZero::new(1).unwrap()),
+            ..Default::default()
+        };
+
+        let id = Id::from(1234u32);
+        db.insert(id, entry).await?;
+
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+        let ids = db.purge()?;
+        assert_eq!(ids.len(), 1);
+        assert_eq!(ids[0].to_i64(), 1234);
 
         Ok(())
     }

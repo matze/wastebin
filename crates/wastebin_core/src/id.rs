@@ -143,15 +143,15 @@ impl From<u32> for Id {
     }
 }
 
+impl From<i64> for Id {
+    fn from(n: i64) -> Self {
+        Self::Id64(n)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    impl From<i64> for Id {
-        fn from(n: i64) -> Self {
-            Self::Id64(n)
-        }
-    }
 
     #[test]
     fn convert_i64_to_id_and_back() {

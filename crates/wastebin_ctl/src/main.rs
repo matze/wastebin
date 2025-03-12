@@ -10,9 +10,12 @@ use wastebin_core::env::vars;
 use wastebin_core::id::Id;
 
 #[derive(Parser)]
+#[command(version, about)]
 struct Cli {
+    /// Path to the database file
     #[arg(long, env = vars::DATABASE_PATH)]
     database: PathBuf,
+
     #[command(subcommand)]
     commands: Commands,
 }

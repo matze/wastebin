@@ -6,10 +6,11 @@ pub mod qr;
 use crate::Page;
 use crate::handlers::extract::Theme;
 use askama::Template;
+use askama_web::WebTemplate;
 use axum::http::StatusCode;
 
 /// Error page showing a message.
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "error.html")]
 pub(crate) struct Error {
     pub page: Page,
@@ -18,7 +19,7 @@ pub(crate) struct Error {
 }
 
 /// Page showing password input.
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "encrypted.html")]
 pub(crate) struct PasswordInput {
     pub page: Page,

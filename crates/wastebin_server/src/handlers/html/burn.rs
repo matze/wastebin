@@ -4,6 +4,7 @@ use crate::handlers::html::qr::{code_from, dark_modules};
 use crate::handlers::html::{ErrorResponse, make_error};
 use crate::{Error, Page};
 use askama::Template;
+use askama_web::WebTemplate;
 use axum::extract::{Path, State};
 
 /// GET handler for the burn page.
@@ -35,7 +36,7 @@ pub async fn get(
 }
 
 /// Burn page shown if "burn-after-reading" was selected during insertion.
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "burn.html", escape = "none")]
 pub(crate) struct Burn {
     page: Page,

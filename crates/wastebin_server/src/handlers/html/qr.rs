@@ -3,6 +3,7 @@ use crate::handlers::extract::Theme;
 use crate::handlers::html::{ErrorResponse, make_error};
 use crate::{Error, Page};
 use askama::Template;
+use askama_web::WebTemplate;
 use axum::extract::{Path, State};
 use qrcodegen::QrCode;
 use url::Url;
@@ -44,7 +45,7 @@ pub async fn get(
 }
 
 /// Paste view showing the formatted paste as well as a bunch of links.
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "qr.html", escape = "none")]
 pub(crate) struct Qr {
     page: Page,

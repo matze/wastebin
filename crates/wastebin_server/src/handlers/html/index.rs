@@ -1,5 +1,6 @@
 use crate::{Highlighter, Page, handlers::extract::Theme};
 use askama::Template;
+use askama_web::WebTemplate;
 use axum::extract::State;
 
 /// GET handler for the index page.
@@ -16,7 +17,7 @@ pub async fn get(
 }
 
 /// Index page displaying a form for paste insertion and a selection box for languages.
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "index.html")]
 pub(crate) struct Index {
     page: Page,

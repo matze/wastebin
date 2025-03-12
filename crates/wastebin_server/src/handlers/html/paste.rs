@@ -4,6 +4,7 @@ use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
 use crate::highlight::Html;
 use crate::{Cache, Database, Highlighter, Page};
 use askama::Template;
+use askama_web::WebTemplate;
 use axum::extract::{Form, Path, State};
 use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
@@ -17,7 +18,7 @@ pub(crate) struct PasswordForm {
 }
 
 /// Paste view showing the formatted paste.
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "formatted.html")]
 pub(crate) struct Paste {
     page: Page,

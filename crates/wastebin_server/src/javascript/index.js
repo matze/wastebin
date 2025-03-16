@@ -44,6 +44,7 @@ function openFile() {
     for (i = 0; i < langSelect.length; i++) {
       if (langSelect[i].value == extension) {
         langSelect[i].selected = true;
+        break;
       }
     }
 

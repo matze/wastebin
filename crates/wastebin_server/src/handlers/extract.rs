@@ -1,8 +1,12 @@
-use axum::extract::{Form, FromRef, FromRequest, FromRequestParts, Request};
+use axum::extract::{
+    Form, FromRef, FromRequest, FromRequestParts, OptionalFromRequest, OptionalFromRequestParts,
+    Request,
+};
 use axum::http::request::Parts;
 use axum_extra::extract::cookie::Key;
 use axum_extra::extract::{CookieJar, SignedCookieJar};
 use serde::Deserialize;
+use std::convert::Infallible;
 use wastebin_core::crypto;
 
 /// Theme extractor, extracted from the `pref` cookie.
@@ -51,27 +55,25 @@ impl std::str::FromStr for Theme {
     }
 }
 
-#[axum::async_trait]
-impl<S> FromRequestParts<S> for Theme
+impl<S> OptionalFromRequestParts<S> for Theme
 where
     S: Send + Sync,
 {
-    // Not extracting the preference is not an issue.
-    type Rejection = ();
+    type Rejection = Infallible;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let jar = CookieJar::from_request_parts(parts, state)
-            .await
-            .map_err(|_| ())?;
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> Result<Option<Self>, Self::Rejection> {
+        let jar = CookieJar::from_request_parts(parts, state).await;
 
-        jar.get("pref")
-            .map(|cookie| cookie.value_trimmed().parse())
-            .transpose()?
-            .ok_or(())
+        jar.map(|jar| {
+            jar.get("pref")
+                .and_then(|cookie| cookie.value_trimmed().parse::<Theme>().ok())
+        })
     }
 }
 
-#[axum::async_trait]
 impl<S> FromRequestParts<S> for Uid
 where
     S: Send + Sync,
@@ -80,51 +82,66 @@ where
     type Rejection = ();
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let jar: SignedCookieJar<crate::Key> = SignedCookieJar::from_request_parts(parts, state)
+        let jar = SignedCookieJar::<crate::Key>::from_request_parts(parts, state)
             .await
             .map_err(|_| ())?;
 
-        let uid = jar
-            .get("uid")
-            .map(|cookie| cookie.value_trimmed().parse::<i64>())
-            .transpose()
-            .map_err(|_| ())?
-            .map(Uid)
-            .ok_or(())?;
-
-        Ok(uid)
+        jar.get("uid")
+            .map(|cookie| {
+                cookie
+                    .value_trimmed()
+                    .parse::<i64>()
+                    .map(Uid)
+                    .map_err(|_| ())
+            })
+            .ok_or(())?
     }
 }
 
-#[axum::async_trait]
-impl<S> FromRequest<S> for Password
+impl<S> OptionalFromRequestParts<S> for Uid
+where
+    S: Send + Sync,
+    Key: FromRef<S>,
+{
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> Result<Option<Self>, Self::Rejection> {
+        Ok(
+            <Uid as FromRequestParts<S>>::from_request_parts(parts, state)
+                .await
+                .ok(),
+        )
+    }
+}
+
+impl<S> OptionalFromRequest<S> for Password
 where
     S: Send + Sync,
 {
     type Rejection = ();
 
-    async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request(req: Request, state: &S) -> Result<Option<Self>, Self::Rejection> {
         #[derive(Deserialize, Debug)]
         struct Data {
             password: String,
         }
 
-        if let Some(password) = req
+        let password = req
             .headers()
             .get(PASSWORD_HEADER_NAME)
             .and_then(|header| header.to_str().ok())
-        {
-            return Ok(Password(password.as_bytes().to_vec().into()));
+            .map(|value| Password(value.as_bytes().to_vec().into()));
+
+        if password.is_some() {
+            return Ok(password);
         }
 
-        if let Some(data) = Option::<Form<Data>>::from_request(req, state)
+        Ok(Form::<Data>::from_request(req, state)
             .await
             .ok()
-            .flatten()
-        {
-            return Ok(Password(data.password.as_bytes().to_vec().into()));
-        }
-
-        Err(())
+            .map(|data| Password(data.password.as_bytes().to_vec().into())))
     }
 }

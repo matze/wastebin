@@ -42,15 +42,19 @@ impl From<Entry> for write::Entry {
     }
 }
 
-pub async fn post(
+pub async fn post<E: std::fmt::Debug>(
     State(page): State<Page>,
     State(db): State<Database>,
     jar: SignedCookieJar,
     headers: HeaderMap,
     uid: Option<Uid>,
     theme: Option<Theme>,
-    Form(entry): Form<Entry>,
+    entry: Result<Form<Entry>, E>,
 ) -> Result<(SignedCookieJar, Redirect), impl IntoResponse> {
+    let Ok(Form(entry)) = entry else {
+        return Err(make_error(crate::Error::MalformedForm, page, theme));
+    };
+
     // TODO: think about something more appropriate because those headers might be all messed up
     // and yet we still have a proper TLS connection.
     let is_https = headers

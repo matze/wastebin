@@ -203,17 +203,17 @@ async fn serve(
         .route("/robots.txt", get(robots::get))
         .route("/theme", get(theme::get))
         .route("/new", post(insert::form::post))
-        .route("/qr/:id", get(html::qr::get))
-        .route("/burn/:id", get(html::burn::get))
+        .route("/qr/{id}", get(html::qr::get))
+        .route("/burn/{id}", get(html::burn::get))
         .route(
-            "/:id",
+            "/{id}",
             get(html::paste::get)
                 .post(html::paste::get)
                 .delete(delete::api::delete),
         )
-        .route("/dl/:id", get(download::get))
-        .route("/raw/:id", get(raw::get))
-        .route("/delete/:id", get(delete::form::delete))
+        .route("/dl/{id}", get(download::get))
+        .route("/raw/{id}", get(raw::get))
+        .route("/delete/{id}", get(delete::form::delete))
         .layer(
             ServiceBuilder::new()
                 .layer(DefaultBodyLimit::max(max_body_size))

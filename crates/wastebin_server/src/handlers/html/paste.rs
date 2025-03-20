@@ -32,7 +32,7 @@ pub(crate) struct Paste {
 }
 
 #[expect(clippy::too_many_arguments)]
-pub async fn get(
+pub async fn get<E>(
     State(cache): State<Cache>,
     State(page): State<Page>,
     State(db): State<Database>,
@@ -40,10 +40,12 @@ pub async fn get(
     Path(id): Path<String>,
     uid: Option<Uid>,
     theme: Option<Theme>,
-    form: Option<Form<PasswordForm>>,
+    form: Result<Form<PasswordForm>, E>,
 ) -> Result<Response, ErrorResponse> {
     async {
-        let password = form.map(|form| Password::from(form.password.as_bytes().to_vec()));
+        let password = form
+            .ok()
+            .map(|form| Password::from(form.password.as_bytes().to_vec()));
         let key: Key = id.parse()?;
 
         let (data, is_available) = match db.get(key.id, password.clone()).await {

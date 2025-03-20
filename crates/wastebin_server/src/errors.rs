@@ -24,6 +24,8 @@ pub(crate) enum Error {
     Database(#[from] db::Error),
     #[error("id error: {0}")]
     Id(#[from] id::Error),
+    #[error("malformed form data")]
+    MalformedForm,
 }
 
 #[derive(Serialize)]
@@ -44,6 +46,7 @@ impl From<Error> for StatusCode {
                 StatusCode::FORBIDDEN
             }
             Error::Id(_) | Error::UrlParsing(_) => StatusCode::BAD_REQUEST,
+            Error::MalformedForm => StatusCode::UNPROCESSABLE_ENTITY,
             Error::Join(_)
             | Error::QrCode(_)
             | Error::Database(_)

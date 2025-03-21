@@ -90,6 +90,8 @@ header .nav-button {
   border: none;
   padding: 1rem;
   background: none;
+  border-radius: 8px;
+  transition: background-color 150ms ease-in-out;
 }
 
 header .nav-button:hover {
@@ -97,6 +99,7 @@ header .nav-button:hover {
   color: var(--main-bg-color);
   cursor: pointer;
   border-radius: 8px;
+  transition: background-color 150ms ease-in-out;
 }
 
 #form {
@@ -118,11 +121,12 @@ button:hover {
   border: none;
   border-radius: 8px;
   background-color: var(--main-accent-color);
+  transition: background-color 200ms ease-in-out;
 }
 
 .button:hover {
   background-color: var(--main-highlight-color);
-  transition: background-color 100ms;
+  transition: background-color 200ms ease-in-out;
 }
 
 select {

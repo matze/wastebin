@@ -56,7 +56,7 @@ docker run -e WASTEBIN_DATABASE_PATH=/data/state.db -v /path/for/storage:/data q
 > [!NOTE]
 > The image is based on scratch which means it neither comes with a shell nor
 > with `TMPDIR` being set. If database migrations fail with an extended sqlite
-> error code 6410, pass `TMPDIR` pointing to a location, sqlite can write to.
+> error code 6410, pass `TMPDIR` pointing to a location sqlite can write to.
 
 
 ### Run with docker-compose
@@ -101,19 +101,16 @@ cargo run --release
 
 ### Build a container image
 
-It's possible to build a container image using Docker or Podman. Assuming you're in the root directory of repository run
+It is possible to build a container image using Docker or Podman. Assuming you
+are in the root directory of the repository run
 
 ```bash
+# Docker
 sudo docker build -t wastebin:v3.0.0 -f Dockerfile .
-```
 
-for Docker or
-
-```bash
+# Podman
 podman build -t wastebin:v3.0.0 -f Dockerfile
 ```
-
-for Podman.
 
 To cross-compile, make sure that your container engine of choice supports it,
 e.g. Docker:
@@ -128,15 +125,12 @@ default*      docker
 To build an arm64 image on an x86_64 host run
 
 ```bash
+# Docker
 sudo docker build --platform linux/arm64 -t wastebin:v3.0.0-arm64 -f Dockerfile.arm .
-```
 
-or
-
-```bash
+# Podman
 podman build --arch=arm64 -t wastebin:v3.0.0-arm64 -f Dockerfile.arm
 ```
-
 
 ## Usage
 
@@ -193,18 +187,18 @@ POST a new paste to the `/` endpoint with the following JSON payload:
 ```
 
 After successful insertion, you will receive a JSON response with the path to
-the newly created paste for the browser:
+the newly created paste:
 
 ```json
 {"path":"/Ibv9Fa.rs"}
 ```
 
-To retrieve the raw content, make a GET request on the `/raw/:id` route. If you
-use a client that is able to handle cookies you make a DELETE request on `/:id`
-using the cookie in the `Set-Cookie` header set during redirect after creation.
+To retrieve the raw content, make a GET request on the `/raw/:id` route. In case
+the paste was encrypted, pass the password via the `wastebin-password` header.
 
-In case the paste was encrypted, pass the password via the `wastebin-password`
-header.
+To delete a paste, make a DELETE request on the `/:id` route with the `uid`
+cookie set that was sent back in the `Set-Cookie` header of the redirect
+response after creation.
 
 
 ### wastebin-ctl command line tool
@@ -223,9 +217,9 @@ the current buffer or selection with `:WastePaste`.
 
 ### Paste from clipboard
 
-We can use the API POST endpoint to paste clipboard data easily from the command
-line using `xclip`, `curl` and `jq`. Define the following function in your
-`.bashrc` and you are good to go:
+To paste clipboard data from the command line you can use the aforementioned API
+calls together with `xclip`, `curl` and `jq`. Define the following function in
+your `.bashrc` and you are good to go:
 
 ```bash
 function paste_from_clipboard() {

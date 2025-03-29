@@ -46,9 +46,10 @@ pub async fn get<E>(
         let password = form
             .ok()
             .map(|form| Password::from(form.password.as_bytes().to_vec()));
+        let no_password = password.is_none();
         let key: Key = id.parse()?;
 
-        let (data, is_available) = match db.get(key.id, password.clone()).await {
+        let (data, is_available) = match db.get(key.id, password).await {
             Ok(Entry::Regular(data)) => (data, true),
             Ok(Entry::Burned(data)) => (data, false),
             Err(db::Error::NoPassword) => {
@@ -75,7 +76,7 @@ pub async fn get<E>(
         } else {
             let html = highlighter.highlight(data, key.ext.clone()).await?;
 
-            if is_available && password.is_none() {
+            if is_available && no_password {
                 tracing::trace!(?key, "cache item");
                 cache.put(key.clone(), html.clone());
             }

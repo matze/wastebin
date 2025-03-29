@@ -38,7 +38,6 @@ pub(crate) struct Encrypted {
     pub nonce: Vec<u8>,
 }
 
-#[derive(Clone)]
 pub struct Password(Vec<u8>);
 
 /// Plaintext bytes to be encrypted.

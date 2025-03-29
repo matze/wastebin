@@ -16,6 +16,7 @@ hostname = "0.4.0"
 http = "1.1.0"
 mime = "0.3"
 qrcodegen = "1"
+ratelimit = "0.10"
 sha2 = "0.10"
 serde = { workspace = true }
 syntect = { version = "5", default-features = false, features = ["html", "plist-load", "regex-fancy"] }

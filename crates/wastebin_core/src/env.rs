@@ -22,6 +22,10 @@ pub mod vars {
     pub const THEME: &str = "WASTEBIN_THEME";
     /// Title.
     pub const TITLE: &str = "WASTEBIN_TITLE";
+    /// Insert rate-limit.
+    pub const RATELIMIT_INSERT: &str = "WASTEBIN_RATELIMIT_INSERT";
+    /// Delete rate-limit.
+    pub const RATELIMIT_DELETE: &str = "WASTEBIN_RATELIMIT_DELETE";
 }
 
 pub(crate) fn password_hash_salt() -> String {

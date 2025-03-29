@@ -17,16 +17,16 @@ pub async fn get(
     theme: Option<Theme>,
 ) -> Result<Qr, ErrorResponse> {
     async {
+        let key: Key = id.parse()?;
+
         let code = {
             let page = page.clone();
-            let id = id.clone();
 
             tokio::task::spawn_blocking(move || code_from(&page.base_url, &id))
                 .await
                 .map_err(Error::from)??
         };
 
-        let key: Key = id.parse()?;
         let title = db.get_title(key.id).await?;
 
         // TODO: fix the bogus hardcoded can_delete and is_deleted fields.

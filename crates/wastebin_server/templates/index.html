@@ -23,7 +23,7 @@
         <div class="controls">
           <div class="controls-group">
             <div class="controls-row">
-              <select class="controls-row" name="extension" id="langs" size="17">
+              <select class="controls-row" name="extension" id="langs" size="17" aria-label="Language">
               {%- for syntax in highlighter.syntaxes -%}
                 {%- if syntax.file_extensions.len() > 0 %}
                 <option value="{{ syntax.file_extensions.first().unwrap() }}">{{ syntax.name }}</option>
@@ -34,7 +34,7 @@
             </div>
           </div>
           <div class="controls-group">
-            <select name="expires" size="{{ page.expirations.len() }}" id="expiration-list">
+            <select name="expires" size="{{ page.expirations.len() }}" id="expiration-list" aria-label="Expiry">
               {% for expiration in page.expirations %}
               <option value="{{ expiration.duration.as_secs() }}" {% if expiration.default %}selected{% endif %}> {{ expiration }}
               </option>

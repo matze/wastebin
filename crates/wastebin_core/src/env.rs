@@ -8,7 +8,7 @@ pub mod vars {
     pub const CACHE_SIZE: &str = "WASTEBIN_CACHE_SIZE";
     /// Path to the database file.
     pub const DATABASE_PATH: &str = "WASTEBIN_DATABASE_PATH";
-    /// Time before a request times uot.
+    /// Time before a request times out.
     pub const HTTP_TIMEOUT: &str = "WASTEBIN_HTTP_TIMEOUT";
     /// Maximum body size.
     pub const MAX_BODY_SIZE: &str = "WASTEBIN_MAX_BODY_SIZE";

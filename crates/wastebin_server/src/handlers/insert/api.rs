@@ -39,10 +39,9 @@ pub async fn post(
     State(db): State<Database>,
     Json(entry): Json<Entry>,
 ) -> Result<Json<RedirectResponse>, JsonErrorResponse> {
-    let id = Id::rand();
     let entry: write::Entry = entry.into();
+    let (id, entry) = db.insert(entry).await.map_err(Error::Database)?;
     let path = format!("/{}", id.to_url_path(&entry));
-    db.insert(id, entry).await.map_err(Error::Database)?;
 
     Ok(Json::from(RedirectResponse { path }))
 }

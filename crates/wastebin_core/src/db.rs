@@ -9,6 +9,8 @@ use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 use tokio::task::spawn_blocking;
 
+const BUF_SIZE: usize = 32 * 1024;
+
 static MIGRATIONS: LazyLock<Migrations> = LazyLock::new(|| {
     Migrations::new(vec![
         M::up(include_str!("migrations/0001-initial.sql")),
@@ -86,7 +88,7 @@ pub enum Open {
 /// Module with types for insertion.
 pub mod write {
     use crate::crypto::{Encrypted, Password, Plaintext};
-    use crate::db::Error;
+    use crate::db::{BUF_SIZE, Error};
     use async_compression::tokio::bufread::ZstdEncoder;
     use serde::{Deserialize, Serialize};
     use std::io::Cursor;
@@ -133,7 +135,7 @@ pub mod write {
     impl Entry {
         /// Compress the entry for insertion.
         pub async fn compress(self) -> Result<CompressedEntry, Error> {
-            let reader = BufReader::new(Cursor::new(&self.text));
+            let reader = BufReader::with_capacity(BUF_SIZE, Cursor::new(&self.text));
             let mut encoder = ZstdEncoder::new(reader);
             let mut data = Vec::new();
 
@@ -170,7 +172,7 @@ pub mod write {
 /// Module with types for reading from the database.
 pub mod read {
     use crate::crypto::{Encrypted, Password};
-    use crate::db::Error;
+    use crate::db::{BUF_SIZE, Error};
     use crate::id::Id;
     use async_compression::tokio::bufread::ZstdDecoder;
     use std::io::Cursor;
@@ -281,7 +283,7 @@ pub mod read {
 
     impl CompressedReadEntry {
         pub async fn decompress(self) -> Result<UmcompressedEntry, Error> {
-            let reader = BufReader::new(Cursor::new(self.data));
+            let reader = BufReader::with_capacity(BUF_SIZE, Cursor::new(self.data));
             let mut decoder = ZstdDecoder::new(reader);
             let mut text = String::new();
 

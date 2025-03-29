@@ -14,15 +14,14 @@ pub async fn get(
     theme: Option<Theme>,
 ) -> Result<Burn, ErrorResponse> {
     async {
+        let key: Key = id.parse()?;
+
         let code = tokio::task::spawn_blocking({
             let page = page.clone();
-            let id = id.clone();
             move || code_from(&page.base_url, &id)
         })
         .await
         .map_err(Error::from)??;
-
-        let key: Key = id.parse()?;
 
         Ok(Burn {
             page: page.clone(),

@@ -26,6 +26,8 @@ pub(crate) enum Error {
     Id(#[from] id::Error),
     #[error("malformed form data")]
     MalformedForm,
+    #[error("expires too far in the future")]
+    TooLongExpires,
 }
 
 #[derive(Serialize)]
@@ -45,7 +47,7 @@ impl From<Error> for StatusCode {
             | Error::Database(db::Error::Crypto(crypto::Error::ChaCha20Poly1305Decrypt)) => {
                 StatusCode::FORBIDDEN
             }
-            Error::Id(_) | Error::UrlParsing(_) => StatusCode::BAD_REQUEST,
+            Error::Id(_) | Error::UrlParsing(_) | Error::TooLongExpires => StatusCode::BAD_REQUEST,
             Error::MalformedForm => StatusCode::UNPROCESSABLE_ENTITY,
             Error::Join(_)
             | Error::QrCode(_)

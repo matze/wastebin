@@ -15,7 +15,7 @@ rusqlite_migration = { version = "1", default-features = false }
 rust-argon2 = "2.0.0"
 serde = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["io-util"] }
+tokio = { workspace = true, features = ["io-util", "rt-multi-thread"] }
 tracing = { workspace = true }
 zstd = "0.13"
 

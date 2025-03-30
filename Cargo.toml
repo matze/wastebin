@@ -32,6 +32,9 @@ unicode_not_nfc = "deny"
 unwrap_used = "deny"
 used_underscore_binding = "deny"
 
+[profile.dev.package.rust-argon2]
+opt-level = 3
+
 [profile.release]
 strip = "debuginfo"
 lto = "fat"

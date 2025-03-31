@@ -12,6 +12,8 @@ pub enum Error {
     IllegalModifier,
     #[error("multiple default values")]
     MultipleDefaults,
+    #[error("duplicate expiration values")]
+    DuplicateExpirations,
 }
 
 /// Single expiration value that can be the default in a set of values.
@@ -152,6 +154,10 @@ impl FromStr for ExpirationSet {
 
         values.sort();
 
+        if values.windows(2).any(|w| w[0].duration == w[1].duration) {
+            Err(Error::DuplicateExpirations)?;
+        }
+
         Ok(ExpirationSet(values))
     }
 }
@@ -210,7 +216,22 @@ mod tests {
 
     #[test]
     fn multiple_defaults() {
-        assert!("3600=d,60=d,48000".parse::<ExpirationSet>().is_err());
+        assert!(matches!(
+            "3600=d,60=d,48000".parse::<ExpirationSet>(),
+            Err(Error::MultipleDefaults)
+        ));
+    }
+
+    #[test]
+    fn duplicate_expirations() {
+        assert!(matches!(
+            "60,60=d".parse::<ExpirationSet>(),
+            Err(Error::DuplicateExpirations)
+        ));
+        assert!(matches!(
+            "3600,60,48000,60=d,3600".parse::<ExpirationSet>(),
+            Err(Error::DuplicateExpirations)
+        ));
     }
 
     #[test]

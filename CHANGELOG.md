@@ -18,6 +18,7 @@
 - Root element's `color-scheme` is now set according to the selected theme,
   which makes browser use appropriate color scheme for its UI.
 - Make "never" the default expiration like it was with wastebin before 3.0.
+- Reject duplicate expiration values.
 
 ### Fixed
 

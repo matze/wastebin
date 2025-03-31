@@ -133,7 +133,7 @@ impl Display for Expiration {
             parts.push(format!("{secs} seconds"));
         }
 
-        f.write_str(&parts.join(" "))
+        f.write_str(&parts.join(", "))
     }
 }
 
@@ -239,15 +239,15 @@ mod tests {
         );
         assert_eq!(
             format!("{}", Expiration::from_secs(60 * 60 * 24 * 7 * 8)),
-            "1 month 3 weeks 5 days"
+            "1 month, 3 weeks, 5 days"
         );
         assert_eq!(
             format!("{}", Expiration::from_secs(60 * 60 * 24 * 7 * 4 * 12)),
-            "11 months 6 days"
+            "11 months, 6 days"
         );
         assert_eq!(
             format!("{}", Expiration::from_secs(60 * 60 * 24 * 7 * 4 * 24)),
-            "1 year 10 months 1 week"
+            "1 year, 10 months, 1 week"
         );
     }
 }

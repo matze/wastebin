@@ -91,7 +91,7 @@ pub mod write {
     use serde::{Deserialize, Serialize};
     use std::io::Cursor;
     use std::num::NonZeroU32;
-    use tokio::io::{AsyncReadExt, BufReader};
+    use tokio::io::AsyncReadExt;
 
     /// An uncompressed entry to be inserted into the database.
     #[derive(Default, Debug, Serialize, Deserialize)]
@@ -133,8 +133,7 @@ pub mod write {
     impl Entry {
         /// Compress the entry for insertion.
         pub async fn compress(self) -> Result<CompressedEntry, Error> {
-            let reader = BufReader::new(Cursor::new(&self.text));
-            let mut encoder = ZstdEncoder::new(reader);
+            let mut encoder = ZstdEncoder::new(Cursor::new(&self.text));
             let mut data = Vec::new();
 
             encoder
@@ -174,7 +173,7 @@ pub mod read {
     use crate::id::Id;
     use async_compression::tokio::bufread::ZstdDecoder;
     use std::io::Cursor;
-    use tokio::io::{AsyncReadExt, BufReader};
+    use tokio::io::AsyncReadExt;
 
     /// A raw entry as read from the database.
     #[derive(Debug)]
@@ -281,8 +280,7 @@ pub mod read {
 
     impl CompressedReadEntry {
         pub async fn decompress(self) -> Result<UmcompressedEntry, Error> {
-            let reader = BufReader::new(Cursor::new(self.data));
-            let mut decoder = ZstdDecoder::new(reader);
+            let mut decoder = ZstdDecoder::new(Cursor::new(self.data));
             let mut text = String::new();
 
             decoder

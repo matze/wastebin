@@ -24,6 +24,11 @@ pub struct Expiration {
 /// Multiple expiration values in ordered fashion.
 pub struct ExpirationSet(Vec<Expiration>);
 
+/// Rough number of seconds in a month
+const MONTH_SECS: u64 = 30 * 24 * 60 * 60; // 30 days
+/// Rough number of seconds in a year
+const YEAR_SECS: u64 = 365 * 24 * 60 * 60; // 365 days
+
 /// A single [`Expiration`] can either be an unsigned number or an unsigned number followed by `=d`
 /// to denote a default expiration.
 impl FromStr for Expiration {
@@ -70,7 +75,7 @@ impl Display for Expiration {
 
         let mut parts = Vec::new();
 
-        if let Some((years, rem)) = div(secs, 60 * 60 * 24 * 7 * 4 * 12) {
+        if let Some((years, rem)) = div(secs, YEAR_SECS) {
             if years > 1 {
                 parts.push(format!("{years} years"));
             } else {
@@ -79,7 +84,7 @@ impl Display for Expiration {
             secs = rem;
         }
 
-        if let Some((months, rem)) = div(secs, 60 * 60 * 24 * 7 * 4) {
+        if let Some((months, rem)) = div(secs, MONTH_SECS) {
             if months > 1 {
                 parts.push(format!("{months} months"));
             } else {
@@ -230,19 +235,19 @@ mod tests {
         );
         assert_eq!(
             format!("{}", Expiration::from_secs(60 * 60 * 24 * 7 * 4)),
-            "1 month"
+            "4 weeks"
         );
         assert_eq!(
             format!("{}", Expiration::from_secs(60 * 60 * 24 * 7 * 8)),
-            "2 months"
+            "1 month 3 weeks 5 days"
         );
         assert_eq!(
             format!("{}", Expiration::from_secs(60 * 60 * 24 * 7 * 4 * 12)),
-            "1 year"
+            "11 months 6 days"
         );
         assert_eq!(
             format!("{}", Expiration::from_secs(60 * 60 * 24 * 7 * 4 * 24)),
-            "2 years"
+            "1 year 10 months 1 week"
         );
     }
 }

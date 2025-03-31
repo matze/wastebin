@@ -22,6 +22,8 @@
 ### Fixed
 
 - Missing separators between expiration parts.
+- Better number of days for expiration months (30 days instead of 28) and years
+  (365 days instead of 336).
 
 
 ## 3.1.0

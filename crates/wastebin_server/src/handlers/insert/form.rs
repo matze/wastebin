@@ -1,7 +1,7 @@
 use crate::Page;
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::make_error;
-use axum::extract::{Form, State};
+use axum::extract::{State, Multipart};
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::cookie::{Cookie, SameSite, SignedCookieJar};
@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
 use wastebin_core::db::{Database, write};
 use wastebin_core::id::Id;
+use std::str;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub(crate) struct Entry {
@@ -42,6 +43,52 @@ impl From<Entry> for write::Entry {
     }
 }
 
+async fn multipart_to_entry(mut entry: Multipart) -> Result<Entry, crate::Error> {
+    let mut title = "".to_string();
+    let mut text: String = "".to_string();
+    let mut password = "".to_string();
+    let mut burn_after_reading = None;
+    let mut extension = None;
+    let mut expires = None;
+
+    while let Some(field) = entry.next_field().await.unwrap() {
+        let name = String::from(
+            field
+            .name()
+            .ok_or(crate::Error::MalformedForm)?
+            );
+        let data = String::from(
+            str::from_utf8(
+                dbg!(&field
+                .bytes()
+                .await
+                .map_err(|_| crate::Error::MalformedForm)?)
+                )
+            .map_err(|_| crate::Error::MalformedForm)?
+            );
+
+        match name.as_str() {
+            "title" => title = data,
+            "text" => text = data,
+            "password" => password = data,
+            "burn_after_reading" => burn_after_reading = Some(data),
+            "extension" => extension = Some(data),
+            "expires" => expires = Some(data),
+            _ => {}
+        }
+    }
+
+
+    Ok(Entry {
+        text,
+        extension,
+        expires,
+        burn_after_reading,
+        password,
+        title,
+    })
+}
+
 pub async fn post<E: std::fmt::Debug>(
     State(page): State<Page>,
     State(db): State<Database>,
@@ -49,9 +96,9 @@ pub async fn post<E: std::fmt::Debug>(
     headers: HeaderMap,
     uid: Option<Uid>,
     theme: Option<Theme>,
-    entry: Result<Form<Entry>, E>,
+    entry: Result<Multipart, E>,
 ) -> Result<(SignedCookieJar, Redirect), impl IntoResponse> {
-    let Ok(Form(entry)) = entry else {
+    let Ok(entry) = entry else {
         return Err(make_error(crate::Error::MalformedForm, page, theme));
     };
 
@@ -76,7 +123,8 @@ pub async fn post<E: std::fmt::Debug>(
             db.next_uid().await?
         };
 
-        let mut entry: write::Entry = entry.into();
+        let multipart_entry: Entry = multipart_to_entry(entry).await?;
+        let mut entry: write::Entry = multipart_entry.into();
         entry.uid = Some(uid);
 
         let id = Id::rand();

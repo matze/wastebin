@@ -15,7 +15,7 @@
 {% endblock %}
 
 {%- block content -%}
-    <form id="form" action="/new" method="post">
+    <form id="form" action="/new" method="post" enctype="multipart/form-data">
       <div class="container">
         <div class="content">
           <textarea id="text" name="text" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text or drop file here>" autofocus></textarea>

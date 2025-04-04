@@ -3,6 +3,7 @@ use crate::expiration::ExpirationSet;
 use crate::highlight::{Highlighter, Theme};
 use crate::page;
 use axum_extra::extract::cookie::Key;
+use ratelimit::Ratelimiter;
 use reqwest::RequestBuilder;
 use std::net::SocketAddr;
 use std::num::NonZeroUsize;
@@ -37,6 +38,14 @@ impl Client {
             key,
             page,
             highlighter: Arc::new(Highlighter::default()),
+            ratelimit_insert: Some(Arc::new(
+                Ratelimiter::builder(60, Duration::from_secs(1))
+                    .max_tokens(60)
+                    .initial_available(60)
+                    .build()
+                    .unwrap(),
+            )),
+            ratelimit_delete: None,
         };
 
         let listener = TcpListener::bind("127.0.0.1:0")

@@ -225,7 +225,7 @@ your `.bashrc` and you are good to go:
 function paste_from_clipboard() {
     local URL=$(\
         jq -n --arg t "$(xclip -selection clipboard -o)" '{text: $t}' | \
-            curl -s -H 'Content-Type: application/json' --data-binary @- https://wastebin.tld/api | \
+            curl -s -H 'Content-Type: application/json' --data-binary @- https://wastebin.tld/ | \
             jq -r '. | "https://wastebin.tld\(.path)"')
 
     xdg-open $URL
@@ -239,8 +239,8 @@ To paste from stdin use the following function in your `.bashrc`:
 ```bash
 function paste_from_stdin() {
     jq -Rns '{text: inputs}' | \
-        curl  -s -H 'Content-Type: application/json' --data-binary @- https://wastebin.tld/api | \
-        jq -r '. | "wastebin.tld\(.path)"'
+        curl  -s -H 'Content-Type: application/json' --data-binary @- https://wastebin.tld/ | \
+        jq -r '. | "https://wastebin.tld\(.path)"'
 }
 ```
 

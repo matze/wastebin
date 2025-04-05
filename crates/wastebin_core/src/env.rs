@@ -16,6 +16,8 @@ pub mod vars {
     pub const PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
     /// Expirations list.
     pub const PASTE_EXPIRATIONS: &str = "WASTEBIN_PASTE_EXPIRATIONS";
+    /// Maximum expiration time.
+    pub const PASTE_MAX_EXPIRATION: &str = "WASTEBIN_PASTE_MAX_EXPIRATION";
     /// Signing key for signed cookie store.
     pub const SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
     /// Theme to use.

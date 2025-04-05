@@ -223,14 +223,17 @@ your `.bashrc` and you are good to go:
 
 ```bash
 function paste_from_clipboard() {
+    local API_URL="https://wastebin.tld"
     local URL=$(\
         jq -n --arg t "$(xclip -selection clipboard -o)" '{text: $t}' | \
-            curl -s -H 'Content-Type: application/json' --data-binary @- https://wastebin.tld/ | \
-            jq -r '. | "https://wastebin.tld\(.path)"')
+            curl -s -H 'Content-Type: application/json' --data-binary @- ${API_URL}/ | \
+            jq -r '. | "${API_URL}\(.path)"')
 
     xdg-open $URL
 }
 ```
+
+For wayland users, consider replace the `xclip ...` with `wl-paste` from `wl-clipboard`.
 
 ### Paste from stdin
 
@@ -238,9 +241,10 @@ To paste from stdin use the following function in your `.bashrc`:
 
 ```bash
 function paste_from_stdin() {
+    local API_URL="https://wastebin.tld"
     jq -Rns '{text: inputs}' | \
-        curl  -s -H 'Content-Type: application/json' --data-binary @- https://wastebin.tld/ | \
-        jq -r '. | "https://wastebin.tld\(.path)"'
+        curl  -s -H 'Content-Type: application/json' --data-binary @- ${API_URL}/ | \
+        jq -r '. | "${API_URL}\(.path)"')
 }
 ```
 

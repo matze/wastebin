@@ -227,7 +227,7 @@ function paste_from_clipboard() {
     local URL=$(\
         jq -n --arg t "$(xclip -selection clipboard -o)" '{text: $t}' | \
             curl -s -H 'Content-Type: application/json' --data-binary @- ${API_URL}/ | \
-            jq -r '. | "${API_URL}\(.path)"')
+            jq -r '. | "'${API_URL}'\(.path)"' )
 
     xdg-open $URL
 }
@@ -244,7 +244,7 @@ function paste_from_stdin() {
     local API_URL="https://wastebin.tld"
     jq -Rns '{text: inputs}' | \
         curl  -s -H 'Content-Type: application/json' --data-binary @- ${API_URL}/ | \
-        jq -r '. | "${API_URL}\(.path)"')
+        jq -r '. | "'${API_URL}'\(.path)"'
 }
 ```
 

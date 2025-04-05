@@ -10,7 +10,7 @@ use std::num::NonZeroU32;
 use wastebin_core::db::{Database, write};
 use wastebin_core::id::Id;
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub(crate) struct Entry {
     pub text: String,
     pub extension: Option<String>,
@@ -19,6 +19,8 @@ pub(crate) struct Entry {
     pub title: String,
     #[serde(rename = "burn-after-reading")]
     pub burn_after_reading: Option<String>,
+    #[serde(rename = "human-readable")]
+    pub human_readable: Option<String>,
 }
 
 impl From<Entry> for write::Entry {
@@ -76,17 +78,30 @@ pub async fn post<E: std::fmt::Debug>(
             db.next_uid().await?
         };
 
-        let mut entry: write::Entry = entry.into();
-        entry.uid = Some(uid);
+        let mut db_entry: write::Entry = entry.clone().into();
+        db_entry.uid = Some(uid);
+        let mut id;
+        loop {
+            id = if entry
+                .human_readable
+                .as_deref()
+                .is_some_and(|human_readable| human_readable == "on")
+            {
+                Id::rand_human_readable()
+            } else {
+                Id::rand()
+            };
+            if let Ok(_) = db.insert(id.clone(), db_entry.clone()).await {
+                break;
+            }
+        }
 
-        let id = Id::rand();
-        let mut url = id.to_url_path(&entry);
+        let mut url = id.to_url_path(&db_entry);
 
-        if entry.burn_after_reading.unwrap_or(false) {
+        if db_entry.burn_after_reading.unwrap_or(false) {
             url = format!("burn/{url}");
         }
 
-        db.insert(id, entry).await?;
         let url = format!("/{url}");
 
         let cookie = Cookie::build(("uid", uid.to_string()))

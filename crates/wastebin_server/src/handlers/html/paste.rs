@@ -49,7 +49,7 @@ pub async fn get<E>(
         let no_password = password.is_none();
         let key: Key = id.parse()?;
 
-        let (data, is_available) = match db.get(key.id, password).await {
+        let (data, is_available) = match db.get(&key.id, password).await {
             Ok(Entry::Regular(data)) => (data, true),
             Ok(Entry::Burned(data)) => (data, false),
             Err(db::Error::NoPassword) => {

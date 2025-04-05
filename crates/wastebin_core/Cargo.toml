@@ -6,7 +6,9 @@ rust-version.workspace = true
 publish = false
 
 [dependencies]
+ahash = { version = "0.8.11", default-features = false, features = ["std"] }
 async-compression = { version = "0.4", features = ["tokio", "zstd"] }
+cgisf_lib = "0.2.1"
 chacha20poly1305 = "0.10.1"
 parking_lot = "0.12.1"
 rand = "0.9"
@@ -18,6 +20,14 @@ thiserror = { workspace = true }
 tokio = { workspace = true, features = ["io-util", "rt-multi-thread"] }
 tracing = { workspace = true }
 zstd = "0.13"
+
+[dev-dependencies]
+tokio = { workspace = true, features = [
+    "io-util",
+    "rt-multi-thread",
+    "macros",
+    "time",
+] }
 
 [lints]
 workspace = true

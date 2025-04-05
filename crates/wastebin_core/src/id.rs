@@ -1,7 +1,9 @@
 use crate::db::write::Entry;
+use cgisf_lib::{SentenceConfigBuilder, gen_sentence};
 use rand::Rng;
 use std::fmt;
 use std::str::FromStr;
+use std::sync::Arc;
 
 const CHAR_TABLE: &[char; 64] = &[
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
@@ -18,12 +20,15 @@ pub enum Error {
     WrongSize,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Id {
     /// Six-character identifiers.
     Id32(u32),
     /// Eleven-character identifiers.
     Id64(i64),
+    /// Human-readable identifiers, at least twelve chracters.
+    /// `Arc<String>` would be cheap to clone.
+    HumanReadable(Arc<String>),
 }
 
 impl Id {
@@ -34,18 +39,52 @@ impl Id {
         Self::Id64(rand::rng().random::<i64>())
     }
 
+    /// Generate a new random human-readable [`Id`].
+    #[must_use]
+    pub fn rand_human_readable() -> Self {
+        let gen_sentence = || {
+            gen_sentence(
+                SentenceConfigBuilder::random()
+                    .plural(false)
+                    .adjectives(1)
+                    .adverbs(1)
+                    .structure(cgisf_lib::Structure::AdjectivesNounVerbAdverbs)
+                    .build(),
+            )
+            .replace("The ", "")
+            .trim_end_matches(".")
+            .replace(" ", "-")
+        };
+
+        let mut sentence = gen_sentence();
+        while sentence.len() < 12 {
+            sentence = gen_sentence();
+        }
+
+        Self::HumanReadable(Arc::new(sentence))
+    }
+
     /// Return i64 representation for database storage purposes.
     #[must_use]
-    pub fn to_i64(self) -> i64 {
+    #[expect(
+        clippy::cast_possible_wrap,
+        reason = "wrapping is acceptable in this case"
+    )]
+    pub fn to_i64(&self) -> i64 {
         match self {
-            Self::Id32(n) => n.into(),
-            Self::Id64(n) => n,
+            Self::Id32(n) => *n as _,
+            Self::Id64(n) => *n,
+            Self::HumanReadable(s) => {
+                // must set a fixed seed
+                let random_state = ahash::RandomState::with_seed(42);
+                random_state.hash_one(s) as _
+            }
         }
     }
 
     /// Generate a URL path from the string representation and `entry`'s extension.
     #[must_use]
-    pub fn to_url_path(self, entry: &Entry) -> String {
+    pub fn to_url_path(&self, entry: &Entry) -> String {
         entry
             .extension
             .as_ref()
@@ -86,6 +125,9 @@ impl fmt::Display for Id {
 
                 write!(f, "{s}")
             }
+            Self::HumanReadable(s) => {
+                write!(f, "{s}")
+            }
         }
     }
 }
@@ -95,45 +137,59 @@ impl FromStr for Id {
 
     #[expect(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        if value.len() == 6 {
-            let mut n: u32 = 0;
+        match value.len() {
+            6 => {
+                let mut n: u32 = 0;
 
-            for (pos, char) in value.chars().enumerate() {
-                let bits: u32 = CHAR_TABLE
-                    .iter()
-                    .enumerate()
-                    .find_map(|(bits, c)| (char == *c).then_some(bits as u32))
-                    .ok_or(Error::IllegalCharacters)?;
+                for (pos, char) in value.chars().enumerate() {
+                    let bits: u32 = CHAR_TABLE
+                        .iter()
+                        .enumerate()
+                        .find_map(|(bits, c)| (char == *c).then_some(bits as u32))
+                        .ok_or(Error::IllegalCharacters)?;
 
-                if pos < 5 {
-                    n = (n << 6) | bits;
-                } else {
-                    n = (n << 2) | bits;
+                    if pos < 5 {
+                        n = (n << 6) | bits;
+                    } else {
+                        n = (n << 2) | bits;
+                    }
                 }
+
+                Ok(Self::Id32(n))
             }
+            11 => {
+                let mut n: i64 = 0;
 
-            Ok(Self::Id32(n))
-        } else if value.len() == 11 {
-            let mut n: i64 = 0;
+                for (pos, char) in value.chars().enumerate() {
+                    let bits: i64 = CHAR_TABLE
+                        .iter()
+                        .enumerate()
+                        .find_map(|(bits, c)| (char == *c).then_some(bits as i64))
+                        .ok_or(Error::IllegalCharacters)?;
 
-            for (pos, char) in value.chars().enumerate() {
-                let bits: i64 = CHAR_TABLE
-                    .iter()
-                    .enumerate()
-                    .find_map(|(bits, c)| (char == *c).then_some(bits as i64))
-                    .ok_or(Error::IllegalCharacters)?;
-
-                if pos < 10 {
-                    n = (n << 6) | bits;
-                } else {
-                    n = (n << 4) | bits;
+                    if pos < 10 {
+                        n = (n << 6) | bits;
+                    } else {
+                        n = (n << 4) | bits;
+                    }
                 }
-            }
 
-            Ok(Self::Id64(n))
-        } else {
+                Ok(Self::Id64(n))
+            }
+            _ => Self::try_from(value.to_string()),
+        }
+    }
+}
+
+impl TryFrom<String> for Id {
+    type Error = Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.len() < 12 {
             return Err(Error::WrongSize);
         }
+
+        Ok(Self::HumanReadable(Arc::new(value)))
     }
 }
 
@@ -170,6 +226,17 @@ mod tests {
         let id = Id::from(0xfffffffffffffffi64);
         assert_eq!(id.to_string(), "d+++++++++p");
         assert_eq!(id.to_i64(), 0xfffffffffffffff);
+    }
+
+    #[test]
+    fn construct_human_readable_strings() {
+        let id = Id::from_str("rust-empowers-programmers-deeply").unwrap();
+        assert_eq!(id.to_i64(), -3379340587488716302);
+        assert_eq!(id.to_string(), "rust-empowers-programmers-deeply");
+
+        let id = Id::from_str("axum-provides-great-performance").unwrap();
+        assert_eq!(id.to_i64(), -7777240774086603578);
+        assert_eq!(id.to_string(), "axum-provides-great-performance");
     }
 
     #[test]

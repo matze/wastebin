@@ -94,7 +94,7 @@ pub mod write {
     use tokio::io::AsyncReadExt;
 
     /// An uncompressed entry to be inserted into the database.
-    #[derive(Default, Debug, Serialize, Deserialize)]
+    #[derive(Clone, Default, Debug, Serialize, Deserialize)]
     pub struct Entry {
         /// Content
         pub text: String,
@@ -353,13 +353,14 @@ impl Database {
     }
 
     /// Get entire entry for `id`.
-    pub async fn get(&self, id: Id, password: Option<Password>) -> Result<read::Entry, Error> {
+    pub async fn get(&self, id: &Id, password: Option<Password>) -> Result<read::Entry, Error> {
         let conn = self.conn.clone();
 
+        let id_clone = id.clone();
         let entry = spawn_blocking(move || {
             conn.lock().query_row(
                 "SELECT data, burn_after_reading, uid, nonce, expires < datetime('now'), title FROM entries WHERE id=?1",
-                params![id.to_i64()],
+                params![id_clone.to_i64()],
                 |row| {
                     Ok(read::DatabaseEntry {
                         data: row.get(0)?,
@@ -375,7 +376,7 @@ impl Database {
         .await??;
 
         if entry.expired {
-            self.delete(id).await?;
+            self.delete(id.clone()).await?;
             return Err(Error::NotFound);
         }
 
@@ -388,7 +389,7 @@ impl Database {
         };
 
         if entry.must_be_deleted {
-            self.delete(id).await?;
+            self.delete(id.clone()).await?;
             return Ok(read::Entry::Burned(data));
         }
 
@@ -531,14 +532,14 @@ mod tests {
         };
 
         let id = Id::from(1234u32);
-        db.insert(id, entry).await?;
+        db.insert(id.clone(), entry).await?;
 
-        let entry = db.get(id, None).await?.unwrap_inner();
+        let entry = db.get(&id, None).await?.unwrap_inner();
         assert_eq!(entry.text, "hello world");
         assert!(entry.uid.is_some());
         assert_eq!(entry.uid.unwrap(), 10);
 
-        let result = db.get(Id::from(5678u32), None).await;
+        let result = db.get(&Id::from(5678u32), None).await;
         assert!(result.is_err());
 
         Ok(())
@@ -554,11 +555,11 @@ mod tests {
         };
 
         let id = Id::from(1234u32);
-        db.insert(id, entry).await?;
+        db.insert(id.clone(), entry).await?;
 
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-        let result = db.get(id, None).await;
+        let result = db.get(&id, None).await;
         assert!(matches!(result, Err(Error::NotFound)));
 
         Ok(())
@@ -569,11 +570,11 @@ mod tests {
         let db = new_db()?;
 
         let id = Id::from(1234u32);
-        db.insert(id, write::Entry::default()).await?;
+        db.insert(id.clone(), write::Entry::default()).await?;
 
-        assert!(db.get(id, None).await.is_ok());
-        assert!(db.delete(id).await.is_ok());
-        assert!(db.get(id, None).await.is_err());
+        assert!(db.get(&id, None).await.is_ok());
+        assert!(db.delete(id.clone()).await.is_ok());
+        assert!(db.get(&id, None).await.is_err());
 
         Ok(())
     }

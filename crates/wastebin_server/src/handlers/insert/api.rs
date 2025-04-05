@@ -6,7 +6,7 @@ use std::num::NonZeroU32;
 use wastebin_core::db::{Database, write};
 use wastebin_core::id::Id;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct Entry {
     pub text: String,
     pub extension: Option<String>,
@@ -14,6 +14,7 @@ pub(crate) struct Entry {
     pub burn_after_reading: Option<bool>,
     pub password: Option<String>,
     pub title: Option<String>,
+    pub human_readable: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -39,10 +40,28 @@ pub async fn post(
     State(db): State<Database>,
     Json(entry): Json<Entry>,
 ) -> Result<Json<RedirectResponse>, JsonErrorResponse> {
-    let id = Id::rand();
-    let entry: write::Entry = entry.into();
-    let path = format!("/{}", id.to_url_path(&entry));
-    db.insert(id, entry).await.map_err(Error::Database)?;
+    let db_entry: write::Entry = entry.clone().into();
+    let mut id;
+
+    loop {
+        id = if entry
+            .human_readable
+            .is_some_and(|human_readabole| human_readabole)
+        {
+            Id::rand_human_readable()
+        } else {
+            Id::rand()
+        };
+        if let Ok(_) = db
+            .insert(id.clone(), db_entry.clone())
+            .await
+            .map_err(Error::Database)
+        {
+            break;
+        }
+    }
+
+    let path = format!("/{}", id.to_url_path(&db_entry));
 
     Ok(Json::from(RedirectResponse { path }))
 }

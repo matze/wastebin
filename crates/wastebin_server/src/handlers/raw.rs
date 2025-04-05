@@ -19,7 +19,7 @@ pub async fn get(
         let password = password.map(|Password(password)| password);
         let key: Key = id.parse()?;
 
-        match db.get(key.id, password).await {
+        match db.get(&key.id, password).await {
             Ok(Entry::Regular(data) | Entry::Burned(data)) => Ok(data.text.into_response()),
             Err(db::Error::NoPassword) => Ok(PasswordInput {
                 page: page.clone(),

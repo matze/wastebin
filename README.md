@@ -183,6 +183,7 @@ POST a new paste to the `/` endpoint with the following JSON payload:
   "expires": <number of seconds from now, optional>,
   "burn_after_reading": <true/false, optional>,
   "password": <password for encryption optional>,
+  "human_readable": <true/false, generate human-readable url path, optional>,
 }
 ```
 

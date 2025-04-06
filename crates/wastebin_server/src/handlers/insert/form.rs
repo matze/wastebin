@@ -1,14 +1,16 @@
-use crate::Page;
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::make_error;
+use crate::{AppState, Page};
 use axum::extract::{Form, State};
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::cookie::{Cookie, SameSite, SignedCookieJar};
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
-use wastebin_core::db::{Database, write};
+use wastebin_core::db::write;
 use wastebin_core::id::Id;
+
+use super::common_insert;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub(crate) struct Entry {
@@ -44,7 +46,7 @@ impl From<Entry> for write::Entry {
 
 pub async fn post<E: std::fmt::Debug>(
     State(page): State<Page>,
-    State(db): State<Database>,
+    State(appstate): State<AppState>,
     jar: SignedCookieJar,
     headers: HeaderMap,
     uid: Option<Uid>,
@@ -73,7 +75,7 @@ pub async fn post<E: std::fmt::Debug>(
         let uid = if let Some(Uid(uid)) = uid {
             uid
         } else {
-            db.next_uid().await?
+            appstate.db.next_uid().await?
         };
 
         let mut entry: write::Entry = entry.into();
@@ -86,7 +88,7 @@ pub async fn post<E: std::fmt::Debug>(
             url = format!("burn/{url}");
         }
 
-        db.insert(id, entry).await?;
+        common_insert(&appstate, id, entry).await?;
         let url = format!("/{url}");
 
         let cookie = Cookie::build(("uid", uid.to_string()))

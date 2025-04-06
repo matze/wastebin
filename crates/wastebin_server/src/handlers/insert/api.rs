@@ -1,10 +1,13 @@
-use crate::errors::{Error, JsonErrorResponse};
+use crate::AppState;
+use crate::errors::JsonErrorResponse;
 use axum::Json;
 use axum::extract::State;
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
-use wastebin_core::db::{Database, write};
+use wastebin_core::db::write;
 use wastebin_core::id::Id;
+
+use super::common_insert;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Entry {
@@ -36,13 +39,13 @@ impl From<Entry> for write::Entry {
 }
 
 pub async fn post(
-    State(db): State<Database>,
+    State(appstate): State<AppState>,
     Json(entry): Json<Entry>,
 ) -> Result<Json<RedirectResponse>, JsonErrorResponse> {
     let id = Id::rand();
     let entry: write::Entry = entry.into();
     let path = format!("/{}", id.to_url_path(&entry));
-    db.insert(id, entry).await.map_err(Error::Database)?;
+    common_insert(&appstate, id, entry).await?;
 
     Ok(Json::from(RedirectResponse { path }))
 }

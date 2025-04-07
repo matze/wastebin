@@ -10,7 +10,7 @@ ahash = { version = "0.8.11", default-features = false, features = ["std"] }
 async-compression = { version = "0.4", features = ["tokio", "zstd"] }
 cgisf_lib = "0.2.1"
 chacha20poly1305 = "0.10.1"
-parking_lot = "0.12.1"
+kanal = "0.1.1"
 rand = "0.9"
 rusqlite = { version = "0.32", features = ["bundled"] }
 rusqlite_migration = { version = "1", default-features = false }

@@ -91,7 +91,7 @@ pub async fn post<E: std::fmt::Debug>(
             } else {
                 Id::rand()
             };
-            if let Ok(_) = db.insert(id.clone(), db_entry.clone()).await {
+            if db.insert(id.clone(), db_entry.clone()).await.is_ok() {
                 break;
             }
         }

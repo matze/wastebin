@@ -52,10 +52,11 @@ pub async fn post(
         } else {
             Id::rand()
         };
-        if let Ok(_) = db
+        if db
             .insert(id.clone(), db_entry.clone())
             .await
             .map_err(Error::Database)
+            .is_ok()
         {
             break;
         }

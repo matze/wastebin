@@ -27,7 +27,7 @@ pub async fn get(
                 .map_err(Error::from)??
         };
 
-        let title = db.get_title(key.id).await?;
+        let title = db.get_title(key.id.clone()).await?;
 
         // TODO: fix the bogus hardcoded can_delete and is_deleted fields.
         Ok(Qr {

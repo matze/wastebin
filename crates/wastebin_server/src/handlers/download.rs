@@ -21,7 +21,7 @@ pub async fn get(
         let key: Key = id.parse()?;
         let password = password.map(|Password(password)| password);
 
-        match db.get(key.id, password).await {
+        match db.get(&key.id, password).await {
             Ok(Entry::Regular(data) | Entry::Burned(data)) => {
                 Ok(get_download(&key, data).into_response())
             }

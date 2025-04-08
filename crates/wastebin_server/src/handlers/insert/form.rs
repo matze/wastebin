@@ -82,15 +82,7 @@ pub async fn post<E: std::fmt::Debug>(
         db_entry.uid = Some(uid);
         let mut id;
         loop {
-            id = if entry
-                .human_readable
-                .as_deref()
-                .is_some_and(|human_readable| human_readable == "on")
-            {
-                Id::rand_human_readable()
-            } else {
-                Id::rand()
-            };
+            id = Id::rand(entry.human_readable.as_deref().map(|s| s == "on"));
             if db.insert(id.clone(), db_entry.clone()).await.is_ok() {
                 break;
             }

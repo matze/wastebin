@@ -35,13 +35,17 @@ impl Id {
     /// Generate a new random [`Id`]. According to the [`rand::rng()`] documentation this should be
     /// fast and not require additional an `spawn_blocking()` call.
     #[must_use]
-    pub fn rand() -> Self {
-        Self::Id64(rand::rng().random::<i64>())
+    pub fn rand(human_readable: Option<bool>) -> Self {
+        if human_readable.is_some_and(|b| b) {
+            Self::rand_human_readable()
+        } else {
+            Self::Id64(rand::rng().random::<i64>())
+        }
     }
 
     /// Generate a new random human-readable [`Id`].
     #[must_use]
-    pub fn rand_human_readable() -> Self {
+    fn rand_human_readable() -> Self {
         let gen_sentence = || {
             gen_sentence(
                 SentenceConfigBuilder::random()

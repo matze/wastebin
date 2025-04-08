@@ -44,14 +44,7 @@ pub async fn post(
     let mut id;
 
     loop {
-        id = if entry
-            .human_readable
-            .is_some_and(|human_readabole| human_readabole)
-        {
-            Id::rand_human_readable()
-        } else {
-            Id::rand()
-        };
+        id = Id::rand(entry.human_readable);
         if db
             .insert(id.clone(), db_entry.clone())
             .await

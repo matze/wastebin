@@ -1,10 +1,13 @@
-use crate::errors::{Error, JsonErrorResponse};
+use crate::AppState;
+use crate::errors::JsonErrorResponse;
 use axum::Json;
 use axum::extract::State;
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
-use wastebin_core::db::{Database, write};
+use wastebin_core::db::write;
 use wastebin_core::id::Id;
+
+use super::common_insert;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Entry {
@@ -36,19 +39,21 @@ impl From<Entry> for write::Entry {
 }
 
 pub async fn post(
-    State(db): State<Database>,
+    State(appstate): State<AppState>,
     Json(entry): Json<Entry>,
 ) -> Result<Json<RedirectResponse>, JsonErrorResponse> {
     let id = Id::rand();
     let entry: write::Entry = entry.into();
     let path = format!("/{}", id.to_url_path(&entry));
-    db.insert(id, entry).await.map_err(Error::Database)?;
+    common_insert(&appstate, id, entry).await?;
 
     Ok(Json::from(RedirectResponse { path }))
 }
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZero;
+
     use crate::handlers::extract::PASSWORD_HEADER_NAME;
     use crate::test_helpers::{Client, StoreCookies};
     use reqwest::StatusCode;
@@ -63,14 +68,80 @@ mod tests {
             ..Default::default()
         };
 
-        let res = client.post_json().json(&entry).send().await?;
+        let res = client.post_json().json(&entry).send().await.unwrap();
         assert_eq!(res.status(), StatusCode::OK);
 
-        let payload = res.json::<super::RedirectResponse>().await?;
+        let payload = res.json::<super::RedirectResponse>().await.unwrap();
 
-        let res = client.get(&format!("/raw{}", payload.path)).send().await?;
+        let res = client
+            .get(&format!("/raw{}", payload.path))
+            .send()
+            .await
+            .unwrap();
         assert_eq!(res.status(), StatusCode::OK);
-        assert_eq!(res.text().await?, "FooBarBaz");
+        assert_eq!(res.text().await.unwrap(), "FooBarBaz");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn insert_fail_max_expire() -> Result<(), Box<dyn std::error::Error>> {
+        let client =
+            Client::new_with_max_expire(StoreCookies(false), Some(NonZero::new(10000).unwrap()))
+                .await;
+
+        {
+            let entry = Entry {
+                text: "FooBarBaz".to_string(),
+                ..Default::default()
+            };
+
+            let res = client.post_json().json(&entry).send().await.unwrap();
+            assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+        }
+
+        {
+            let entry = Entry {
+                text: "FooBarBaz".to_string(),
+                expires: None,
+                ..Default::default()
+            };
+
+            let res = client.post_json().json(&entry).send().await.unwrap();
+            assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+        }
+
+        {
+            let entry = Entry {
+                text: "FooBarBaz".to_string(),
+                expires: Some(NonZero::new(10001).unwrap()),
+                ..Default::default()
+            };
+
+            let res = client.post_json().json(&entry).send().await.unwrap();
+            assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+        }
+
+        {
+            let entry = Entry {
+                text: "FooBarBaz".to_string(),
+                expires: Some(NonZero::new(10000).unwrap()),
+                ..Default::default()
+            };
+
+            let res = client.post_json().json(&entry).send().await.unwrap();
+            assert_eq!(res.status(), StatusCode::OK);
+
+            let payload = res.json::<super::RedirectResponse>().await.unwrap();
+
+            let res = client
+                .get(&format!("/raw{}", payload.path))
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(res.status(), StatusCode::OK);
+            assert_eq!(res.text().await.unwrap(), "FooBarBaz");
+        }
 
         Ok(())
     }
@@ -81,7 +152,7 @@ mod tests {
 
         let entry = "Hello World";
 
-        let res = client.post_json().json(&entry).send().await?;
+        let res = client.post_json().json(&entry).send().await.unwrap();
         assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
 
         Ok(())
@@ -98,19 +169,20 @@ mod tests {
             ..Default::default()
         };
 
-        let res = client.post_json().json(&entry).send().await?;
+        let res = client.post_json().json(&entry).send().await.unwrap();
         assert_eq!(res.status(), StatusCode::OK);
 
-        let payload = res.json::<super::RedirectResponse>().await?;
+        let payload = res.json::<super::RedirectResponse>().await.unwrap();
 
         let res = client
             .get(&format!("/raw{}", payload.path))
             .header(PASSWORD_HEADER_NAME, password)
             .send()
-            .await?;
+            .await
+            .unwrap();
 
         assert_eq!(res.status(), StatusCode::OK);
-        assert_eq!(res.text().await?, "FooBarBaz");
+        assert_eq!(res.text().await.unwrap(), "FooBarBaz");
 
         Ok(())
     }

@@ -10,7 +10,7 @@ async-compression = { version = "0.4", features = ["tokio", "zstd"] }
 chacha20poly1305 = "0.10.1"
 parking_lot = "0.12.1"
 rand = "0.9"
-rusqlite = { version = "0.34", features = ["bundled"] }
+rusqlite = { version = "0.35", features = ["bundled"] }
 rusqlite_migration = { version = "2", default-features = false }
 rust-argon2 = "2.0.0"
 serde = { workspace = true }

@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 askama = { version = "0.13.0" }
 askama_web = { version = "0.13.0", features = ["axum-0.8"] }
-axum = { version = "0.8", features = ["json", "query", "macros"] }
+axum = { version = "0.8", features = ["json", "query", "macros", "multipart"] }
 axum-extra = { version = "0.10", features = ["cookie-signed", "typed-header"] }
 cached = { version = "0.55.0", default-features = false }
 hex = "0.4"

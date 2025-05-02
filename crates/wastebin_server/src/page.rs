@@ -1,3 +1,5 @@
+use std::num::NonZeroU32;
+
 use crate::assets::{Asset, Css, Kind};
 use crate::expiration::{Expiration, ExpirationSet};
 use crate::highlight::Theme;
@@ -18,12 +20,19 @@ pub(crate) struct Page {
     pub assets: Assets,
     pub base_url: Url,
     pub expirations: Vec<Expiration>,
+    pub max_expiration: Option<NonZeroU32>,
 }
 
 impl Page {
     /// Create new page meta data from generated  `assets`, `title` and optional `base_url`.
     #[must_use]
-    pub fn new(title: String, base_url: Url, theme: Theme, expirations: ExpirationSet) -> Self {
+    pub fn new(
+        title: String,
+        base_url: Url,
+        theme: Theme,
+        expirations: ExpirationSet,
+        max_expiration: Option<NonZeroU32>,
+    ) -> Self {
         let assets = Assets::new(theme);
         let expirations = expirations.into_inner();
 
@@ -33,6 +42,7 @@ impl Page {
             assets,
             base_url,
             expirations,
+            max_expiration,
         }
     }
 }

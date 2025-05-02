@@ -5,7 +5,7 @@ use crate::page;
 use axum_extra::extract::cookie::Key;
 use reqwest::RequestBuilder;
 use std::net::SocketAddr;
-use std::num::NonZeroUsize;
+use std::num::{NonZeroU32, NonZeroUsize};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::TcpListener;
@@ -21,6 +21,13 @@ pub(crate) struct StoreCookies(pub bool);
 
 impl Client {
     pub(crate) async fn new(store_cookies: StoreCookies) -> Self {
+        Self::new_with_max_expire(store_cookies, None).await
+    }
+
+    pub(crate) async fn new_with_max_expire(
+        store_cookies: StoreCookies,
+        max_expiration: Option<NonZeroU32>,
+    ) -> Self {
         let db = Database::new(db::Open::Memory).expect("open memory database");
         let cache = Cache::new(NonZeroUsize::new(128).unwrap());
         let key = Key::generate();
@@ -30,6 +37,7 @@ impl Client {
             url::Url::parse("https://localhost:8888").unwrap(),
             Theme::Ayu,
             expirations,
+            max_expiration,
         ));
         let state = crate::AppState {
             db,

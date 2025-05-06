@@ -324,32 +324,51 @@ impl Database {
         Ok(Self { conn })
     }
 
-    /// Insert `entry` under `id` into the database and optionally set owner to `uid`.
-    pub async fn insert(&self, id: Id, entry: write::Entry) -> Result<(), Error> {
+    /// Insert `entry` with a new generated `id` into the database and optionally set owner to `uid`.
+    pub async fn insert(&self, entry: write::Entry) -> Result<(Id, write::Entry), Error> {
         let conn = self.conn.clone();
         let write::DatabaseEntry { entry, data, nonce } = entry.compress().await?.encrypt().await?;
 
-        spawn_blocking(move || match entry.expires {
-            None => conn.lock().execute(
-                "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, title) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                params![id.to_i64(), entry.uid, data, entry.burn_after_reading, nonce, entry.title],
-            ),
-            Some(expires) => conn.lock().execute(
-                "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, expires, title) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now', ?6), ?7)",
-                params![
-                    id.to_i64(),
-                    entry.uid,
-                    data,
-                    entry.burn_after_reading,
-                    nonce,
-                    format!("{expires} seconds"),
-                    entry.title,
-                ],
-            ),
-        })
-        .await??;
+        let title = entry.title.clone();
 
-        Ok(())
+        let id = spawn_blocking(move || {
+            let mut counter = 0;
+
+            loop {
+                let id = Id::rand();
+
+                let result = match entry.expires {
+                    None => conn.lock().execute(
+                        "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, title) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                        params![id.to_i64(), entry.uid, data, entry.burn_after_reading, nonce, title],
+                    ),
+                    Some(expires) => conn.lock().execute(
+                        "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, expires, title) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now', ?6), ?7)",
+                        params![
+                            id.to_i64(),
+                            entry.uid,
+                            data,
+                            entry.burn_after_reading,
+                            nonce,
+                            format!("{expires} seconds"),
+                            title,
+                        ],
+                    ),
+                };
+
+                match result {
+                    Err(rusqlite::Error::SqliteFailure(rusqlite::ffi::Error { code, extended_code }, Some(ref _message))) if code == rusqlite::ErrorCode::ConstraintViolation && extended_code == 1555 && counter < 10 => {
+                        /* Retry if ID is already existent */
+                        counter += 1;
+                        continue;
+                    },
+                    Err(err) => break Err(err),
+                    Ok(rows) => { debug_assert!(rows == 1); break Ok(id) },
+                }
+            }
+        }).await??;
+
+        Ok((id, entry))
     }
 
     /// Get entire entry for `id`.
@@ -530,8 +549,7 @@ mod tests {
             ..Default::default()
         };
 
-        let id = Id::from(1234u32);
-        db.insert(id, entry).await?;
+        let (id, _entry) = db.insert(entry).await?;
 
         let entry = db.get(id, None).await?.unwrap_inner();
         assert_eq!(entry.text, "hello world");
@@ -553,8 +571,7 @@ mod tests {
             ..Default::default()
         };
 
-        let id = Id::from(1234u32);
-        db.insert(id, entry).await?;
+        let (id, _entry) = db.insert(entry).await?;
 
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
@@ -568,8 +585,7 @@ mod tests {
     async fn delete() -> Result<(), Box<dyn std::error::Error>> {
         let db = new_db()?;
 
-        let id = Id::from(1234u32);
-        db.insert(id, write::Entry::default()).await?;
+        let (id, _entry) = db.insert(write::Entry::default()).await?;
 
         assert!(db.get(id, None).await.is_ok());
         assert!(db.delete(id).await.is_ok());
@@ -587,14 +603,13 @@ mod tests {
             ..Default::default()
         };
 
-        let id = Id::from(1234u32);
-        db.insert(id, entry).await?;
+        let (id, _entry) = db.insert(entry).await?;
 
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
         let ids = db.purge()?;
         assert_eq!(ids.len(), 1);
-        assert_eq!(ids[0].to_i64(), 1234);
+        assert_eq!(ids[0], id);
 
         Ok(())
     }

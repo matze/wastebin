@@ -33,6 +33,12 @@ to earlier versions here:
 * arbitrary file uploads
 * mitigations for all kinds of DoS attack vectors
 
+> [!CAUTION]
+> Due to lack of authentication and further DoS mitigations, it is not advised
+> to run wastebin facing the internet _as is_. If you plan to do so, you are
+> strongly advised to rate limit inbound requests via iptables rules or a
+> properly configured reverse proxy of your choice.
+
 
 ## Installation
 

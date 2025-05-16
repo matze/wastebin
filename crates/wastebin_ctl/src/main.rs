@@ -89,19 +89,21 @@ impl From<ListEntry> for Entry {
 }
 
 #[allow(clippy::print_stdout)]
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
-    let db = Database::new(Open::Path(cli.database))?;
+    let (db, db_handler) = Database::new(Open::Path(cli.database))?;
+    tokio::task::spawn(db_handler);
 
     match &cli.commands {
         Commands::List => {
-            let mut table = Table::new(db.list()?.into_iter().map(Entry::from));
+            let mut table = Table::new(db.list().await?.into_iter().map(Entry::from));
             table.with(Style::psql()).with(Alignment::left());
 
             println!("{}", table);
         }
         Commands::Purge => {
-            let ids = db.purge()?;
+            let ids = db.purge().await?;
 
             if ids.is_empty() {
                 println!("no entries purged");

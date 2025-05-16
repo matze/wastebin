@@ -11,9 +11,11 @@
 
 ### Changed
 
-- Enclose Markdown links in anchor tags to make them clickable. Thansk for
+- Enclose Markdown links in anchor tags to make them clickable. Thanks for
   preliminary work done in #85 by @FliegendeWurst.
 - Improve performance by avoiding unnecessary memory allocations.
+- Improve throughput by 45% RPS by avoiding locks on the database. Thanks for
+  preliminary work done in #156 by @mokurin000.
 
 ### Fixed
 

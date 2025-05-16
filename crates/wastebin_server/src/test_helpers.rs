@@ -21,7 +21,7 @@ pub(crate) struct StoreCookies(pub bool);
 
 impl Client {
     pub(crate) async fn new(store_cookies: StoreCookies) -> Self {
-        let db = Database::new(db::Open::Memory).expect("open memory database");
+        let (db, handler) = Database::new(db::Open::Memory).expect("open memory database");
         let cache = Cache::new(NonZeroUsize::new(128).unwrap());
         let key = Key::generate();
         let expirations = "0".parse::<ExpirationSet>().unwrap();
@@ -44,6 +44,8 @@ impl Client {
             .expect("Could not bind ephemeral socket");
 
         let addr = listener.local_addr().unwrap();
+
+        tokio::spawn(handler);
 
         tokio::spawn(async move {
             crate::serve(listener, state, Duration::new(30, 0), 1024 * 1024)

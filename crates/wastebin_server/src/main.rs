@@ -8,6 +8,8 @@ use axum::middleware::{Next, from_fn, from_fn_with_state};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{Router, get, post};
 use axum_extra::extract::cookie::Key;
+use futures::future::TryFutureExt;
+use futures_concurrency::future::TryJoin;
 use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
     X_XSS_PROTECTION,
@@ -247,7 +249,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let title = env::title();
 
     let cache = Cache::new(cache_size);
-    let db = Database::new(method)?;
+    let (db, db_handler) = Database::new(method)?;
 
     tracing::debug!("serving on {addr}");
     tracing::debug!("caching {cache_size} paste highlights");
@@ -265,7 +267,10 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let listener = TcpListener::bind(&addr).await?;
-    serve(listener, state, timeout, max_body_size).await?;
+    let serve = serve(listener, state, timeout, max_body_size);
+    let db_handler = db_handler.map_err(Into::into);
+
+    (serve, db_handler).try_join().await?;
 
     Ok(())
 }

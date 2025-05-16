@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 async-compression = { version = "0.4", features = ["tokio", "zstd"] }
 chacha20poly1305 = "0.10.1"
-parking_lot = "0.12.1"
+kanal = "0.1.1"
 rand = "0.9"
 rusqlite = { version = "0.35", features = ["bundled"] }
 rusqlite_migration = { version = "2", default-features = false }

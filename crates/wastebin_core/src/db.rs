@@ -1,13 +1,12 @@
 use crate::crypto::{self, Password};
 use crate::id::Id;
-use parking_lot::Mutex;
-use read::ListEntry;
+use read::{DatabaseEntry, ListEntry};
 use rusqlite::{Connection, Transaction, params};
 use rusqlite_migration::{HookError, M, Migrations};
 use std::io::Cursor;
 use std::path::PathBuf;
-use std::sync::{Arc, LazyLock};
-use tokio::task::spawn_blocking;
+use std::sync::LazyLock;
+use tokio::sync::oneshot;
 
 static MIGRATIONS: LazyLock<Migrations> = LazyLock::new(|| {
     Migrations::new(vec![
@@ -66,12 +65,64 @@ pub enum Error {
     Join(#[from] tokio::task::JoinError),
     #[error("crypto error: {0}")]
     Crypto(#[from] crypto::Error),
+    #[error("failed to send command to channel")]
+    SendError,
+    #[error("failed to send result")]
+    ResultSendError,
+    #[error("failed to send result: {0}")]
+    ResultRecvError(#[from] oneshot::error::RecvError),
 }
 
-/// Our main database and integrated cache.
+/// The programmatic database interface. However, database calls are not translated directly to
+/// sqlite but moved forward to a [`Handler`] which reads database commands from a queue and
+/// processes them. This is done to avoid locking the underlying non-Send database per call which
+/// cuts down performance in half on certain systems.
 #[derive(Clone)]
 pub struct Database {
-    conn: Arc<Mutex<Connection>>,
+    /// Sender for database commands.
+    sender: kanal::AsyncSender<Command>,
+}
+
+/// Actual database handler that owns the connection to the underlying sqlite database.
+struct Handler {
+    conn: Connection,
+    /// Receiver for database commands.
+    receiver: kanal::Receiver<Command>,
+}
+
+/// Commands issued to the database handler and corresponding to [`Database`] calls.
+enum Command {
+    Insert {
+        id: Id,
+        entry: write::DatabaseEntry,
+        result: oneshot::Sender<Result<(), Error>>,
+    },
+    Get {
+        id: Id,
+        result: oneshot::Sender<Result<DatabaseEntry, Error>>,
+    },
+    GetTitle {
+        id: Id,
+        result: oneshot::Sender<Result<Option<String>, Error>>,
+    },
+    Delete {
+        id: Id,
+        result: oneshot::Sender<Result<(), Error>>,
+    },
+    DeleteFor {
+        id: Id,
+        uid: i64,
+        result: oneshot::Sender<Result<(), Error>>,
+    },
+    NextUid {
+        result: oneshot::Sender<Result<i64, Error>>,
+    },
+    List {
+        result: oneshot::Sender<Result<Vec<ListEntry>, Error>>,
+    },
+    Purge {
+        result: oneshot::Sender<Result<Vec<Id>, Error>>,
+    },
 }
 
 /// Database opening modes
@@ -177,7 +228,7 @@ pub mod read {
 
     /// A raw entry as read from the database.
     #[derive(Debug)]
-    pub(crate) struct DatabaseEntry {
+    pub struct DatabaseEntry {
         /// Compressed and potentially encrypted data
         pub data: Vec<u8>,
         /// Entry is expired
@@ -194,7 +245,7 @@ pub mod read {
 
     /// Potentially decrypted but still compressed entry
     #[derive(Debug)]
-    pub(crate) struct CompressedReadEntry {
+    pub struct CompressedReadEntry {
         /// Compressed data
         data: Vec<u8>,
         /// Entry must be deleted
@@ -207,7 +258,7 @@ pub mod read {
 
     /// Uncompressed entry
     #[derive(Debug)]
-    pub(crate) struct UmcompressedEntry {
+    pub struct UmcompressedEntry {
         /// Content
         pub text: String,
         /// Entry must be deleted
@@ -307,9 +358,9 @@ impl From<rusqlite::Error> for Error {
     }
 }
 
-impl Database {
+impl Handler {
     /// Create new database with the given `method`.
-    pub fn new(method: Open) -> Result<Self, Error> {
+    fn new(method: Open, receiver: kanal::Receiver<Command>) -> Result<Self, Error> {
         tracing::debug!("opening {method:?}");
 
         let mut conn = match method {
@@ -319,22 +370,70 @@ impl Database {
 
         MIGRATIONS.to_latest(&mut conn)?;
 
-        let conn = Arc::new(Mutex::new(conn));
-
-        Ok(Self { conn })
+        Ok(Self { conn, receiver })
     }
 
-    /// Insert `entry` under `id` into the database and optionally set owner to `uid`.
-    pub async fn insert(&self, id: Id, entry: write::Entry) -> Result<(), Error> {
-        let conn = self.conn.clone();
-        let write::DatabaseEntry { entry, data, nonce } = entry.compress().await?.encrypt().await?;
+    /// Run database command loop.
+    fn run(mut self) -> Result<(), Error> {
+        while let Ok(command) = self.receiver.recv() {
+            match command {
+                Command::Insert { id, entry, result } => {
+                    result
+                        .send(self.insert(id, entry))
+                        .map_err(|_| Error::ResultSendError)?;
+                }
+                Command::Get { id, result } => {
+                    result
+                        .send(self.get(id))
+                        .map_err(|_| Error::ResultSendError)?;
+                }
+                Command::GetTitle { id, result } => {
+                    result
+                        .send(self.get_title(id))
+                        .map_err(|_| Error::ResultSendError)?;
+                }
+                Command::Delete { id, result } => {
+                    result
+                        .send(self.delete(id))
+                        .map_err(|_| Error::ResultSendError)?;
+                }
+                Command::DeleteFor { id, uid, result } => {
+                    result
+                        .send(self.delete_for(id, uid))
+                        .map_err(|_| Error::ResultSendError)?;
+                }
+                Command::NextUid { result } => {
+                    result
+                        .send(self.next_uid())
+                        .map_err(|_| Error::ResultSendError)?;
+                }
+                Command::List { result } => {
+                    result
+                        .send(self.list())
+                        .map_err(|_| Error::ResultSendError)?;
+                }
+                Command::Purge { result } => {
+                    result
+                        .send(self.purge())
+                        .map_err(|_| Error::ResultSendError)?;
+                }
+            }
+        }
 
-        spawn_blocking(move || match entry.expires {
-            None => conn.lock().execute(
+        Ok(())
+    }
+
+    fn insert(
+        &self,
+        id: Id,
+        write::DatabaseEntry { entry, data, nonce }: write::DatabaseEntry,
+    ) -> Result<(), Error> {
+        match entry.expires {
+            None => self.conn.execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, title) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
                 params![id.to_i64(), entry.uid, data, entry.burn_after_reading, nonce, entry.title],
-            ),
-            Some(expires) => conn.lock().execute(
+            )?,
+            Some(expires) => self.conn.execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, expires, title) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now', ?6), ?7)",
                 params![
                     id.to_i64(),
@@ -345,19 +444,14 @@ impl Database {
                     format!("{expires} seconds"),
                     entry.title,
                 ],
-            ),
-        })
-        .await??;
+            )?,
+        };
 
         Ok(())
     }
 
-    /// Get entire entry for `id`.
-    pub async fn get(&self, id: Id, password: Option<Password>) -> Result<read::Entry, Error> {
-        let conn = self.conn.clone();
-
-        let entry = spawn_blocking(move || {
-            conn.lock().query_row(
+    fn get(&self, id: Id) -> Result<DatabaseEntry, Error> {
+        let entry = self.conn.query_row(
                 "SELECT data, burn_after_reading, uid, nonce, expires < datetime('now'), title FROM entries WHERE id=?1",
                 params![id.to_i64()],
                 |row| {
@@ -370,9 +464,122 @@ impl Database {
                         title: row.get::<_, Option<String>>(5)?,
                     })
                 },
-            )
-        })
-        .await??;
+            )?;
+
+        Ok(entry)
+    }
+
+    fn get_title(&self, id: Id) -> Result<Option<String>, Error> {
+        let title = self.conn.query_row(
+            "SELECT title FROM entries WHERE id=?1",
+            params![id.to_i64()],
+            |row| row.get(0),
+        )?;
+
+        Ok(title)
+    }
+
+    fn delete(&self, id: Id) -> Result<(), Error> {
+        self.conn
+            .execute("DELETE FROM entries WHERE id=?1", params![id.to_i64()])?;
+
+        Ok(())
+    }
+
+    fn delete_for(&mut self, id: Id, uid: i64) -> Result<(), Error> {
+        let exists: Option<i64> = {
+            let tx = self.conn.transaction()?;
+
+            let exists = tx.query_row(
+                "SELECT 1 FROM entries WHERE (id=?1 AND uid=?2)",
+                params![id.to_i64(), uid],
+                |row| Ok(row.get(0)),
+            )?;
+
+            tx.execute(
+                "DELETE FROM entries WHERE (id=?1 AND uid=?2)",
+                params![id.to_i64(), uid],
+            )?;
+
+            tx.commit()?;
+
+            exists
+        }?;
+
+        exists.map(|_| ()).ok_or(Error::Delete)
+    }
+
+    fn next_uid(&self) -> Result<i64, Error> {
+        let uid = self.conn.query_row(
+            "UPDATE uids SET n = n + 1 WHERE id = 0 RETURNING n",
+            [],
+            |row| row.get(0),
+        )?;
+
+        Ok(uid)
+    }
+
+    fn list(&self) -> Result<Vec<ListEntry>, Error> {
+        let entries = self
+            .conn
+            .prepare("SELECT id, title, nonce, expires < datetime('now') FROM entries")?
+            .query_map([], |row| {
+                Ok(ListEntry {
+                    id: Id::from(row.get::<_, i64>(0)?),
+                    title: row.get(1)?,
+                    is_encrypted: row.get::<_, Option<Vec<u8>>>(2)?.is_some(),
+                    is_expired: row.get::<_, Option<bool>>(3)?.unwrap_or_default(),
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+
+        Ok(entries)
+    }
+
+    fn purge(&self) -> Result<Vec<Id>, Error> {
+        let ids = self
+            .conn
+            .prepare("DELETE FROM entries WHERE expires < datetime('now') RETURNING id")?
+            .query_map([], |row| Ok(Id::from(row.get::<_, i64>(0)?)))?
+            .collect::<Result<_, _>>()?;
+
+        Ok(ids)
+    }
+}
+
+impl Database {
+    /// Create new database with the given `method` as well as a [`Handler`] future that makes the
+    /// actual calls.
+    pub fn new(method: Open) -> Result<(Self, impl Future<Output = Result<(), Error>>), Error> {
+        let (sender, receiver) = kanal::bounded(256);
+        let sender = sender.to_async();
+        let handler = Handler::new(method, receiver)?;
+        let fut = async move { tokio::task::spawn_blocking(|| handler.run()).await? };
+        Ok((Self { sender }, fut))
+    }
+
+    /// Insert `entry` under `id` into the database and optionally set owner to `uid`.
+    pub async fn insert(&self, id: Id, entry: write::Entry) -> Result<(), Error> {
+        let entry = entry.compress().await?.encrypt().await?;
+
+        let (result, command_result) = oneshot::channel();
+        self.sender
+            .send(Command::Insert { id, entry, result })
+            .await
+            .map_err(|_| Error::SendError)?;
+
+        command_result.await?
+    }
+
+    /// Get entire entry for `id`.
+    pub async fn get(&self, id: Id, password: Option<Password>) -> Result<read::Entry, Error> {
+        let (result, command_result) = oneshot::channel();
+        self.sender
+            .send(Command::Get { id, result })
+            .await
+            .map_err(|_| Error::SendError)?;
+
+        let entry = command_result.await??;
 
         if entry.expired {
             self.delete(id).await?;
@@ -397,106 +604,62 @@ impl Database {
 
     /// Get title of a paste.
     pub async fn get_title(&self, id: Id) -> Result<Option<String>, Error> {
-        let conn = self.conn.clone();
-
-        let title = spawn_blocking(move || {
-            conn.lock().query_row(
-                "SELECT title FROM entries WHERE id=?1",
-                params![id.to_i64()],
-                |row| row.get(0),
-            )
-        })
-        .await??;
-
-        Ok(title)
+        let (result, command_result) = oneshot::channel();
+        self.sender
+            .send(Command::GetTitle { id, result })
+            .await
+            .map_err(|_| Error::SendError)?;
+        command_result.await?
     }
 
     /// Delete paste with `id`.
     async fn delete(&self, id: Id) -> Result<(), Error> {
-        let conn = self.conn.clone();
-
-        spawn_blocking(move || {
-            conn.lock()
-                .execute("DELETE FROM entries WHERE id=?1", params![id.to_i64()])
-        })
-        .await??;
-
-        Ok(())
+        let (result, command_result) = oneshot::channel();
+        self.sender
+            .send(Command::Delete { id, result })
+            .await
+            .map_err(|_| Error::SendError)?;
+        command_result.await?
     }
 
     /// Delete paste with `id` for user `uid`.
     pub async fn delete_for(&self, id: Id, uid: i64) -> Result<(), Error> {
-        let conn = self.conn.clone();
-
-        let exists: Option<i64> = spawn_blocking(move || {
-            let mut conn = conn.lock();
-            let tx = conn.transaction()?;
-
-            let exists = tx.query_row(
-                "SELECT 1 FROM entries WHERE (id=?1 AND uid=?2)",
-                params![id.to_i64(), uid],
-                |row| Ok(row.get(0)),
-            )?;
-
-            tx.execute(
-                "DELETE FROM entries WHERE (id=?1 AND uid=?2)",
-                params![id.to_i64(), uid],
-            )?;
-
-            tx.commit()?;
-
-            exists
-        })
-        .await??;
-
-        exists.map(|_| ()).ok_or(Error::Delete)
+        let (result, command_result) = oneshot::channel();
+        self.sender
+            .send(Command::DeleteFor { id, uid, result })
+            .await
+            .map_err(|_| Error::SendError)?;
+        command_result.await?
     }
 
     /// Retrieve next monotonically increasing uid.
     pub async fn next_uid(&self) -> Result<i64, Error> {
-        let conn = self.conn.clone();
-
-        let uid = spawn_blocking(move || {
-            conn.lock().query_row(
-                "UPDATE uids SET n = n + 1 WHERE id = 0 RETURNING n",
-                [],
-                |row| row.get(0),
-            )
-        })
-        .await??;
-
-        Ok(uid)
+        let (result, command_result) = oneshot::channel();
+        self.sender
+            .send(Command::NextUid { result })
+            .await
+            .map_err(|_| Error::SendError)?;
+        command_result.await?
     }
 
     /// List all entries.
-    pub fn list(&self) -> Result<Vec<ListEntry>, Error> {
-        let entries = self
-            .conn
-            .lock()
-            .prepare("SELECT id, title, nonce, expires < datetime('now') FROM entries")?
-            .query_map([], |row| {
-                Ok(ListEntry {
-                    id: Id::from(row.get::<_, i64>(0)?),
-                    title: row.get(1)?,
-                    is_encrypted: row.get::<_, Option<Vec<u8>>>(2)?.is_some(),
-                    is_expired: row.get::<_, Option<bool>>(3)?.unwrap_or_default(),
-                })
-            })?
-            .collect::<Result<_, _>>()?;
-
-        Ok(entries)
+    pub async fn list(&self) -> Result<Vec<ListEntry>, Error> {
+        let (result, command_result) = oneshot::channel();
+        self.sender
+            .send(Command::List { result })
+            .await
+            .map_err(|_| Error::SendError)?;
+        command_result.await?
     }
 
     /// Purge all expired entries and return their [`Id`]s
-    pub fn purge(&self) -> Result<Vec<Id>, Error> {
-        let ids = self
-            .conn
-            .lock()
-            .prepare("DELETE FROM entries WHERE expires < datetime('now') RETURNING id")?
-            .query_map([], |row| Ok(Id::from(row.get::<_, i64>(0)?)))?
-            .collect::<Result<_, _>>()?;
-
-        Ok(ids)
+    pub async fn purge(&self) -> Result<Vec<Id>, Error> {
+        let (result, command_result) = oneshot::channel();
+        self.sender
+            .send(Command::Purge { result })
+            .await
+            .map_err(|_| Error::SendError)?;
+        command_result.await?
     }
 }
 
@@ -517,7 +680,9 @@ mod tests {
     }
 
     fn new_db() -> Result<Database, Box<dyn std::error::Error>> {
-        Ok(Database::new(Open::Memory)?)
+        let (db, handler) = Database::new(Open::Memory)?;
+        tokio::spawn(handler);
+        Ok(db)
     }
 
     #[tokio::test]
@@ -592,7 +757,7 @@ mod tests {
 
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-        let ids = db.purge()?;
+        let ids = db.purge().await?;
         assert_eq!(ids.len(), 1);
         assert_eq!(ids[0].to_i64(), 1234);
 

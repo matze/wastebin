@@ -1,15 +1,17 @@
-use crate::Database;
+use crate::AppState;
 use crate::errors::{Error, JsonErrorResponse};
 use crate::handlers::extract::Uid;
 use axum::extract::{Path, State};
 
+use super::common_delete;
+
 pub async fn delete(
     Path(id): Path<String>,
-    State(db): State<Database>,
+    State(appstate): State<AppState>,
     Uid(uid): Uid,
 ) -> Result<(), JsonErrorResponse> {
     let id = id.parse().map_err(Error::Id)?;
-    db.delete_for(id, uid).await.map_err(Error::Database)?;
+    common_delete(&appstate, id, uid).await?;
     Ok(())
 }
 

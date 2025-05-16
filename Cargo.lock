@@ -545,6 +545,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 
 [[package]]
+name = "clocksource"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "129026dd5a8a9592d96916258f3a5379589e513ea5e86aeb0bd2530286e44e9e"
+dependencies = [
+ "libc",
+ "time",
+ "winapi",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1524,6 +1535,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ratelimit"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36ea961700fd7260e7fa3701c8287d901b2172c51f9c1421fa0f21d7f7e184b7"
+dependencies = [
+ "clocksource",
+ "parking_lot",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2342,6 +2364,7 @@ dependencies = [
  "http",
  "mime",
  "qrcodegen",
+ "ratelimit",
  "reqwest",
  "serde",
  "sha2",

@@ -12,6 +12,7 @@ use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
     X_XSS_PROTECTION,
 };
+use ratelimit::Ratelimiter;
 use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Duration;
@@ -46,6 +47,8 @@ pub(crate) struct AppState {
     key: Key,
     page: Page,
     highlighter: Highlighter,
+    ratelimit_insert: Option<Arc<Ratelimiter>>,
+    ratelimit_delete: Option<Arc<Ratelimiter>>,
 }
 
 impl FromRef<AppState> for Key {
@@ -245,6 +248,8 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let expirations = env::expiration_set()?;
     let theme = env::theme()?;
     let title = env::title();
+    let ratelimit_insert = env::ratelimit_insert()?;
+    let ratelimit_delete = env::ratelimit_delete()?;
 
     let cache = Cache::new(cache_size);
     let db = Database::new(method)?;
@@ -253,15 +258,39 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
     tracing::debug!("enforcing a http timeout of {timeout:#?}");
+    tracing::debug!("ratelimiting insert amount to {ratelimit_insert:?} per minute");
+    tracing::debug!("ratelimiting delete attempts to {ratelimit_delete:?} per minute");
 
     let page = Arc::new(page::Page::new(title, base_url, theme, expirations));
     let highlighter = Arc::new(highlight::Highlighter::default());
+    let ratelimit_insert = ratelimit_insert.map(|rli| {
+        let value = rli.get().into();
+        Arc::new(
+            Ratelimiter::builder(value, Duration::from_secs(60))
+                .max_tokens(value)
+                .initial_available(value)
+                .build()
+                .expect("valid rate limiter values"),
+        )
+    });
+    let ratelimit_delete = ratelimit_delete.map(|rld| {
+        let value = rld.get().into();
+        Arc::new(
+            Ratelimiter::builder(value, Duration::from_secs(60))
+                .max_tokens(value)
+                .initial_available(value)
+                .build()
+                .expect("valid rate limiter values"),
+        )
+    });
     let state = AppState {
         db,
         cache,
         key,
         page,
         highlighter,
+        ratelimit_insert,
+        ratelimit_delete,
     };
 
     let listener = TcpListener::bind(&addr).await?;

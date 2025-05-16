@@ -26,6 +26,8 @@ pub(crate) enum Error {
     Id(#[from] id::Error),
     #[error("malformed form data")]
     MalformedForm,
+    #[error("rate-limit hit")]
+    RateLimit,
 }
 
 #[derive(Serialize)]
@@ -41,10 +43,10 @@ impl From<Error> for StatusCode {
         match err {
             Error::Database(db::Error::NoPassword) => StatusCode::BAD_REQUEST,
             Error::Database(db::Error::NotFound) => StatusCode::NOT_FOUND,
-            Error::Database(db::Error::Delete)
-            | Error::Database(db::Error::Crypto(crypto::Error::ChaCha20Poly1305Decrypt)) => {
-                StatusCode::FORBIDDEN
-            }
+            Error::Database(
+                db::Error::Delete | db::Error::Crypto(crypto::Error::ChaCha20Poly1305Decrypt),
+            )
+            | Error::RateLimit => StatusCode::FORBIDDEN,
             Error::Id(_) | Error::UrlParsing(_) => StatusCode::BAD_REQUEST,
             Error::MalformedForm => StatusCode::UNPROCESSABLE_ENTITY,
             Error::Join(_)

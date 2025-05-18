@@ -10,6 +10,7 @@ pub(crate) struct Assets {
     pub base_js: Asset,
     pub index_js: Asset,
     pub paste_js: Asset,
+    pub burn_js: Asset,
 }
 
 pub(crate) struct Page {
@@ -61,6 +62,11 @@ impl Assets {
                 "paste",
                 Kind::Js,
                 include_bytes!("javascript/paste.js").to_vec(),
+            ),
+            burn_js: Asset::new_hashed(
+                "burn",
+                Kind::Js,
+                include_bytes!("javascript/burn.js").to_vec(),
             ),
         }
     }

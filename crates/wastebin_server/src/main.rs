@@ -187,6 +187,10 @@ async fn paste_js(State(page): State<Page>) -> impl IntoResponse {
     page.assets.paste_js.clone()
 }
 
+async fn burn_js(State(page): State<Page>) -> impl IntoResponse {
+    page.assets.burn_js.clone()
+}
+
 async fn serve(
     listener: TcpListener,
     state: AppState,
@@ -201,6 +205,7 @@ async fn serve(
         .route(state.page.assets.base_js.route(), get(base_js))
         .route(state.page.assets.index_js.route(), get(index_js))
         .route(state.page.assets.paste_js.route(), get(paste_js))
+        .route(state.page.assets.burn_js.route(), get(burn_js))
         .route("/", get(html::index::get).post(insert::api::post))
         .route("/robots.txt", get(robots::get))
         .route("/theme", get(theme::get))

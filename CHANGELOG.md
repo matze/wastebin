@@ -7,15 +7,16 @@
 - `wastebin-ctl` command line tool to list all existing entries and purge
   expired ones.
 - `/robots.txt` disallowing any crawling.
-- Button animations.
+- Subtle button animations.
+- Toast message when a burned paste is read.
 
 ### Changed
 
 - Enclose Markdown links in anchor tags to make them clickable. Thanks for
   preliminary work done in #85 by @FliegendeWurst.
 - Improve performance by avoiding unnecessary memory allocations.
-- Improve throughput by 45% RPS by avoiding locks on the database. Thanks for
-  preliminary work done in #156 by @mokurin000.
+- Improve throughput by avoiding locks on the database. Thanks for preliminary
+  work done in #156 by @mokurin000.
 - Improve mobile layout.
 
 ### Fixed

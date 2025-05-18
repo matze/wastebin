@@ -5,6 +5,19 @@ function $(id) {
 document.addEventListener('keydown', onKey);
 $("copy-button").addEventListener("click", copy);
 
+function showToast(text, timeout) {
+  let toast = $("toast");
+
+  toast.innerText = text;
+  toast.classList.toggle("hidden");
+  toast.classList.toggle("shown");
+
+  setTimeout(() => {
+    toast.classList.toggle("hidden");
+    toast.classList.toggle("shown");
+  }, timeout);
+}
+
 function copy() {
   const lines = document.querySelectorAll('td.line');
   const content = Array.from(lines)
@@ -14,15 +27,7 @@ function copy() {
 
   navigator.clipboard.writeText(content)
     .then(() => {
-        let toast = $("toast");
-
-        toast.classList.toggle("hidden");
-        toast.classList.toggle("shown");
-
-        setTimeout(() => {
-          toast.classList.toggle("hidden");
-          toast.classList.toggle("shown");
-        }, 1500);
+      showToast("Copied content", 1500);
     }, function(err) {
       console.error("failed to copy content", err);
     });

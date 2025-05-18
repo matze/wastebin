@@ -4,16 +4,6 @@
   --main-line-number-color: #abb0b6;
 }
 
-@media screen and (max-width: 720px) {
-  main {
-    padding: 0 !important;
-  }
-
-  header {
-    padding: 0 !important;
-  }
-}
-
 html {
   font-size: 16px;
 }
@@ -311,4 +301,32 @@ td.line-number {
 
 .shown {
   display: block;
+}
+
+@media screen and (max-width: 720px) {
+  main {
+    padding: 0.5em !important;
+  }
+
+  header {
+    padding: 0 !important;
+  }
+
+  .container {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .controls {
+    width: 100%;
+  }
+
+  .controls-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .controls-row {
+    width: 100%;
+  }
 }

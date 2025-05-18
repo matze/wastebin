@@ -16,6 +16,7 @@
 - Improve performance by avoiding unnecessary memory allocations.
 - Improve throughput by 45% RPS by avoiding locks on the database. Thanks for
   preliminary work done in #156 by @mokurin000.
+- Improve mobile layout.
 
 ### Fixed
 

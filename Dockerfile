@@ -32,5 +32,6 @@ COPY --from=builder /etc/group /etc/group
 
 WORKDIR /app
 COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/wastebin ./
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/wastebin-ctl ./
 USER app:app
 CMD ["/app/wastebin"]

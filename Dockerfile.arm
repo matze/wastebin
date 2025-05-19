@@ -1,4 +1,5 @@
 # --- build image
+
 FROM rust:1.87 AS builder
 
 RUN rustup target add aarch64-unknown-linux-musl && \
@@ -22,6 +23,9 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
     cargo build --release && mv /app/target/release/wastebin /app
 
+
+# --- final image
+
 FROM scratch
 
 COPY --from=builder /lib/aarch64-linux-gnu/libgcc_s.so.1 /lib/aarch64-linux-gnu/libgcc_s.so.1
@@ -33,5 +37,6 @@ COPY --from=builder /etc/group /etc/group
 
 WORKDIR /app
 COPY --from=builder /app/wastebin .
+COPY --from=builder /app/wastebin-ctl .
 USER app:app
 CMD ["/app/wastebin"]

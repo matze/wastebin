@@ -59,7 +59,7 @@ jobs:
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ matrix.target }}.tar.gz
+          files: wastebin_${{ github.event.release.tag_name }}_${{ matrix.target }}.tar.gz
           # see https://stackoverflow.com/a/69919067
           tag_name: ${{ github.event.release.tag_name }}
           prerelease: false

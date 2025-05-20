@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 3.1.0
+
+**2025-05-20**
+
 ### Added
 
 - `wastebin-ctl` command line tool to list all existing entries and purge
@@ -9,6 +14,10 @@
 - `/robots.txt` disallowing any crawling.
 - Subtle button animations.
 - Toast message when a burned paste is read.
+- `x86_64-apple-darwin` `aarch64-apple-darwin` `aarch64-unknown-linux-musl`
+  `riscv64gc-unknown-linux-gnu` `x86_64-pc-windows-msvc`
+  `aarch64-pc-windows-msvc` release binaries in addition to the existing
+  `x86_64-unknown-linux-musl` ones.
 
 ### Changed
 

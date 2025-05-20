@@ -1,5 +1,6 @@
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::{Shell, generate};
 use std::path::PathBuf;
 use tabled::derive::display;
 use tabled::settings::{Alignment, Style};
@@ -12,20 +13,26 @@ use wastebin_core::id::Id;
 #[derive(Parser)]
 #[command(version, about)]
 struct Cli {
-    /// Path to the database file
-    #[arg(long, env = vars::DATABASE_PATH)]
-    database: PathBuf,
-
     #[command(subcommand)]
     commands: Commands,
 }
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Generate shell completion.
+    Completion { shell: Shell },
     /// List and filter database entries
-    List,
+    List {
+        /// Path to the database file
+        #[arg(long, env = vars::DATABASE_PATH)]
+        database: PathBuf,
+    },
     /// Purge all expired entries and show their identifiers
-    Purge,
+    Purge {
+        /// Path to the database file
+        #[arg(long, env = vars::DATABASE_PATH)]
+        database: PathBuf,
+    },
 }
 
 enum Encrypted {
@@ -92,17 +99,32 @@ impl From<ListEntry> for Entry {
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
-    let (db, db_handler) = Database::new(Open::Path(cli.database))?;
-    tokio::task::spawn(db_handler);
 
-    match &cli.commands {
-        Commands::List => {
+    match cli.commands {
+        Commands::Completion { shell } => {
+            let mut cmd = Cli::command();
+            let cmd = &mut cmd;
+
+            generate(
+                shell,
+                cmd,
+                cmd.get_name().to_string(),
+                &mut std::io::stdout(),
+            );
+        }
+        Commands::List { database } => {
+            let (db, db_handler) = Database::new(Open::Path(database))?;
+            tokio::task::spawn(db_handler);
+
             let mut table = Table::new(db.list().await?.into_iter().map(Entry::from));
             table.with(Style::psql()).with(Alignment::left());
 
             println!("{}", table);
         }
-        Commands::Purge => {
+        Commands::Purge { database } => {
+            let (db, db_handler) = Database::new(Open::Path(database))?;
+            tokio::task::spawn(db_handler);
+
             let ids = db.purge().await?;
 
             if ids.is_empty() {

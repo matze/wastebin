@@ -54,7 +54,7 @@ jobs:
         shell: bash
         run: |
           mv target/${{ matrix.target }}/release/wastebin{,-ctl}${{ matrix.suffix }} .
-          tar -cvzf ${{ matrix.target }}.tar.gz LICENSE README.md wastebin{,-ctl}${{ matrix.suffix }}
+          tar -cvzf wastebin_${{ github.event.release.tag_name }}_${{ matrix.target }}.tar.gz LICENSE README.md wastebin{,-ctl}${{ matrix.suffix }}
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2

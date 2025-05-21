@@ -1,7 +1,8 @@
 use crate::{expiration, highlight};
 use axum_extra::extract::cookie::Key;
 use std::env::VarError;
-use std::net::SocketAddr;
+use std::fmt::Display;
+use std::net::{Ipv4Addr, SocketAddr};
 use std::num::{NonZeroUsize, ParseIntError};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -33,6 +34,26 @@ pub(crate) enum Error {
     ParsePasteExpiration(#[from] expiration::Error),
     #[error("unknown theme {0}")]
     UnknownTheme(String),
+    #[error("binding to both TCP and Unix socket is not possible")]
+    BothListeners,
+}
+
+pub(crate) enum SocketType {
+    Tcp(SocketAddr),
+    Unix(PathBuf),
+}
+
+impl Display for SocketType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SocketType::Tcp(addr) => {
+                write!(f, "{addr}")
+            }
+            SocketType::Unix(path) => {
+                write!(f, "{path:?}")
+            }
+        }
+    }
 }
 
 pub fn title() -> String {
@@ -79,13 +100,22 @@ pub fn signing_key() -> Result<Key, Error> {
     )
 }
 
-pub fn addr() -> Result<SocketAddr, Error> {
-    std::env::var(vars::ADDRESS_PORT)
-        .as_ref()
-        .map(String::as_str)
-        .unwrap_or("0.0.0.0:8088")
-        .parse()
-        .map_err(|_| Error::AddressPort)
+pub fn socket_type() -> Result<SocketType, Error> {
+    match (
+        std::env::var(vars::ADDRESS_PORT),
+        std::env::var(vars::SOCKET_PATH),
+    ) {
+        (Ok(_), Ok(_)) => Err(Error::BothListeners),
+        (Ok(var), Err(_)) => {
+            let addr: SocketAddr = var.parse().map_err(|_| Error::AddressPort)?;
+            Ok(SocketType::Tcp(addr))
+        }
+        (Err(_), Ok(var)) => Ok(SocketType::Unix(var.into())),
+        (Err(_), Err(_)) => {
+            let addr = SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), 8088);
+            Ok(SocketType::Tcp(addr))
+        }
+    }
 }
 
 pub fn max_body_size() -> Result<usize, Error> {

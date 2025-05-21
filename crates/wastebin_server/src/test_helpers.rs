@@ -48,7 +48,10 @@ impl Client {
         tokio::spawn(handler);
 
         tokio::spawn(async move {
-            crate::serve(listener, state, Duration::new(30, 0), 1024 * 1024)
+            let app = crate::make_app(state, Duration::from_secs(30), 1024 * 1024);
+
+            axum::serve(listener, app)
+                .with_graceful_shutdown(crate::shutdown_signal())
                 .await
                 .unwrap();
         });

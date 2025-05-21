@@ -17,7 +17,7 @@ use http::header::{
 use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::net::TcpListener;
+use tokio::net::{TcpListener, UnixListener};
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
@@ -191,13 +191,8 @@ async fn burn_js(State(page): State<Page>) -> impl IntoResponse {
     page.assets.burn_js.clone()
 }
 
-async fn serve(
-    listener: TcpListener,
-    state: AppState,
-    timeout: Duration,
-    max_body_size: usize,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let app = Router::new()
+fn make_app(state: AppState, timeout: Duration, max_body_size: usize) -> Router {
+    Router::new()
         .route(state.page.assets.favicon.route(), get(favicon))
         .route(state.page.assets.css.style.route(), get(style_css))
         .route(state.page.assets.css.dark.route(), get(dark_css))
@@ -230,13 +225,7 @@ async fn serve(
                 .layer(from_fn_with_state(state.clone(), handle_service_errors))
                 .layer(from_fn(security_headers_layer)),
         )
-        .with_state(state);
-
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
-
-    Ok(())
+        .with_state(state)
 }
 
 async fn start() -> Result<(), Box<dyn std::error::Error>> {
@@ -245,7 +234,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let cache_size = env::cache_size()?;
     let method = env::database_method()?;
     let key = env::signing_key()?;
-    let addr = env::addr()?;
+    let socket_type = env::socket_type()?;
     let max_body_size = env::max_body_size()?;
     let base_url = env::base_url()?;
     let timeout = env::http_timeout()?;
@@ -256,7 +245,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let cache = Cache::new(cache_size);
     let (db, db_handler) = Database::new(method)?;
 
-    tracing::debug!("serving on {addr}");
+    tracing::debug!("serving on {socket_type}");
     tracing::debug!("caching {cache_size} paste highlights");
     tracing::debug!("restricting maximum body size to {max_body_size} bytes");
     tracing::debug!("enforcing a http timeout of {timeout:#?}");
@@ -271,10 +260,28 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
         highlighter,
     };
 
-    let listener = TcpListener::bind(&addr).await?;
-    let serve = serve(listener, state, timeout, max_body_size);
-    let db_handler = db_handler.map_err(Into::into);
+    let app = make_app(state, timeout, max_body_size);
 
+    let serve = async {
+        match socket_type {
+            env::SocketType::Tcp(addr) => {
+                let listener = TcpListener::bind(addr).await?;
+                axum::serve(listener, app)
+                    .with_graceful_shutdown(shutdown_signal())
+                    .await?;
+            }
+            env::SocketType::Unix(path) => {
+                let listener = UnixListener::bind(path)?;
+                axum::serve(listener, app)
+                    .with_graceful_shutdown(shutdown_signal())
+                    .await?;
+            }
+        }
+
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+
+    let db_handler = db_handler.map_err(Into::into);
     (serve, db_handler).try_join().await?;
 
     Ok(())

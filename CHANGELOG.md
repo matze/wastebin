@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- Support for binding to a Unix domain socket instead of a TCP address/port via
+  the `WASTEBIN_UNIX_SOCKET_PATH` environment variable.
+
 
 ## 3.1.0
 

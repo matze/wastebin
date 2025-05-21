@@ -22,6 +22,8 @@ pub mod vars {
     pub const THEME: &str = "WASTEBIN_THEME";
     /// Title.
     pub const TITLE: &str = "WASTEBIN_TITLE";
+    /// Unix socket path the server binds to.
+    pub const SOCKET_PATH: &str = "WASTEBIN_UNIX_SOCKET_PATH";
 }
 
 pub(crate) fn password_hash_salt() -> String {

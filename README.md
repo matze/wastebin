@@ -173,7 +173,13 @@ run-time behavior:
 | `WASTEBIN_SIGNING_KEY`            | Key to sign cookies. Must be at least 64 bytes long.          | Random key generated at startup, i.e. cookies will become invalid after restarts and paste creators will not be able to delete their pastes. |
 | `WASTEBIN_THEME`                  | Theme colors, one of `ayu`, `base16ocean`, `coldark`, `gruvbox`, `monokai`, `onehalf`, `solarized`. | `ayu` |
 | `WASTEBIN_TITLE`                  | HTML page title.                                              | `wastebin`            |
+| `WASTEBIN_UNIX_SOCKET_PATH`       | Path to a Unix socket to accept connections from.             |                       |
 | `RUST_LOG`                        | Log level. Besides the typical `trace`, `debug`, `info` etc. keys, you can also set the `tower_http` key to a log level to get additional request and response logs. |  |
+
+> [!NOTE]
+> `WASTEBIN_ADDRESS_PORT` and `WASTEBIN_UNIX_SOCKET_PATH` are mutually
+> exclusive, which means that setting both will lead to an error. Setting
+> neither will implicitly bind via TCP on `0.0.0.0:8088`.
 
 
 ### API endpoints

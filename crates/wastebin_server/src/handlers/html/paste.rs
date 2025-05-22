@@ -1,7 +1,6 @@
 use crate::cache::Key;
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
-use crate::highlight::Html;
 use crate::{Cache, Database, Highlighter, Page};
 use askama::Template;
 use askama_web::WebTemplate;
@@ -11,6 +10,7 @@ use serde::Deserialize;
 use wastebin_core::crypto::Password;
 use wastebin_core::db;
 use wastebin_core::db::read::Entry;
+use wastebin_core::expiration::Expiration;
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct PasswordForm {
@@ -27,6 +27,8 @@ pub(crate) struct Paste {
     can_delete: bool,
     /// If the paste still in the database and can be fetched with another request.
     is_available: bool,
+    /// Expiration in case it was set.
+    expiration: Option<Expiration>,
     html: String,
     title: Option<String>,
 }
@@ -63,17 +65,18 @@ pub async fn get<E>(
             Err(err) => return Err(err.into()),
         };
 
-        let can_be_deleted = uid
+        let can_delete = uid
             .zip(data.uid)
             .is_some_and(|(Uid(user_uid), owner_uid)| user_uid == owner_uid);
 
+        let expiration = data.expiration.clone();
         let title = data.title.clone();
 
         let html = if let Some(html) = cache.get(&key) {
             tracing::trace!(?key, "found cached item");
-
-            html
+            html.into_inner()
         } else {
+            // TODO: do not take Data as a whole to avoid cloning everything upfront
             let html = highlighter.highlight(data, key.ext.clone()).await?;
 
             if is_available && no_password {
@@ -81,47 +84,24 @@ pub async fn get<E>(
                 cache.put(key.clone(), html.clone());
             }
 
-            html
+            html.into_inner()
         };
 
-        Ok(Paste::new(
+        let paste = Paste {
+            page: page.clone(),
             key,
-            html,
-            theme.clone(),
-            can_be_deleted,
+            theme: theme.clone(),
+            can_delete,
             is_available,
+            expiration,
+            html,
             title,
-            page.clone(),
-        )
-        .into_response())
+        };
+
+        Ok(paste.into_response())
     }
     .await
     .map_err(|err| make_error(err, page, theme))
-}
-
-impl Paste {
-    /// Construct new paste view from cache `key` and paste `html`.
-    pub fn new(
-        key: Key,
-        html: Html,
-        theme: Option<Theme>,
-        can_delete: bool,
-        is_available: bool,
-        title: Option<String>,
-        page: Page,
-    ) -> Self {
-        let html = html.into_inner();
-
-        Self {
-            page,
-            key,
-            theme,
-            can_delete,
-            is_available,
-            html,
-            title,
-        }
-    }
 }
 
 #[cfg(test)]

@@ -15,7 +15,7 @@ pub enum Error {
 }
 
 /// Single expiration value that can be the default in a set of values.
-#[derive(Ord, Eq, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Ord, Eq, PartialEq, PartialOrd)]
 pub struct Expiration {
     pub duration: Duration,
     pub default: bool,

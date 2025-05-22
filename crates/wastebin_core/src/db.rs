@@ -1,4 +1,5 @@
 use crate::crypto::{self, Password};
+use crate::expiration::Expiration;
 use crate::id::Id;
 use read::{DatabaseEntry, ListEntry};
 use rusqlite::{Connection, Transaction, params};
@@ -6,6 +7,7 @@ use rusqlite_migration::{HookError, M, Migrations};
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::LazyLock;
+use std::time::Duration;
 use tokio::sync::oneshot;
 
 static MIGRATIONS: LazyLock<Migrations> = LazyLock::new(|| {
@@ -221,6 +223,7 @@ pub mod write {
 pub mod read {
     use crate::crypto::{Encrypted, Password};
     use crate::db::Error;
+    use crate::expiration::Expiration;
     use crate::id::Id;
     use async_compression::tokio::bufread::ZstdDecoder;
     use std::io::Cursor;
@@ -233,6 +236,8 @@ pub mod read {
         pub data: Vec<u8>,
         /// Entry is expired
         pub expired: bool,
+        /// Entry expiration datetime
+        pub expiration: Option<Expiration>,
         /// Entry must be deleted
         pub must_be_deleted: bool,
         /// User identifier that inserted the entry
@@ -278,6 +283,8 @@ pub mod read {
         pub uid: Option<i64>,
         /// Title
         pub title: Option<String>,
+        /// Entry expiration datetime
+        pub expiration: Option<Expiration>,
     }
 
     /// Potentially deleted or non-existent expired entry.
@@ -452,16 +459,20 @@ impl Handler {
 
     fn get(&self, id: Id) -> Result<DatabaseEntry, Error> {
         let entry = self.conn.query_row(
-                "SELECT data, burn_after_reading, uid, nonce, expires < datetime('now'), title FROM entries WHERE id=?1",
+                "SELECT data, burn_after_reading, uid, nonce, expires < datetime('now'), CAST(ROUND((julianday(expires) - julianday('now')) * 86400) AS INTEGER), title FROM entries WHERE id=?1",
                 params![id.to_i64()],
                 |row| {
+                    let expiration = row.get::<_, Option<u64>>(5)?
+                        .map(|secs| Expiration { duration: Duration::from_secs(secs), default: false });
+
                     Ok(read::DatabaseEntry {
                         data: row.get(0)?,
                         must_be_deleted: row.get::<_, Option<bool>>(1)?.unwrap_or(false),
                         uid: row.get(2)?,
                         nonce: row.get(3)?,
                         expired: row.get::<_, Option<bool>>(4)?.unwrap_or(false),
-                        title: row.get::<_, Option<String>>(5)?,
+                        expiration,
+                        title: row.get::<_, Option<String>>(6)?,
                     })
                 },
             )?;
@@ -586,12 +597,14 @@ impl Database {
             return Err(Error::NotFound);
         }
 
+        let expiration = entry.expiration.clone();
         let entry = entry.decrypt(password).await?.decompress().await?;
 
         let data = read::Data {
             text: entry.text,
             title: entry.title,
             uid: entry.uid,
+            expiration,
         };
 
         if entry.must_be_deleted {

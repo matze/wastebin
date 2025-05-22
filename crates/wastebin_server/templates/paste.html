@@ -4,6 +4,9 @@
   {% if let Some(title) = title %}
     <div class="nav-title">{{ title }}</div>
   {% endif %}
+  {% if let Some(expiration) = expiration %}
+    <div class="nav-title nav-title-expiration">expires in {{ expiration }}</div>
+  {% endif %}
 {% endblock %}
 
 {% block title_content %}{% if let Some(title) = title %}: {{ title }}{% endif %}{% endblock %}

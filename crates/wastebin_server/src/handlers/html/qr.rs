@@ -8,6 +8,7 @@ use axum::extract::{Path, State};
 use qrcodegen::QrCode;
 use url::Url;
 use wastebin_core::db::Database;
+use wastebin_core::expiration::Expiration;
 
 /// GET handler for a QR page.
 pub async fn get(
@@ -29,7 +30,7 @@ pub async fn get(
 
         let title = db.get_title(key.id).await?;
 
-        // TODO: fix the bogus hardcoded can_delete and is_deleted fields.
+        // TODO: fix the bogus hardcoded can_delete, is_deleted and expiration fields.
         Ok(Qr {
             page: page.clone(),
             theme: theme.clone(),
@@ -38,6 +39,7 @@ pub async fn get(
             is_available: false,
             code,
             title,
+            expiration: None,
         })
     }
     .await
@@ -55,6 +57,7 @@ pub(crate) struct Qr {
     is_available: bool,
     code: qrcodegen::QrCode,
     title: Option<String>,
+    expiration: Option<Expiration>,
 }
 
 impl Qr {

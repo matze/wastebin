@@ -74,6 +74,14 @@ header .nav-title {
   color: var(--main-fg-color);
 }
 
+header .nav-title + .nav-title {
+  margin-left: .75em;
+}
+
+header .nav-title-expiration {
+  color: color-mix(in srgb, var(--main-fg-color) 50%, transparent);
+}
+
 header .nav-button {
   display: flex;
   color: var(--main-accent-color);

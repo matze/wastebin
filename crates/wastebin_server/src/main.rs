@@ -28,7 +28,6 @@ mod assets;
 mod cache;
 mod env;
 mod errors;
-mod expiration;
 mod handlers;
 mod highlight;
 mod page;

@@ -1,7 +1,7 @@
 use crate::assets::{Asset, Css, Kind};
-use crate::expiration::{Expiration, ExpirationSet};
 use crate::highlight::Theme;
 use url::Url;
+use wastebin_core::expiration::{Expiration, ExpirationSet};
 
 /// Static page assets.
 pub(crate) struct Assets {

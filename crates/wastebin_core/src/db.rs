@@ -462,8 +462,9 @@ impl Handler {
                 "SELECT data, burn_after_reading, uid, nonce, expires < datetime('now'), CAST(ROUND((julianday(expires) - julianday('now')) * 86400) AS INTEGER), title FROM entries WHERE id=?1",
                 params![id.to_i64()],
                 |row| {
-                    let expiration = row.get::<_, Option<u64>>(5)?
-                        .map(|secs| Expiration { duration: Duration::from_secs(secs), default: false });
+                    let expiration = row.get::<_, Option<i64>>(5)?
+                        .filter(|secs| *secs < 0)
+                        .map(|secs| Expiration { duration: Duration::from_secs(secs as u64), default: false });
 
                     Ok(read::DatabaseEntry {
                         data: row.get(0)?,
@@ -737,6 +738,7 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
         let result = db.get(id, None).await;
+        println!("{result:?}");
         assert!(matches!(result, Err(Error::NotFound)));
 
         Ok(())

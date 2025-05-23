@@ -103,9 +103,9 @@ enum Command {
         id: Id,
         result: oneshot::Sender<Result<DatabaseEntry, Error>>,
     },
-    GetTitle {
+    GetMetadata {
         id: Id,
-        result: oneshot::Sender<Result<Option<String>, Error>>,
+        result: oneshot::Sender<Result<Metadata, Error>>,
     },
     Delete {
         id: Id,
@@ -390,9 +390,9 @@ impl Handler {
                         .send(self.get(id))
                         .map_err(|_| Error::ResultSendError)?;
                 }
-                Command::GetTitle { id, result } => {
+                Command::GetMetadata { id, result } => {
                     result
-                        .send(self.get_title(id))
+                        .send(self.get_metadata(id))
                         .map_err(|_| Error::ResultSendError)?;
                 }
                 Command::Delete { id, result } => {
@@ -491,16 +491,6 @@ impl Handler {
         )?;
 
         Ok(entry)
-    }
-
-    fn get_title(&self, id: Id) -> Result<Option<String>, Error> {
-        let title = self.conn.query_row(
-            "SELECT title FROM entries WHERE id=?1",
-            params![id.to_i64()],
-            |row| row.get(0),
-        )?;
-
-        Ok(title)
     }
 
     fn delete(&self, id: Id) -> Result<(), Error> {
@@ -626,11 +616,11 @@ impl Database {
         Ok(read::Entry::Regular(data))
     }
 
-    /// Get title of a paste.
-    pub async fn get_title(&self, id: Id) -> Result<Option<String>, Error> {
+    /// Get metadata of a paste.
+    pub async fn get_metadata(&self, id: Id) -> Result<Metadata, Error> {
         let (result, command_result) = oneshot::channel();
         self.sender
-            .send(Command::GetTitle { id, result })
+            .send(Command::GetMetadata { id, result })
             .await
             .map_err(|_| Error::SendError)?;
         command_result.await?

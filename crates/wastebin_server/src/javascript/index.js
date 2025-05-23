@@ -64,6 +64,11 @@ function filterLangs(ev) {
   const term = $("filter").value.toLowerCase();
 
   for (option of langs) {
+    // always display 'reset' option
+    if (option.value === "") {
+      option.style.display = "";
+      continue;
+    }
     if (option.innerText.toLowerCase().includes(term)) {
       option.style.display = "";
     }

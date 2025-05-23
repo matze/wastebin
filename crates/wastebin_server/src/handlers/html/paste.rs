@@ -9,7 +9,7 @@ use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 use wastebin_core::crypto::Password;
 use wastebin_core::db;
-use wastebin_core::db::read::Entry;
+use wastebin_core::db::read::{Data, Entry};
 use wastebin_core::expiration::Expiration;
 
 #[derive(Deserialize, Debug)]
@@ -65,19 +65,22 @@ pub async fn get<E>(
             Err(err) => return Err(err.into()),
         };
 
-        let can_delete = uid
-            .zip(data.uid)
-            .is_some_and(|(Uid(user_uid), owner_uid)| user_uid == owner_uid);
+        let Data {
+            text,
+            uid: owner_uid,
+            title,
+            expiration,
+        } = data;
 
-        let expiration = data.expiration.clone();
-        let title = data.title.clone();
+        let can_delete = uid
+            .zip(owner_uid)
+            .is_some_and(|(Uid(user_uid), owner_uid)| user_uid == owner_uid);
 
         let html = if let Some(html) = cache.get(&key) {
             tracing::trace!(?key, "found cached item");
             html.into_inner()
         } else {
-            // TODO: do not take Data as a whole to avoid cloning everything upfront
-            let html = highlighter.highlight(data, key.ext.clone()).await?;
+            let html = highlighter.highlight(text, key.ext.clone()).await?;
 
             if is_available && no_password {
                 tracing::trace!(?key, "cache item");

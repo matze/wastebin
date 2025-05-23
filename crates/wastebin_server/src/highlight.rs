@@ -7,7 +7,6 @@ use syntect::parsing::{
     SyntaxSet,
 };
 use syntect::util::LinesWithEndings;
-use wastebin_core::db::read::Data;
 
 const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
 
@@ -231,14 +230,12 @@ impl Highlighter {
     }
 
     /// Highlight `data` with the given file extension.
-    pub async fn highlight(&self, data: Data, ext: Option<String>) -> Result<Html, Error> {
+    pub async fn highlight(&self, text: String, ext: Option<String>) -> Result<Html, Error> {
         let highlighter = self.clone();
 
         Ok(Html(
-            tokio::task::spawn_blocking(move || {
-                highlighter.highlight_inner(&data.text, ext.as_deref())
-            })
-            .await??,
+            tokio::task::spawn_blocking(move || highlighter.highlight_inner(&text, ext.as_deref()))
+                .await??,
         ))
     }
 }

@@ -8,6 +8,10 @@
   the `WASTEBIN_UNIX_SOCKET_PATH` environment variable.
 - Display set expiration in the title.
 
+### Fixed
+
+- Missing separators between expiration parts.
+
 
 ## 3.1.0
 

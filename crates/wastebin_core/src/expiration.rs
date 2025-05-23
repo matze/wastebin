@@ -68,65 +68,67 @@ impl Display for Expiration {
             return write!(f, "never");
         }
 
+        let mut parts = Vec::new();
+
         if let Some((years, rem)) = div(secs, 60 * 60 * 24 * 7 * 4 * 12) {
             if years > 1 {
-                write!(f, "{years} years")?;
+                parts.push(format!("{years} years"));
             } else {
-                write!(f, "{years} year")?;
+                parts.push(String::from("1 year"));
             }
             secs = rem;
         }
 
         if let Some((months, rem)) = div(secs, 60 * 60 * 24 * 7 * 4) {
             if months > 1 {
-                write!(f, "{months} months")?;
+                parts.push(format!("{months} months"));
             } else {
-                write!(f, "{months} month")?;
+                parts.push(String::from("1 month"));
             }
             secs = rem;
         }
 
         if let Some((weeks, rem)) = div(secs, 60 * 60 * 24 * 7) {
             if weeks > 1 {
-                write!(f, "{weeks} weeks")?;
+                parts.push(format!("{weeks} weeks"));
             } else {
-                write!(f, "{weeks} week")?;
+                parts.push(String::from("1 week"));
             }
             secs = rem;
         }
 
         if let Some((days, rem)) = div(secs, 60 * 60 * 24) {
             if days > 1 {
-                write!(f, "{days} days")?;
+                parts.push(format!("{days} days"));
             } else {
-                write!(f, "{days} day")?;
+                parts.push(String::from("1 day"));
             }
             secs = rem;
         }
 
         if let Some((hours, rem)) = div(secs, 60 * 60) {
             if hours > 1 {
-                write!(f, "{hours} hours")?;
+                parts.push(format!("{hours} hours"));
             } else {
-                write!(f, "{hours} hour")?;
+                parts.push(String::from("1 hour"));
             }
             secs = rem;
         }
 
         if let Some((minutes, rem)) = div(secs, 60) {
             if minutes > 1 {
-                write!(f, "{minutes} minutes")?;
+                parts.push(format!("{minutes} minutes"));
             } else {
-                write!(f, "{minutes} minute")?;
+                parts.push(String::from("1 minute"));
             }
             secs = rem;
         }
 
         if secs > 0 {
-            write!(f, "{secs} seconds")?;
+            parts.push(format!("{secs} seconds"));
         }
 
-        Ok(())
+        f.write_str(&parts.join(" "))
     }
 }
 

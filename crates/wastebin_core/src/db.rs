@@ -459,7 +459,7 @@ impl Handler {
             params![id.to_i64()],
             |row| {
                 let expiration = row.get::<_, Option<i64>>(2)?
-                    .filter(|secs| *secs < 0)
+                    .filter(|secs| *secs > 0)
                     .and_then(|secs| u64::try_from(secs).ok())
                     .map(|secs| Expiration { duration: Duration::from_secs(secs), default: false });
 

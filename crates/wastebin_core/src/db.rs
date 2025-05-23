@@ -464,7 +464,8 @@ impl Handler {
                 |row| {
                     let expiration = row.get::<_, Option<i64>>(5)?
                         .filter(|secs| *secs < 0)
-                        .map(|secs| Expiration { duration: Duration::from_secs(secs as u64), default: false });
+                        .and_then(|secs| u64::try_from(secs).ok())
+                        .map(|secs| Expiration { duration: Duration::from_secs(secs), default: false });
 
                     Ok(read::DatabaseEntry {
                         data: row.get(0)?,

@@ -9,7 +9,7 @@ use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 use wastebin_core::crypto::Password;
 use wastebin_core::db;
-use wastebin_core::db::read::{Data, Entry};
+use wastebin_core::db::read::{Data, Entry, Metadata};
 use wastebin_core::expiration::Expiration;
 
 #[derive(Deserialize, Debug)]
@@ -65,12 +65,12 @@ pub async fn get<E>(
             Err(err) => return Err(err.into()),
         };
 
-        let Data {
-            text,
+        let Data { text, metadata } = data;
+        let Metadata {
             uid: owner_uid,
             title,
             expiration,
-        } = data;
+        } = metadata;
 
         let can_delete = uid
             .zip(owner_uid)

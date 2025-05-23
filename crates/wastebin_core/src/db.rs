@@ -1,7 +1,7 @@
 use crate::crypto::{self, Password};
 use crate::expiration::Expiration;
 use crate::id::Id;
-use read::{DatabaseEntry, ListEntry};
+use read::{DatabaseEntry, ListEntry, Metadata};
 use rusqlite::{Connection, Transaction, params};
 use rusqlite_migration::{HookError, M, Migrations};
 use std::io::Cursor;
@@ -234,18 +234,14 @@ pub mod read {
     pub struct DatabaseEntry {
         /// Compressed and potentially encrypted data
         pub data: Vec<u8>,
+        /// Metadata
+        pub metadata: Metadata,
         /// Entry is expired
         pub expired: bool,
-        /// Entry expiration datetime
-        pub expiration: Option<Expiration>,
         /// Entry must be deleted
         pub must_be_deleted: bool,
-        /// User identifier that inserted the entry
-        pub uid: Option<i64>,
         /// Nonce for this entry
         pub nonce: Option<Vec<u8>>,
-        /// Title
-        pub title: Option<String>,
     }
 
     /// Potentially decrypted but still compressed entry
@@ -253,12 +249,10 @@ pub mod read {
     pub struct CompressedReadEntry {
         /// Compressed data
         data: Vec<u8>,
+        /// Metadata
+        metadata: Metadata,
         /// Entry must be deleted
         must_be_deleted: bool,
-        /// User identifier that inserted the entry
-        uid: Option<i64>,
-        /// Title
-        title: Option<String>,
     }
 
     /// Uncompressed entry
@@ -266,12 +260,10 @@ pub mod read {
     pub struct UmcompressedEntry {
         /// Content
         pub text: String,
+        /// Metadata
+        pub metadata: Metadata,
         /// Entry must be deleted
         pub must_be_deleted: bool,
-        /// User identifier that inserted the entry
-        pub uid: Option<i64>,
-        /// Title
-        pub title: Option<String>,
     }
 
     /// Uncompressed, decrypted data read from the database.
@@ -279,6 +271,13 @@ pub mod read {
     pub struct Data {
         /// Content
         pub text: String,
+        /// Metadata
+        pub metadata: Metadata,
+    }
+
+    /// Paste metadata, i.e. anything but actual content.
+    #[derive(Debug)]
+    pub struct Metadata {
         /// User identifier that inserted the entry
         pub uid: Option<i64>,
         /// Title
@@ -318,18 +317,16 @@ pub mod read {
                 (Some(_), None) => Err(Error::NoPassword),
                 (None, None | Some(_)) => Ok(CompressedReadEntry {
                     data: self.data,
+                    metadata: self.metadata,
                     must_be_deleted: self.must_be_deleted,
-                    uid: self.uid,
-                    title: self.title,
                 }),
                 (Some(nonce), Some(password)) => {
                     let encrypted = Encrypted::new(self.data, nonce);
                     let decrypted = encrypted.decrypt(password).await?;
                     Ok(CompressedReadEntry {
                         data: decrypted,
+                        metadata: self.metadata,
                         must_be_deleted: self.must_be_deleted,
-                        uid: self.uid,
-                        title: self.title,
                     })
                 }
             }
@@ -348,9 +345,8 @@ pub mod read {
 
             Ok(UmcompressedEntry {
                 text,
-                uid: self.uid,
+                metadata: self.metadata,
                 must_be_deleted: self.must_be_deleted,
-                title: self.title,
             })
         }
     }
@@ -457,27 +453,42 @@ impl Handler {
         Ok(())
     }
 
-    fn get(&self, id: Id) -> Result<DatabaseEntry, Error> {
-        let entry = self.conn.query_row(
-                "SELECT data, burn_after_reading, uid, nonce, expires < datetime('now'), CAST(ROUND((julianday(expires) - julianday('now')) * 86400) AS INTEGER), title FROM entries WHERE id=?1",
-                params![id.to_i64()],
-                |row| {
-                    let expiration = row.get::<_, Option<i64>>(5)?
-                        .filter(|secs| *secs < 0)
-                        .and_then(|secs| u64::try_from(secs).ok())
-                        .map(|secs| Expiration { duration: Duration::from_secs(secs), default: false });
+    fn get_metadata(&self, id: Id) -> Result<Metadata, Error> {
+        let metadata = self.conn.query_row(
+            "SELECT uid, title, CAST(ROUND((julianday(expires) - julianday('now')) * 86400) AS INTEGER) FROM entries WHERE id=?1",
+            params![id.to_i64()],
+            |row| {
+                let expiration = row.get::<_, Option<i64>>(2)?
+                    .filter(|secs| *secs < 0)
+                    .and_then(|secs| u64::try_from(secs).ok())
+                    .map(|secs| Expiration { duration: Duration::from_secs(secs), default: false });
 
-                    Ok(read::DatabaseEntry {
-                        data: row.get(0)?,
-                        must_be_deleted: row.get::<_, Option<bool>>(1)?.unwrap_or(false),
-                        uid: row.get(2)?,
-                        nonce: row.get(3)?,
-                        expired: row.get::<_, Option<bool>>(4)?.unwrap_or(false),
-                        expiration,
-                        title: row.get::<_, Option<String>>(6)?,
-                    })
-                },
-            )?;
+                Ok(read::Metadata {
+                    uid: row.get(0)?,
+                    title: row.get::<_, Option<String>>(1)?,
+                    expiration,
+                })
+            }
+        )?;
+
+        Ok(metadata)
+    }
+
+    fn get(&self, id: Id) -> Result<DatabaseEntry, Error> {
+        let metadata = self.get_metadata(id)?;
+        let entry = self.conn.query_row(
+            "SELECT data, burn_after_reading, nonce, expires < datetime('now') FROM entries WHERE id=?1",
+            params![id.to_i64()],
+            |row| {
+                Ok(read::DatabaseEntry {
+                    data: row.get(0)?,
+                    metadata,
+                    must_be_deleted: row.get::<_, Option<bool>>(1)?.unwrap_or(false),
+                    nonce: row.get(2)?,
+                    expired: row.get::<_, Option<bool>>(3)?.unwrap_or(false),
+                })
+            },
+        )?;
 
         Ok(entry)
     }
@@ -599,17 +610,15 @@ impl Database {
             return Err(Error::NotFound);
         }
 
-        let expiration = entry.expiration.clone();
-        let entry = entry.decrypt(password).await?.decompress().await?;
+        let read::UmcompressedEntry {
+            text,
+            metadata,
+            must_be_deleted,
+        } = entry.decrypt(password).await?.decompress().await?;
 
-        let data = read::Data {
-            text: entry.text,
-            title: entry.title,
-            uid: entry.uid,
-            expiration,
-        };
+        let data = read::Data { text, metadata };
 
-        if entry.must_be_deleted {
+        if must_be_deleted {
             self.delete(id).await?;
             return Ok(read::Entry::Burned(data));
         }
@@ -715,8 +724,8 @@ mod tests {
 
         let entry = db.get(id, None).await?.unwrap_inner();
         assert_eq!(entry.text, "hello world");
-        assert!(entry.uid.is_some());
-        assert_eq!(entry.uid.unwrap(), 10);
+        assert!(entry.metadata.uid.is_some());
+        assert_eq!(entry.metadata.uid.unwrap(), 10);
 
         let result = db.get(Id::from(5678u32), None).await;
         assert!(result.is_err());

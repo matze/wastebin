@@ -51,6 +51,8 @@ struct Entry {
     #[tabled(display("display::option", ""))]
     title: Option<String>,
     encrypted: Encrypted,
+    #[tabled(display("display::option", ""))]
+    expiration: Option<String>,
     expired: Expired,
 }
 
@@ -90,6 +92,7 @@ impl From<ListEntry> for Entry {
             id: entry.id,
             title: entry.title,
             encrypted: entry.is_encrypted.into(),
+            expiration: entry.expiration,
             expired: entry.is_expired.into(),
         }
     }

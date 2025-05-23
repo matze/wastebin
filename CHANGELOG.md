@@ -7,6 +7,7 @@
 - Support for binding to a Unix domain socket instead of a TCP address/port via
   the `WASTEBIN_UNIX_SOCKET_PATH` environment variable.
 - Display set expiration in the title.
+- Display set expiration in `wastebin-ctl list`.
 
 ### Fixed
 

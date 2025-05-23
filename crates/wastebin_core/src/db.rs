@@ -304,6 +304,8 @@ pub mod read {
         pub title: Option<String>,
         /// If entry is encrypted
         pub is_encrypted: bool,
+        /// Expiration if set
+        pub expiration: Option<String>,
         /// If entry is expired
         pub is_expired: bool,
     }
@@ -536,13 +538,14 @@ impl Handler {
     fn list(&self) -> Result<Vec<ListEntry>, Error> {
         let entries = self
             .conn
-            .prepare("SELECT id, title, nonce, expires < datetime('now') FROM entries")?
+            .prepare("SELECT id, title, nonce, expires, expires < datetime('now') FROM entries")?
             .query_map([], |row| {
                 Ok(ListEntry {
                     id: Id::from(row.get::<_, i64>(0)?),
                     title: row.get(1)?,
                     is_encrypted: row.get::<_, Option<Vec<u8>>>(2)?.is_some(),
-                    is_expired: row.get::<_, Option<bool>>(3)?.unwrap_or_default(),
+                    expiration: row.get(3)?,
+                    is_expired: row.get::<_, Option<bool>>(4)?.unwrap_or_default(),
                 })
             })?
             .collect::<Result<_, _>>()?;

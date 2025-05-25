@@ -158,48 +158,40 @@ async fn shutdown_signal() {
     tracing::info!("received signal, exiting ...");
 }
 
-async fn favicon(State(page): State<Page>) -> impl IntoResponse {
-    page.assets.favicon.clone()
-}
-
-async fn style_css(State(page): State<Page>) -> impl IntoResponse {
-    page.assets.css.style.clone()
-}
-
-async fn dark_css(State(page): State<Page>) -> impl IntoResponse {
-    page.assets.css.dark.clone()
-}
-
-async fn light_css(State(page): State<Page>) -> impl IntoResponse {
-    page.assets.css.light.clone()
-}
-
-async fn base_js(State(page): State<Page>) -> impl IntoResponse {
-    page.assets.base_js.clone()
-}
-
-async fn index_js(State(page): State<Page>) -> impl IntoResponse {
-    page.assets.index_js.clone()
-}
-
-async fn paste_js(State(page): State<Page>) -> impl IntoResponse {
-    page.assets.paste_js.clone()
-}
-
-async fn burn_js(State(page): State<Page>) -> impl IntoResponse {
-    page.assets.burn_js.clone()
-}
-
 fn make_app(state: AppState, timeout: Duration, max_body_size: usize) -> Router {
     Router::new()
-        .route(state.page.assets.favicon.route(), get(favicon))
-        .route(state.page.assets.css.style.route(), get(style_css))
-        .route(state.page.assets.css.dark.route(), get(dark_css))
-        .route(state.page.assets.css.light.route(), get(light_css))
-        .route(state.page.assets.base_js.route(), get(base_js))
-        .route(state.page.assets.index_js.route(), get(index_js))
-        .route(state.page.assets.paste_js.route(), get(paste_js))
-        .route(state.page.assets.burn_js.route(), get(burn_js))
+        .route(
+            state.page.assets.favicon.route(),
+            get(async |State(page): State<Page>| page.assets.favicon.clone()),
+        )
+        .route(
+            state.page.assets.css.style.route(),
+            get(async |State(page): State<Page>| page.assets.css.style.clone()),
+        )
+        .route(
+            state.page.assets.css.dark.route(),
+            get(async |State(page): State<Page>| page.assets.css.dark.clone()),
+        )
+        .route(
+            state.page.assets.css.light.route(),
+            get(async |State(page): State<Page>| page.assets.css.light.clone()),
+        )
+        .route(
+            state.page.assets.base_js.route(),
+            get(async |State(page): State<Page>| page.assets.base_js.clone()),
+        )
+        .route(
+            state.page.assets.index_js.route(),
+            get(async |State(page): State<Page>| page.assets.index_js.clone()),
+        )
+        .route(
+            state.page.assets.paste_js.route(),
+            get(async |State(page): State<Page>| page.assets.paste_js.clone()),
+        )
+        .route(
+            state.page.assets.burn_js.route(),
+            get(async |State(page): State<Page>| page.assets.burn_js.clone()),
+        )
         .route("/", get(html::index::get).post(insert::api::post))
         .route("/robots.txt", get(robots::get))
         .route("/theme", get(theme::get))

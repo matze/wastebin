@@ -6,47 +6,8 @@ use rusqlite::{Connection, Transaction, params};
 use rusqlite_migration::{HookError, M, Migrations};
 use std::io::Cursor;
 use std::path::PathBuf;
-use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::sync::oneshot;
-
-static MIGRATIONS: LazyLock<Migrations> = LazyLock::new(|| {
-    Migrations::new(vec![
-        M::up(include_str!("migrations/0001-initial.sql")),
-        M::up(include_str!("migrations/0002-add-created-column.sql")),
-        M::up(include_str!(
-            "migrations/0003-drop-created-add-uid-column.sql"
-        )),
-        M::up_with_hook(
-            include_str!("migrations/0004-add-compressed-column.sql"),
-            |tx: &Transaction| {
-                let mut stmt = tx.prepare("SELECT id, text FROM entries")?;
-
-                let rows = stmt
-                    .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
-                    .collect::<Result<Vec<(u32, String)>, _>>()?;
-
-                tracing::debug!("compressing {} rows", rows.len());
-
-                for (id, text) in rows {
-                    let cursor = Cursor::new(text);
-                    let data = zstd::stream::encode_all(cursor, zstd::DEFAULT_COMPRESSION_LEVEL)
-                        .map_err(|e| HookError::Hook(e.to_string()))?;
-
-                    tx.execute(
-                        "UPDATE entries SET data = ?1 WHERE id = ?2",
-                        params![data, id],
-                    )?;
-                }
-
-                Ok(())
-            },
-        ),
-        M::up(include_str!("migrations/0005-drop-text-column.sql")),
-        M::up(include_str!("migrations/0006-add-nonce-column.sql")),
-        M::up(include_str!("migrations/0007-add-title-column.sql")),
-    ])
-});
 
 /// Database related errors.
 #[derive(thiserror::Error, Debug)]
@@ -373,7 +334,44 @@ impl Handler {
             Open::Path(path) => Connection::open(path)?,
         };
 
-        MIGRATIONS.to_latest(&mut conn)?;
+        let migrations = Migrations::new(vec![
+            M::up(include_str!("migrations/0001-initial.sql")),
+            M::up(include_str!("migrations/0002-add-created-column.sql")),
+            M::up(include_str!(
+                "migrations/0003-drop-created-add-uid-column.sql"
+            )),
+            M::up_with_hook(
+                include_str!("migrations/0004-add-compressed-column.sql"),
+                |tx: &Transaction| {
+                    let mut stmt = tx.prepare("SELECT id, text FROM entries")?;
+
+                    let rows = stmt
+                        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+                        .collect::<Result<Vec<(u32, String)>, _>>()?;
+
+                    tracing::debug!("compressing {} rows", rows.len());
+
+                    for (id, text) in rows {
+                        let cursor = Cursor::new(text);
+                        let data =
+                            zstd::stream::encode_all(cursor, zstd::DEFAULT_COMPRESSION_LEVEL)
+                                .map_err(|e| HookError::Hook(e.to_string()))?;
+
+                        tx.execute(
+                            "UPDATE entries SET data = ?1 WHERE id = ?2",
+                            params![data, id],
+                        )?;
+                    }
+
+                    Ok(())
+                },
+            ),
+            M::up(include_str!("migrations/0005-drop-text-column.sql")),
+            M::up(include_str!("migrations/0006-add-nonce-column.sql")),
+            M::up(include_str!("migrations/0007-add-title-column.sql")),
+        ]);
+
+        migrations.to_latest(&mut conn)?;
 
         Ok(Self { conn, receiver })
     }

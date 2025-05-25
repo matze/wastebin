@@ -503,26 +503,29 @@ impl Handler {
     }
 
     fn delete_for(&mut self, id: Id, uid: i64) -> Result<(), Error> {
-        let exists: Option<i64> = {
-            let tx = self.conn.transaction()?;
+        let tx = self.conn.transaction()?;
 
-            let exists = tx.query_row(
-                "SELECT 1 FROM entries WHERE (id=?1 AND uid=?2)",
-                params![id.to_i64(), uid],
-                |row| Ok(row.get(0)),
-            )?;
+        let exists = match tx.query_row(
+            "SELECT 1 FROM entries WHERE (id=?1 AND uid=?2)",
+            params![id.to_i64(), uid],
+            |row| row.get::<_, i64>(0),
+        ) {
+            Ok(_) => true,
+            Err(rusqlite::Error::QueryReturnedNoRows) => false,
+            Err(e) => return Err(Error::Sqlite(e)),
+        };
 
-            tx.execute(
-                "DELETE FROM entries WHERE (id=?1 AND uid=?2)",
-                params![id.to_i64(), uid],
-            )?;
+        if !exists {
+            return Err(Error::Delete);
+        }
 
-            tx.commit()?;
+        tx.execute(
+            "DELETE FROM entries WHERE (id=?1 AND uid=?2)",
+            params![id.to_i64(), uid],
+        )?;
 
-            exists
-        }?;
-
-        exists.map(|_| ()).ok_or(Error::Delete)
+        tx.commit()?;
+        Ok(())
     }
 
     fn next_uid(&self) -> Result<i64, Error> {
@@ -682,7 +685,7 @@ impl Database {
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZero;
+    use std::num::{NonZero, NonZeroU32};
 
     use super::*;
 
@@ -727,6 +730,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn next_uid() -> Result<(), Box<dyn std::error::Error>> {
+        let db = new_db()?;
+
+        let uid1 = db.next_uid().await?;
+        let uid2 = db.next_uid().await?;
+        let uid3 = db.next_uid().await?;
+
+        assert!(uid1 < uid2);
+        assert!(uid2 < uid3);
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn expired_does_not_exist() -> Result<(), Box<dyn std::error::Error>> {
         let db = new_db()?;
 
@@ -762,6 +779,40 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn delete_for() -> Result<(), Box<dyn std::error::Error>> {
+        let db = new_db()?;
+
+        let id = Id::from(1234u32);
+        let uid = 42;
+
+        let entry = write::Entry {
+            uid: Some(uid),
+            ..Default::default()
+        };
+        db.insert(id, entry).await?;
+
+        assert!(db.get(id, None).await.is_ok());
+        assert!(db.delete_for(id, uid).await.is_ok());
+        assert!(db.get(id, None).await.is_err());
+
+        let entry = write::Entry {
+            uid: Some(uid),
+            ..Default::default()
+        };
+        db.insert(id, entry).await?;
+
+        let incorrect_uid = 99;
+        assert!(matches!(
+            db.delete_for(id, incorrect_uid).await,
+            Err(Error::Delete)
+        ));
+
+        assert!(db.get(id, None).await.is_ok());
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn purge() -> Result<(), Box<dyn std::error::Error>> {
         let db = new_db()?;
 
@@ -778,6 +829,33 @@ mod tests {
         let ids = db.purge().await?;
         assert_eq!(ids.len(), 1);
         assert_eq!(ids[0].to_i64(), 1234);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn get_metadata() -> Result<(), Box<dyn std::error::Error>> {
+        let db = new_db()?;
+
+        let entry = write::Entry {
+            text: "test content".to_string(),
+            uid: Some(42),
+            title: Some("Test Title".to_string()),
+            expires: Some(NonZeroU32::new(3600).unwrap()),
+            ..Default::default()
+        };
+
+        let id = Id::from(5678u32);
+        db.insert(id, entry).await?;
+
+        let metadata = db.get_metadata(id).await?;
+        assert_eq!(metadata.uid, Some(42));
+        assert_eq!(metadata.title, Some("Test Title".to_string()));
+
+        let expiration = metadata.expiration.unwrap().duration.as_secs();
+        assert!(expiration <= 3600);
+        // We have a problem if the test takes more than 10 seconds.
+        assert!(expiration >= 3590);
 
         Ok(())
     }

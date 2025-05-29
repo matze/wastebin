@@ -139,6 +139,10 @@ select > option:hover {
   color: var(--main-bg-color);
 }
 
+select > option:checked {
+  background-color: var(--main-accent-color);
+}
+
 option {
   border-radius: 4px;
 }

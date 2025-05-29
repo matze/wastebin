@@ -9,6 +9,10 @@
 - Display set expiration in the title.
 - Display set expiration in `wastebin-ctl list`.
 
+### Changed
+
+- Use main accent color for selected options.
+
 ### Fixed
 
 - Missing separators between expiration parts.

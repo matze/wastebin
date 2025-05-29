@@ -8,7 +8,6 @@ use axum_extra::extract::cookie::{Cookie, SameSite, SignedCookieJar};
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
 use wastebin_core::db::{Database, write};
-use wastebin_core::id::Id;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub(crate) struct Entry {
@@ -79,14 +78,14 @@ pub async fn post<E: std::fmt::Debug>(
         let mut entry: write::Entry = entry.into();
         entry.uid = Some(uid);
 
-        let id = Id::rand();
+        let (id, entry) = db.insert(entry).await?;
+
         let mut url = id.to_url_path(&entry);
 
         if entry.burn_after_reading.unwrap_or(false) {
             url = format!("burn/{url}");
         }
 
-        db.insert(id, entry).await?;
         let url = format!("/{url}");
 
         let cookie = Cookie::build(("uid", uid.to_string()))

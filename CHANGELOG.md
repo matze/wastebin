@@ -12,6 +12,8 @@
 ### Changed
 
 - Use main accent color for selected options.
+- Root element's `color-scheme` is now set according to the selected theme, which
+  makes browser use appropriate color scheme for its UI.
 
 ### Fixed
 

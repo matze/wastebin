@@ -92,12 +92,13 @@ pub(crate) struct Css {
 
 /// Generate the highlighting colors for `theme` and add main foreground and background colors
 /// based on the theme.
-fn combined_css(theme: &highlighting::Theme) -> Vec<u8> {
+fn combined_css(color_scheme: &str, theme: &highlighting::Theme) -> Vec<u8> {
     let fg = theme.settings.foreground.expect("existing color");
     let bg = theme.settings.background.expect("existing color");
 
     let main_colors = format!(
         ":root {{
+  color-scheme: {color_scheme};
   --main-bg-color: rgb({}, {}, {}, {});
   --main-fg-color: rgb({}, {}, {}, {});
 }}",
@@ -117,8 +118,8 @@ impl Css {
         let light_theme = light_theme(theme);
         let dark_theme = dark_theme(theme);
         let style = Asset::new_hashed("style", Kind::Css, include_str!("style.css").into());
-        let light = Asset::new_hashed("light", Kind::Css, combined_css(&light_theme));
-        let dark = Asset::new_hashed("dark", Kind::Css, combined_css(&dark_theme));
+        let light = Asset::new_hashed("light", Kind::Css, combined_css("light", &light_theme));
+        let dark = Asset::new_hashed("dark", Kind::Css, combined_css("dark", &dark_theme));
 
         Self { style, light, dark }
     }

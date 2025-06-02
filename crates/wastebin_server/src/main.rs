@@ -9,7 +9,6 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{Router, get, post};
 use axum_extra::extract::cookie::Key;
 use futures::future::TryFutureExt;
-use futures_concurrency::future::TryJoin;
 use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
     X_XSS_PROTECTION,
@@ -273,7 +272,8 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let db_handler = db_handler.map_err(Into::into);
-    (serve, db_handler).try_join().await?;
+
+    futures::try_join!(serve, db_handler)?;
 
     Ok(())
 }

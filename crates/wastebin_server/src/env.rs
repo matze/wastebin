@@ -66,6 +66,7 @@ pub fn theme() -> Result<highlight::Theme, Error> {
         |var| match var.as_str() {
             "ayu" => Ok(highlight::Theme::Ayu),
             "base16ocean" => Ok(highlight::Theme::Base16Ocean),
+            "catppuccin" => Ok(highlight::Theme::Catppuccin),
             "coldark" => Ok(highlight::Theme::Coldark),
             "gruvbox" => Ok(highlight::Theme::Gruvbox),
             "monokai" => Ok(highlight::Theme::Monokai),

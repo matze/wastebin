@@ -134,6 +134,7 @@ fn light_theme(theme: Theme) -> syntect::highlighting::Theme {
             ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
         }
         Theme::Base16Ocean => theme_set.get(EmbeddedThemeName::Base16OceanLight).clone(),
+        Theme::Catppuccin => theme_set.get(EmbeddedThemeName::CatppuccinLatte).clone(),
         Theme::Coldark => theme_set.get(EmbeddedThemeName::ColdarkCold).clone(),
         Theme::Gruvbox => theme_set.get(EmbeddedThemeName::GruvboxLight).clone(),
         Theme::Monokai => theme_set
@@ -153,6 +154,7 @@ fn dark_theme(theme: Theme) -> syntect::highlighting::Theme {
             ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
         }
         Theme::Base16Ocean => theme_set.get(EmbeddedThemeName::Base16OceanDark).clone(),
+        Theme::Catppuccin => theme_set.get(EmbeddedThemeName::CatppuccinMocha).clone(),
         Theme::Coldark => theme_set.get(EmbeddedThemeName::ColdarkDark).clone(),
         Theme::Gruvbox => theme_set.get(EmbeddedThemeName::GruvboxDark).clone(),
         Theme::Monokai => theme_set.get(EmbeddedThemeName::MonokaiExtended).clone(),

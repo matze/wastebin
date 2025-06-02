@@ -15,6 +15,7 @@ const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
 pub(crate) enum Theme {
     Ayu,
     Base16Ocean,
+    Catppuccin,
     Coldark,
     Gruvbox,
     Monokai,

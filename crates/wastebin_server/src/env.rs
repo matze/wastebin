@@ -163,7 +163,7 @@ pub fn http_timeout() -> Result<Duration, Error> {
 /// Parse [`expiration::ExpirationSet`] from environment or return default.
 pub fn expiration_set() -> Result<expiration::ExpirationSet, Error> {
     let set = std::env::var(vars::PASTE_EXPIRATIONS).map_or_else(
-        |_| "0,600,3600=d,86400,604800,2419200,29030400".parse::<expiration::ExpirationSet>(),
+        |_| "0=d,600,3600,86400,604800,2419200,29030400".parse::<expiration::ExpirationSet>(),
         |value| value.parse::<expiration::ExpirationSet>(),
     )?;
 

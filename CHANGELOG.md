@@ -8,12 +8,15 @@
   the `WASTEBIN_UNIX_SOCKET_PATH` environment variable.
 - Display set expiration in the title.
 - Display set expiration in `wastebin-ctl list`.
+- `catpuccin` theme key selecting Catppuccin Latte for light and Catppuccin
+  Mocha for dark mode.
+- New debsources, GDScript, Idris, Odin and Typst syntaxes.
 
 ### Changed
 
 - Use main accent color for selected options.
-- Root element's `color-scheme` is now set according to the selected theme, which
-  makes browser use appropriate color scheme for its UI.
+- Root element's `color-scheme` is now set according to the selected theme,
+  which makes browser use appropriate color scheme for its UI.
 
 ### Fixed
 

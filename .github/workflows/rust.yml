@@ -16,7 +16,7 @@ jobs:
       uses: dtolnay/rust-toolchain@1.87.0
       with:
         components: clippy,rustfmt
-    - run: cargo clippy
+    - run: cargo clippy -- -Dwarnings
     - run: cargo fmt --all --check
     - run: cargo test --all-targets
 

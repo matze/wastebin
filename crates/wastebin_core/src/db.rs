@@ -685,7 +685,7 @@ impl Database {
 
 #[cfg(test)]
 mod tests {
-    use std::num::{NonZero, NonZeroU32};
+    use std::num::NonZeroU32;
 
     use super::*;
 
@@ -748,7 +748,7 @@ mod tests {
         let db = new_db()?;
 
         let entry = write::Entry {
-            expires: Some(NonZero::new(1).unwrap()),
+            expires: Some(NonZeroU32::new(1).unwrap()),
             ..Default::default()
         };
 
@@ -817,7 +817,7 @@ mod tests {
         let db = new_db()?;
 
         let entry = write::Entry {
-            expires: Some(NonZero::new(1).unwrap()),
+            expires: Some(NonZeroU32::new(1).unwrap()),
             ..Default::default()
         };
 

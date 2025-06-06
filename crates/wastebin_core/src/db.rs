@@ -218,7 +218,7 @@ pub mod read {
 
     /// Uncompressed entry
     #[derive(Debug)]
-    pub struct UmcompressedEntry {
+    pub struct UncompressedEntry {
         /// Content
         pub text: String,
         /// Metadata
@@ -297,7 +297,7 @@ pub mod read {
     }
 
     impl CompressedReadEntry {
-        pub async fn decompress(self) -> Result<UmcompressedEntry, Error> {
+        pub async fn decompress(self) -> Result<UncompressedEntry, Error> {
             let mut decoder = ZstdDecoder::new(Cursor::new(self.data));
             let mut text = String::new();
 
@@ -306,7 +306,7 @@ pub mod read {
                 .await
                 .map_err(|e| Error::Compression(e.to_string()))?;
 
-            Ok(UmcompressedEntry {
+            Ok(UncompressedEntry {
                 text,
                 metadata: self.metadata,
                 must_be_deleted: self.must_be_deleted,
@@ -604,7 +604,7 @@ impl Database {
             return Err(Error::NotFound);
         }
 
-        let read::UmcompressedEntry {
+        let read::UncompressedEntry {
             text,
             metadata,
             must_be_deleted,

@@ -30,14 +30,6 @@ jobs:
             os: ubuntu-latest
             suffix: ""
 
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            suffix: .exe
-
-          - target: aarch64-pc-windows-msvc
-            os: windows-latest
-            suffix: .exe
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

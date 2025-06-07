@@ -2,10 +2,17 @@
 
 ## Unreleased
 
+
+## 3.2.0
+
+**2025-06-07**
+
 ### Added
 
 - Support for binding to a Unix domain socket instead of a TCP address/port via
   the `WASTEBIN_UNIX_SOCKET_PATH` environment variable.
+- Support for expiration durations specified explicitly as seconds, minutes,
+  hours, days, months and years.
 - Display set expiration in the title.
 - Display set expiration in `wastebin-ctl list`.
 - `catpuccin` theme key selecting Catppuccin Latte for light and Catppuccin

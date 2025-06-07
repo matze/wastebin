@@ -55,7 +55,11 @@ To persist the database as `state.db` via the
 `/path/for/storage` like this
 
 ```bash
-docker run -e WASTEBIN_DATABASE_PATH=/data/state.db -v /path/for/storage:/data quxfoo/wastebin:latest
+docker run \
+    -e WASTEBIN_DATABASE_PATH=/data/state.db \
+    -v /path/for/storage:/data \
+    -u $(id -u):$(id -g) \
+    quxfoo/wastebin:latest
 ```
 
 > [!NOTE]

@@ -19,9 +19,7 @@ RUN adduser \
 
 WORKDIR /app
 COPY . .
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target \
-    cargo build --release && mv /app/target/release/wastebin /app
+RUN cargo build --release && mv /app/target/release/wastebin /app && mv /app/target/release/wastebin-ctl /app
 
 
 # --- final image

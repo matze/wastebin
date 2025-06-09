@@ -27,7 +27,7 @@
         {
           wastebin = with pkgs; rustPlatform.buildRustPackage rec {
             pname = "wastebin";
-            version = "2.7.0";
+            version = "3.2.0";
 
             src = ./.;
 

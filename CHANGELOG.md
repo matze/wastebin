@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Added
+
+- Possibility to switch back to system settings for the dark/light mode
+  selection.
+
+### Changed
+
+- Do not require JavaScript to hide respective dark/light/system mode buttons.
+  Note that this might cause a confusing initial state because we do not know
+  the system setting without querying it with browser APIs but in the worst case
+  it means two to three clicks to change it.
+
 
 ## 3.2.0
 

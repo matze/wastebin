@@ -176,10 +176,6 @@ fn make_app(state: AppState, timeout: Duration, max_body_size: usize) -> Router 
             get(async |State(page): State<Page>| page.assets.css.light.clone()),
         )
         .route(
-            state.page.assets.base_js.route(),
-            get(async |State(page): State<Page>| page.assets.base_js.clone()),
-        )
-        .route(
             state.page.assets.index_js.route(),
             get(async |State(page): State<Page>| page.assets.index_js.clone()),
         )

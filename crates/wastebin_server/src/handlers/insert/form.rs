@@ -32,7 +32,7 @@ impl From<Entry> for write::Entry {
 
         Self {
             text: entry.text,
-            extension: entry.extension,
+            extension: entry.extension.filter(|e| !e.is_empty()),
             expires,
             burn_after_reading,
             uid: None,

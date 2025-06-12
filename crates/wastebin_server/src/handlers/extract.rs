@@ -16,6 +16,8 @@ pub(crate) enum Theme {
     Dark,
     #[serde(rename = "light")]
     Light,
+    #[serde(rename = "system")]
+    System,
 }
 
 /// Theme preference for use in shared [`axum::extract::Query`]'s.
@@ -39,6 +41,7 @@ impl std::fmt::Display for Theme {
         match self {
             Theme::Dark => f.write_str("dark"),
             Theme::Light => f.write_str("light"),
+            Theme::System => f.write_str("system"),
         }
     }
 }
@@ -50,6 +53,7 @@ impl std::str::FromStr for Theme {
         match s {
             "dark" => Ok(Theme::Dark),
             "light" => Ok(Theme::Light),
+            "system" => Ok(Theme::System),
             _ => Err(()),
         }
     }

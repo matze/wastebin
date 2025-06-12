@@ -9,12 +9,21 @@ window.onload = function() {
   if (value == "dark") {
     $("dark-switch").style.display = "none";
     $("light-switch").style.display = "block";
+    $("system-switch").style.display = "none";
     return;
   }
 
   if (value == "light") {
+    $("dark-switch").style.display = "none";
+    $("light-switch").style.display = "none";
+    $("system-switch").style.display = "block";
+    return;
+  }
+
+  if (value == "system") {
     $("dark-switch").style.display = "block";
     $("light-switch").style.display = "none";
+    $("system-switch").style.display = "none";
     return;
   }
 
@@ -23,9 +32,11 @@ window.onload = function() {
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     $("dark-switch").style.display = "none";
     $("light-switch").style.display = "block";
+    $("system-switch").style.display = "none";
   }
   else {
     $("dark-switch").style.display = "block";
     $("light-switch").style.display = "none";
+    $("system-switch").style.display = "none";
   }
 };

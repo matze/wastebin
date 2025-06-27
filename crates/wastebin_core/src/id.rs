@@ -132,7 +132,7 @@ impl FromStr for Id {
 
             Ok(Self::Id64(n))
         } else {
-            return Err(Error::WrongSize);
+            Err(Error::WrongSize)
         }
     }
 }

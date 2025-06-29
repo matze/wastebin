@@ -5,7 +5,7 @@ resolver = "2"
 [workspace.package]
 version = "3.2.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 
 [workspace.dependencies]
 tokio = { version = "1", default-features = false }

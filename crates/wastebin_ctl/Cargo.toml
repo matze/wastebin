@@ -10,7 +10,7 @@ anyhow = "1.0.97"
 clap = { version = "4.5.32", features = ["derive", "env"] }
 clap_complete = "4.5.50"
 tabled = "0.20.0"
-tokio.workspace = true
+tokio = { workspace = true, features = ["macros", "sync"] }
 wastebin_core = { path = "../wastebin_core" }
 
 [lints]

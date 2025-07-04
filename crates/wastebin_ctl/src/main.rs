@@ -51,6 +51,15 @@ enum Commands {
         #[arg(short, long)]
         sort: Option<SortOrder>,
     },
+    /// Delete specific entries
+    Delete {
+        /// Path to the database file
+        #[arg(long, env = vars::DATABASE_PATH)]
+        database: PathBuf,
+
+        /// Delete entry with the given identifiers
+        identifier: Vec<String>,
+    },
     /// Purge all expired entries and show their identifiers
     Purge {
         /// Path to the database file
@@ -227,6 +236,25 @@ async fn main() -> Result<()> {
 
             println!("{table}");
         }
+        Commands::Delete {
+            database,
+            identifier,
+        } => {
+            let ids = identifier
+                .iter()
+                .map(|id| Id::from_str(id))
+                .collect::<Result<Vec<_>, _>>()
+                .with_context(|| "Invalid identifier")?;
+
+            let (db, db_handler) = Database::new(Open::Path(database))?;
+            tokio::task::spawn(db_handler);
+
+            let affected = db.delete_many(ids).await?;
+            println!(
+                "Deleted {affected} {}",
+                if affected > 1 { "entries" } else { "entry" }
+            );
+        }
         Commands::Purge { database } => {
             let (db, db_handler) = Database::new(Open::Path(database))?;
             tokio::task::spawn(db_handler);
@@ -236,7 +264,11 @@ async fn main() -> Result<()> {
             if ids.is_empty() {
                 println!("no entries purged");
             } else {
-                println!("purged {} expired entries", ids.len());
+                println!(
+                    "purged {} expired {}",
+                    ids.len(),
+                    if ids.len() > 1 { "entries" } else { "entry" }
+                );
 
                 for id in ids {
                     println!("{id}");

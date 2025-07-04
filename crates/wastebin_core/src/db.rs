@@ -74,6 +74,10 @@ enum Command {
         id: Id,
         result: oneshot::Sender<Result<(), Error>>,
     },
+    DeleteMany {
+        ids: Vec<Id>,
+        result: oneshot::Sender<Result<usize, Error>>,
+    },
     DeleteFor {
         id: Id,
         uid: i64,
@@ -404,6 +408,11 @@ impl Handler {
                         .send(self.delete(id))
                         .map_err(|_| Error::ResultSendError)?;
                 }
+                Command::DeleteMany { ids, result } => {
+                    result
+                        .send(self.delete_many(ids))
+                        .map_err(|_| Error::ResultSendError)?;
+                }
                 Command::DeleteFor { id, uid, result } => {
                     result
                         .send(self.delete_for(id, uid))
@@ -500,6 +509,19 @@ impl Handler {
             .execute("DELETE FROM entries WHERE id=?1", params![id.to_i64()])?;
 
         Ok(())
+    }
+
+    fn delete_many(&mut self, ids: Vec<Id>) -> Result<usize, Error> {
+        let tx = self.conn.transaction()?;
+
+        let mut affected = 0;
+
+        for id in ids {
+            affected += tx.execute("DELETE FROM entries WHERE id=?1", params![id.to_i64()])?;
+        }
+
+        tx.commit()?;
+        Ok(affected)
     }
 
     fn delete_for(&mut self, id: Id, uid: i64) -> Result<(), Error> {
@@ -637,6 +659,16 @@ impl Database {
         let (result, command_result) = oneshot::channel();
         self.sender
             .send(Command::Delete { id, result })
+            .await
+            .map_err(|_| Error::SendError)?;
+        command_result.await?
+    }
+
+    /// Delete pastes with `ids`.
+    pub async fn delete_many(&self, ids: Vec<Id>) -> Result<usize, Error> {
+        let (result, command_result) = oneshot::channel();
+        self.sender
+            .send(Command::DeleteMany { ids, result })
             .await
             .map_err(|_| Error::SendError)?;
         command_result.await?

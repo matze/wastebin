@@ -758,7 +758,6 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
         let result = db.get(id, None).await;
-        println!("{result:?}");
         assert!(matches!(result, Err(Error::NotFound)));
 
         Ok(())

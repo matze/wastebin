@@ -1,10 +1,11 @@
-use anyhow::Result;
-use clap::{Parser, Subcommand};
+use anyhow::{Context, Result};
 #[cfg(feature = "completion")]
 use clap::CommandFactory;
+use clap::{Args, Parser, Subcommand, ValueEnum};
 #[cfg(feature = "completion")]
 use clap_complete::{Shell, generate};
 use std::path::PathBuf;
+use std::str::FromStr;
 use tabled::derive::display;
 use tabled::settings::{Alignment, Style};
 use tabled::{Table, Tabled};
@@ -30,6 +31,25 @@ enum Commands {
         /// Path to the database file
         #[arg(long, env = vars::DATABASE_PATH)]
         database: PathBuf,
+
+        /// List entry with the given identifier
+        #[arg(short, long)]
+        identifier: Option<String>,
+
+        /// List entries containing the given string (case-sensitive)
+        #[arg(short, long)]
+        title: Option<String>,
+
+        /// List only entries with the given encryption status
+        #[arg(short, long)]
+        encrypted: Option<Encrypted>,
+
+        #[command(flatten)]
+        expired_filter: ExpiredFilter,
+
+        /// Order the results
+        #[arg(short, long)]
+        sort: Option<SortOrder>,
     },
     /// Purge all expired entries and show their identifiers
     Purge {
@@ -39,9 +59,30 @@ enum Commands {
     },
 }
 
+#[derive(Args)]
+#[group(required = false, multiple = false)]
+struct ExpiredFilter {
+    /// List only expired entries
+    #[arg(long)]
+    expired: bool,
+
+    /// List only non-expired entries
+    #[arg(long)]
+    active: bool,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+enum SortOrder {
+    TitleAsc,
+    TitleDesc,
+    ExpirationAsc,
+    ExpirationDesc,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
 enum Encrypted {
-    Yes,
-    No,
+    Encrypted,
+    Plain,
 }
 
 enum Expired {
@@ -62,7 +103,7 @@ struct Entry {
 
 impl From<bool> for Encrypted {
     fn from(value: bool) -> Self {
-        if value { Self::Yes } else { Self::No }
+        if value { Self::Encrypted } else { Self::Plain }
     }
 }
 
@@ -75,8 +116,8 @@ impl From<bool> for Expired {
 impl std::fmt::Display for Encrypted {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Encrypted::Yes => write!(f, "🔒"),
-            Encrypted::No => Ok(()),
+            Encrypted::Encrypted => write!(f, "🔒"),
+            Encrypted::Plain => Ok(()),
         }
     }
 }
@@ -120,11 +161,68 @@ async fn main() -> Result<()> {
                 &mut std::io::stdout(),
             );
         }
-        Commands::List { database } => {
+        Commands::List {
+            database,
+            identifier,
+            title,
+            encrypted,
+            expired_filter,
+            sort,
+        } => {
+            let identifier = identifier
+                .map(|id| Id::from_str(&id))
+                .transpose()
+                .with_context(|| "Invalid identifier")?;
+
             let (db, db_handler) = Database::new(Open::Path(database))?;
             tokio::task::spawn(db_handler);
 
-            let mut table = Table::new(db.list().await?.into_iter().map(Entry::from));
+            let mut db_items: Vec<_> = db
+                .list()
+                .await?
+                .into_iter()
+                .filter(|entry| identifier.is_none_or(|ident| entry.id == ident))
+                .filter(|entry| {
+                    title.as_ref().is_none_or(|t| {
+                        entry
+                            .title
+                            .as_ref()
+                            .is_some_and(|entry_t| entry_t.contains(t))
+                    })
+                })
+                .filter(|entry| match encrypted {
+                    Some(Encrypted::Encrypted) => entry.is_encrypted,
+                    Some(Encrypted::Plain) => !entry.is_encrypted,
+                    None => true,
+                })
+                .filter(|entry| {
+                    if expired_filter.active {
+                        !entry.is_expired
+                    } else if expired_filter.expired {
+                        entry.is_expired
+                    } else {
+                        true
+                    }
+                })
+                .map(Entry::from)
+                .collect();
+
+            if let Some(sort_order) = sort {
+                match sort_order {
+                    SortOrder::TitleAsc => db_items.sort_unstable_by(|a, b| a.title.cmp(&b.title)),
+                    SortOrder::TitleDesc => {
+                        db_items.sort_unstable_by(|a, b| a.title.cmp(&b.title).reverse())
+                    }
+                    SortOrder::ExpirationAsc => {
+                        db_items.sort_unstable_by(|a, b| a.expiration.cmp(&b.expiration))
+                    }
+                    SortOrder::ExpirationDesc => {
+                        db_items.sort_unstable_by(|a, b| a.expiration.cmp(&b.expiration).reverse())
+                    }
+                }
+            }
+
+            let mut table = Table::new(&db_items);
             table.with(Style::psql()).with(Alignment::left());
 
             println!("{table}");

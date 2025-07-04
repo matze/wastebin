@@ -1,5 +1,8 @@
 use anyhow::Result;
-use clap::{CommandFactory, Parser, Subcommand};
+use clap::{Parser, Subcommand};
+#[cfg(feature = "completion")]
+use clap::CommandFactory;
+#[cfg(feature = "completion")]
 use clap_complete::{Shell, generate};
 use std::path::PathBuf;
 use tabled::derive::display;
@@ -20,6 +23,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Generate shell completion.
+    #[cfg(feature = "completion")]
     Completion { shell: Shell },
     /// List and filter database entries
     List {
@@ -104,6 +108,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.commands {
+        #[cfg(feature = "completion")]
         Commands::Completion { shell } => {
             let mut cmd = Cli::command();
             let cmd = &mut cmd;

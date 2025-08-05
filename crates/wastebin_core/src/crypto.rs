@@ -10,6 +10,7 @@ static CONFIG: LazyLock<argon2::Config> = LazyLock::new(|| argon2::Config {
     mem_cost: 65536,
     time_cost: 10,
     lanes: 4,
+    thread_mode: argon2::ThreadMode::Parallel,
     secret: &[],
     ad: &[],
     hash_length: 32,

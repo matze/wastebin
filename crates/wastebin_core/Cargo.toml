@@ -12,7 +12,7 @@ kanal = "0.1.1"
 rand = "0.9"
 rusqlite = { version = "0.37", features = ["bundled"] }
 rusqlite_migration = { version = "2", default-features = false }
-rust-argon2 = "2.0.0"
+rust-argon2 = "3.0.0"
 serde = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["io-util", "rt-multi-thread"] }

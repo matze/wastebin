@@ -219,9 +219,10 @@ response after creation.
 ### wastebin-ctl command line tool
 
 `wastebin-ctl` is a command line tool to interact directly with the wastebin
-database. It can be used to `list` all entries or `purge` entries which have
-expired. To specify the database either use the `--database` option or set the
-`WASTEBIN_DATABASE_PATH` environment variable as usual.
+database. It can be used to `list` all entries, `purge` entries which have
+expired or `delete` specific entries. To specify the database either use the
+`--database` option or set the `WASTEBIN_DATABASE_PATH` environment variable as
+usual.
 
 
 ### Paste from neovim

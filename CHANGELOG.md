@@ -6,6 +6,8 @@
 
 - Possibility to switch back to system settings for the dark/light mode
   selection.
+- `delete` command to `wastebin-ctl` to delete specific entries.
+- Filters to the `wastebin-ctl`'s `list` command.
 
 ### Changed
 
@@ -13,6 +15,10 @@
   Note that this might cause a confusing initial state because we do not know
   the system setting without querying it with browser APIs but in the worst case
   it means two to three clicks to change it.
+
+### Fixed
+
+- Store `wastebin-ctl` correctly in the ARM image.
 
 
 ## 3.2.0

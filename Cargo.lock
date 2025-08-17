@@ -2364,7 +2364,7 @@ dependencies = [
 
 [[package]]
 name = "wastebin"
-version = "3.2.0"
+version = "3.3.0"
 dependencies = [
  "askama",
  "askama_web",
@@ -2394,7 +2394,7 @@ dependencies = [
 
 [[package]]
 name = "wastebin-ctl"
-version = "3.2.0"
+version = "3.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -2406,7 +2406,7 @@ dependencies = [
 
 [[package]]
 name = "wastebin_core"
-version = "3.2.0"
+version = "3.3.0"
 dependencies = [
  "async-compression",
  "chacha20poly1305",

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 3.3.0
+
+**2025-08-17**
+
 ### Added
 
 - Possibility to switch back to system settings for the dark/light mode

@@ -143,6 +143,10 @@ select > option:checked {
   background-color: var(--main-accent-color);
 }
 
+.controls-row > select {
+  scrollbar-color: var(--main-accent-color) color-mix(in srgb, var(--main-accent-color) 15%, transparent);
+}
+
 option {
   border-radius: 4px;
 }

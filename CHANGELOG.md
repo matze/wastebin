@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Customize scrollbar color for the language list.
+
 
 ## 3.3.0
 

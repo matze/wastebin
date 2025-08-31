@@ -54,7 +54,6 @@ impl Id {
 }
 
 impl fmt::Display for Id {
-    #[expect(clippy::cast_sign_loss)]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Id32(n) => {
@@ -69,6 +68,7 @@ impl fmt::Display for Id {
 
                 write!(f, "{s}")
             }
+            #[expect(clippy::cast_sign_loss)]
             Self::Id64(n) => {
                 let mut s = String::with_capacity(11);
 
@@ -93,12 +93,12 @@ impl fmt::Display for Id {
 impl FromStr for Id {
     type Err = Error;
 
-    #[expect(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         if value.len() == 6 {
             let mut n: u32 = 0;
 
             for (pos, char) in value.chars().enumerate() {
+                #[expect(clippy::cast_possible_truncation)]
                 let bits: u32 = CHAR_TABLE
                     .iter()
                     .enumerate()
@@ -117,6 +117,7 @@ impl FromStr for Id {
             let mut n: i64 = 0;
 
             for (pos, char) in value.chars().enumerate() {
+                #[expect(clippy::cast_possible_wrap)]
                 let bits: i64 = CHAR_TABLE
                     .iter()
                     .enumerate()

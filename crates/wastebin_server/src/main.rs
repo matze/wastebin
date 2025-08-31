@@ -1,3 +1,5 @@
+#![cfg_attr(test, allow(clippy::map_unwrap_or, clippy::unwrap_used))]
+
 use crate::cache::Cache;
 use crate::errors::Error;
 use crate::handlers::extract::Theme;

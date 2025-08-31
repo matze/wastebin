@@ -118,23 +118,25 @@ mod tests {
 
         assert_eq!(res.status(), StatusCode::OK);
 
-        #[derive(Debug, Serialize)]
-        struct Form {
-            password: String,
+        {
+            #[derive(Debug, Serialize)]
+            struct Form {
+                password: String,
+            }
+
+            let data = Form {
+                password: password.to_string(),
+            };
+
+            let res = client
+                .post(&location)
+                .form(&data)
+                .header(header::ACCEPT, "text/html; charset=utf-8")
+                .send()
+                .await?;
+
+            assert_eq!(res.status(), StatusCode::OK);
         }
-
-        let data = Form {
-            password: password.to_string(),
-        };
-
-        let res = client
-            .post(&location)
-            .form(&data)
-            .header(header::ACCEPT, "text/html; charset=utf-8")
-            .send()
-            .await?;
-
-        assert_eq!(res.status(), StatusCode::OK);
 
         let res = client
             .get(&location)

@@ -192,6 +192,7 @@ impl FromStr for ExpirationSet {
 
 impl ExpirationSet {
     /// Retrieve sorted vector of [`Expiration`] values.
+    #[must_use]
     pub fn into_inner(self) -> Vec<Expiration> {
         self.0
     }

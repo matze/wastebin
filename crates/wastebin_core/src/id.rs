@@ -163,23 +163,23 @@ mod tests {
         assert_eq!(id.to_string(), "aaaaaaaaaaa");
         assert_eq!(id.to_i64(), 0);
 
-        let id = Id::from(0xffffffffu32);
+        let id = Id::from(0xffff_ffff_u32);
         assert_eq!(id.to_string(), "+++++d");
-        assert_eq!(id.to_i64(), 0xffffffff);
+        assert_eq!(id.to_i64(), 0xffff_ffff);
 
-        let id = Id::from(0xfffffffffffffffi64);
+        let id = Id::from(0xfff_ffff_ffff_ffff_i64);
         assert_eq!(id.to_string(), "d+++++++++p");
-        assert_eq!(id.to_i64(), 0xfffffffffffffff);
+        assert_eq!(id.to_i64(), 0xfff_ffff_ffff_ffff);
     }
 
     #[test]
     fn convert_string_to_id_and_back() {
         let id = Id::from_str("bJZCna").unwrap();
-        assert_eq!(id.to_i64(), 104651828);
+        assert_eq!(id.to_i64(), 104_651_828);
         assert_eq!(id.to_string(), "bJZCna");
 
         let id = Id::from_str("eVI4Z48hybf").unwrap();
-        assert_eq!(id.to_i64(), 1367045688504311829);
+        assert_eq!(id.to_i64(), 1_367_045_688_504_311_829);
         assert_eq!(id.to_string(), "eVI4Z48hybf");
     }
 

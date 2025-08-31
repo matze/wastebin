@@ -39,13 +39,13 @@ pub(crate) type JsonErrorResponse = (StatusCode, Json<JsonError>);
 impl From<Error> for StatusCode {
     fn from(err: Error) -> Self {
         match err {
-            Error::Database(db::Error::NoPassword) => StatusCode::BAD_REQUEST,
             Error::Database(db::Error::NotFound) => StatusCode::NOT_FOUND,
-            Error::Database(db::Error::Delete)
-            | Error::Database(db::Error::Crypto(crypto::Error::ChaCha20Poly1305Decrypt)) => {
-                StatusCode::FORBIDDEN
+            Error::Database(
+                db::Error::Delete | db::Error::Crypto(crypto::Error::ChaCha20Poly1305Decrypt),
+            ) => StatusCode::FORBIDDEN,
+            Error::Database(db::Error::NoPassword) | Error::Id(_) | Error::UrlParsing(_) => {
+                StatusCode::BAD_REQUEST
             }
-            Error::Id(_) | Error::UrlParsing(_) => StatusCode::BAD_REQUEST,
             Error::MalformedForm => StatusCode::UNPROCESSABLE_ENTITY,
             Error::Join(_)
             | Error::QrCode(_)

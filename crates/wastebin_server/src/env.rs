@@ -50,7 +50,7 @@ impl Display for SocketType {
                 write!(f, "{addr}")
             }
             SocketType::Unix(path) => {
-                write!(f, "{path:?}")
+                write!(f, "{}", path.display())
             }
         }
     }
@@ -113,7 +113,7 @@ pub fn socket_type() -> Result<SocketType, Error> {
         }
         (Err(_), Ok(var)) => Ok(SocketType::Unix(var.into())),
         (Err(_), Err(_)) => {
-            let addr = SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), 8088);
+            let addr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 8088);
             Ok(SocketType::Tcp(addr))
         }
     }

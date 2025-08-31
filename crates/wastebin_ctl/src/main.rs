@@ -152,7 +152,7 @@ impl From<ListEntry> for Entry {
     }
 }
 
-#[allow(clippy::print_stdout)]
+#[expect(clippy::print_stdout)]
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();

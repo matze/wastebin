@@ -34,7 +34,7 @@ mod tests {
         assert_eq!(res.status(), StatusCode::SEE_OTHER);
 
         let location = res.headers().get("location").unwrap().to_str()?;
-        let id = location.replace("/", "");
+        let id = location.replace('/', "");
 
         let res = client.get(&format!("/delete/{id}")).send().await?;
         assert_eq!(res.status(), StatusCode::SEE_OTHER);

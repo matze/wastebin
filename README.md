@@ -145,6 +145,12 @@ sudo docker build --platform linux/arm64 -t wastebin:v3.0.0-arm64 -f Dockerfile.
 podman build --arch=arm64 -t wastebin:v3.0.0-arm64 -f Dockerfile.arm
 ```
 
+To interact with a running wastebin instance the bundled `wastebin-ctl` tool can be used, e.g.:
+
+```bash
+podman exec -e RUST_LOG=debug -it wastebin /app/wastebin-ctl
+```
+
 ## Usage
 
 ### Browser interface

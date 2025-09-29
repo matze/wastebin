@@ -3,10 +3,12 @@ use std::cmp::Ordering;
 use std::fmt::Write;
 use syntect::html::{ClassStyle, line_tokens_to_classed_spans};
 use syntect::parsing::{
-    BasicScopeStackOp, ParseState, SCOPE_REPO, Scope, ScopeStack, ScopeStackOp, SyntaxReference,
-    SyntaxSet,
+    BasicScopeStackOp, ParseState, Scope, ScopeStack, ScopeStackOp, SyntaxReference, SyntaxSet,
 };
 use syntect::util::LinesWithEndings;
+
+#[expect(deprecated)]
+use syntect::parsing::SCOPE_REPO;
 
 const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
 
@@ -84,6 +86,7 @@ fn escape(s: &str, buf: &mut String) -> std::fmt::Result {
 
 /// Transform `scope` atoms to CSS style classes and write output to `s`.
 fn scope_to_classes(s: &mut String, scope: Scope) {
+    #[expect(deprecated)]
     let repo = SCOPE_REPO.lock().expect("lock");
     for i in 0..(scope.len()) {
         let atom = scope.atom_at(i as usize);
@@ -97,6 +100,7 @@ fn scope_to_classes(s: &mut String, scope: Scope) {
 
 /// Return `true` if `scope` will be used to render a Markdown link.
 fn is_markdown_link(scope: Scope) -> bool {
+    #[expect(deprecated)]
     let repo = SCOPE_REPO.lock().expect("lock");
 
     (0..scope.len()).all(|index| {

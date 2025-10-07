@@ -285,6 +285,11 @@ td.line-number {
   user-select: text;
 }
 
+.line-wrap .line {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
 .flex-center {
   display: flex;
   align-items: center;

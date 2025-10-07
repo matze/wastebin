@@ -55,6 +55,9 @@ function onKey(e) {
   else if (e.key == 'c') {
     copy();
   }
+  else if (e.key == 'w') { // 'w' for wrap
+    document.body.classList.toggle('line-wrap');
+  }
   else if (e.key == '?') {
     var overlay = document.getElementById("overlay");
 

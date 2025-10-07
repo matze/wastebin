@@ -163,6 +163,7 @@ When viewing a paste, you can use
 * <kbd>c</kbd> to copy the content to the clipboard,
 * <kbd>q</kbd> to display the current URL as a QR code,
 * <kbd>p</kbd> to view the formatted paste and
+* <kbd>w</kbd> toggle line wrapping on and off (off by default)
 * <kbd>?</kbd> to view the list of keybindings.
 
 To paste some text you can also use the <kbd>ctrl</kbd>+<kbd>s</kbd> key

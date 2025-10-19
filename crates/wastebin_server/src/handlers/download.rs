@@ -1,11 +1,12 @@
-use crate::Page;
-use crate::cache::Key;
-use crate::handlers::extract::{Password, Theme};
-use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
 use axum::extract::{Path, State};
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
 use axum_extra::headers::HeaderValue;
+
+use crate::Page;
+use crate::cache::Key;
+use crate::handlers::extract::{Password, Theme};
+use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
 use wastebin_core::db::read::{Data, Entry};
 use wastebin_core::db::{self, Database};
 

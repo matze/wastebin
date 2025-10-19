@@ -1,8 +1,10 @@
-use crate::errors::{Error, JsonErrorResponse};
+use std::num::NonZeroU32;
+
 use axum::Json;
 use axum::extract::State;
 use serde::{Deserialize, Serialize};
-use std::num::NonZeroU32;
+
+use crate::errors::{Error, JsonErrorResponse};
 use wastebin_core::db::{Database, write};
 use wastebin_core::id::Id;
 

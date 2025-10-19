@@ -1,11 +1,12 @@
+use askama::Template;
+use askama_web::WebTemplate;
+use axum::extract::{Path, State};
+
 use crate::cache::Key;
 use crate::handlers::extract::Theme;
 use crate::handlers::html::qr::{code_from, dark_modules};
 use crate::handlers::html::{ErrorResponse, make_error};
 use crate::{Error, Page};
-use askama::Template;
-use askama_web::WebTemplate;
-use axum::extract::{Path, State};
 
 /// GET handler for the burn page.
 pub async fn get(

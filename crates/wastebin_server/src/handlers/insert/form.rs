@@ -1,12 +1,14 @@
-use crate::Page;
-use crate::handlers::extract::{Theme, Uid};
-use crate::handlers::html::make_error;
+use std::num::NonZeroU32;
+
 use axum::extract::{Form, State};
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::cookie::{Cookie, SameSite, SignedCookieJar};
 use serde::{Deserialize, Serialize};
-use std::num::NonZeroU32;
+
+use crate::Page;
+use crate::handlers::extract::{Theme, Uid};
+use crate::handlers::html::make_error;
 use wastebin_core::db::{Database, write};
 use wastebin_core::id::Id;
 

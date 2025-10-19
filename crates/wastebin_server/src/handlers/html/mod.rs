@@ -3,11 +3,12 @@ pub mod index;
 pub mod paste;
 pub mod qr;
 
-use crate::Page;
-use crate::handlers::extract::Theme;
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::http::StatusCode;
+
+use crate::Page;
+use crate::handlers::extract::Theme;
 
 /// Error page showing a message.
 #[derive(Template, WebTemplate)]

@@ -1,13 +1,16 @@
-use crate::cache::Cache;
-use crate::highlight::{Highlighter, Theme};
-use crate::page;
-use axum_extra::extract::cookie::Key;
-use reqwest::RequestBuilder;
 use std::net::SocketAddr;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::time::Duration;
+
+use axum_extra::extract::cookie::Key;
+use reqwest::RequestBuilder;
 use tokio::net::TcpListener;
+
+use crate::cache::Cache;
+use crate::highlight::{Highlighter, Theme};
+use crate::page;
+
 use wastebin_core::db::{self, Database};
 use wastebin_core::expiration::ExpirationSet;
 

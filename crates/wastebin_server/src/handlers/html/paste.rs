@@ -1,12 +1,13 @@
-use crate::cache::Key;
-use crate::handlers::extract::{Theme, Uid};
-use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
-use crate::{Cache, Database, Highlighter, Page};
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::{Form, Path, State};
 use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
+
+use crate::cache::Key;
+use crate::handlers::extract::{Theme, Uid};
+use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
+use crate::{Cache, Database, Highlighter, Page};
 use wastebin_core::crypto::Password;
 use wastebin_core::db;
 use wastebin_core::db::read::{Data, Entry, Metadata};

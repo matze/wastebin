@@ -1,7 +1,8 @@
-use crate::{Highlighter, Page, handlers::extract::Theme};
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::State;
+
+use crate::{Highlighter, Page, handlers::extract::Theme};
 
 /// GET handler for the index page.
 pub async fn get(

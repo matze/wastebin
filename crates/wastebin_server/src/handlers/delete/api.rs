@@ -1,7 +1,8 @@
+use axum::extract::{Path, State};
+
 use crate::Database;
 use crate::errors::{Error, JsonErrorResponse};
 use crate::handlers::extract::Uid;
-use axum::extract::{Path, State};
 
 pub async fn delete(
     Path(id): Path<String>,

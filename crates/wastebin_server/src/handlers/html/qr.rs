@@ -1,12 +1,13 @@
-use crate::cache::Key;
-use crate::handlers::extract::{Theme, Uid};
-use crate::handlers::html::{ErrorResponse, make_error};
-use crate::{Error, Page};
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::{Path, State};
 use qrcodegen::QrCode;
 use url::Url;
+
+use crate::cache::Key;
+use crate::handlers::extract::{Theme, Uid};
+use crate::handlers::html::{ErrorResponse, make_error};
+use crate::{Error, Page};
 use wastebin_core::db::Database;
 use wastebin_core::db::read::Metadata;
 use wastebin_core::expiration::Expiration;

@@ -1,6 +1,6 @@
-use crate::errors::Error;
 use std::cmp::Ordering;
 use std::fmt::Write;
+
 use syntect::html::{ClassStyle, line_tokens_to_classed_spans};
 use syntect::parsing::{
     BasicScopeStackOp, ParseState, Scope, ScopeStack, ScopeStackOp, SyntaxReference, SyntaxSet,
@@ -9,6 +9,8 @@ use syntect::util::LinesWithEndings;
 
 #[expect(deprecated)]
 use syntect::parsing::SCOPE_REPO;
+
+use crate::errors::Error;
 
 const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
 

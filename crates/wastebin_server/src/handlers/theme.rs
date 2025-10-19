@@ -1,8 +1,9 @@
-use crate::handlers::extract::Preference;
 use axum::extract::Query;
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect};
 use http::header::{REFERER, SET_COOKIE};
+
+use crate::handlers::extract::Preference;
 
 /// GET handler to switch theme by setting the pref cookie and redirecting back to the referer.
 pub async fn get(headers: HeaderMap, Query(pref): Query<Preference>) -> impl IntoResponse {

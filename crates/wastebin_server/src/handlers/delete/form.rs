@@ -1,8 +1,9 @@
+use axum::extract::{Path, State};
+use axum::response::Redirect;
+
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::{ErrorResponse, make_error};
 use crate::{Database, Page};
-use axum::extract::{Path, State};
-use axum::response::Redirect;
 
 pub async fn delete(
     Path(id): Path<String>,

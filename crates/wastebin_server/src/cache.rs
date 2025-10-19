@@ -1,10 +1,13 @@
-use crate::errors::Error;
-use crate::highlight::Html;
-use cached::{Cached, SizedCache};
 use std::fmt::Display;
 use std::num::NonZeroUsize;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
+
+use cached::{Cached, SizedCache};
+
+use crate::errors::Error;
+use crate::highlight::Html;
+
 use wastebin_core::id::Id;
 
 /// Cache based on identifier and format.

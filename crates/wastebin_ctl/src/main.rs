@@ -1,14 +1,16 @@
+use std::path::PathBuf;
+use std::str::FromStr;
+
 use anyhow::{Context, Result};
 #[cfg(feature = "completion")]
 use clap::CommandFactory;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 #[cfg(feature = "completion")]
 use clap_complete::{Shell, generate};
-use std::path::PathBuf;
-use std::str::FromStr;
 use tabled::derive::display;
 use tabled::settings::{Alignment, Style};
 use tabled::{Table, Tabled};
+
 use wastebin_core::db::read::ListEntry;
 use wastebin_core::db::{Database, Open};
 use wastebin_core::env::vars;

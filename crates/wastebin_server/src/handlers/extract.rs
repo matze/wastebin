@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use axum::extract::{
     Form, FromRef, FromRequest, FromRequestParts, OptionalFromRequest, OptionalFromRequestParts,
     Request,
@@ -6,7 +8,7 @@ use axum::http::request::Parts;
 use axum_extra::extract::cookie::Key;
 use axum_extra::extract::{CookieJar, SignedCookieJar};
 use serde::Deserialize;
-use std::convert::Infallible;
+
 use wastebin_core::crypto;
 
 /// Theme extractor, extracted from the `pref` cookie.

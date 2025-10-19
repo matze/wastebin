@@ -1,9 +1,10 @@
+use axum::extract::{Path, State};
+use axum::response::{IntoResponse, Response};
+
 use crate::cache::Key;
 use crate::handlers::extract::{Password, Theme};
 use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
 use crate::{Database, Page};
-use axum::extract::{Path, State};
-use axum::response::{IntoResponse, Response};
 use wastebin_core::db;
 use wastebin_core::db::read::Entry;
 

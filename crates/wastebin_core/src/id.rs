@@ -1,7 +1,9 @@
-use crate::db::write::Entry;
 use rand::Rng;
+
 use std::fmt;
 use std::str::FromStr;
+
+use crate::db::write::Entry;
 
 const CHAR_TABLE: &[char; 64] = &[
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',

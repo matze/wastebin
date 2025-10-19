@@ -1,8 +1,10 @@
-use crate::env;
+use std::sync::LazyLock;
+
 use chacha20poly1305::aead::{Aead, AeadCore, KeyInit, OsRng};
 use chacha20poly1305::{Key, XChaCha20Poly1305, XNonce};
-use std::sync::LazyLock;
 use tokio::task::spawn_blocking;
+
+use crate::env;
 
 static CONFIG: LazyLock<argon2::Config> = LazyLock::new(|| argon2::Config {
     variant: argon2::Variant::Argon2i,

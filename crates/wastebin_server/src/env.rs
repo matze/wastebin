@@ -1,11 +1,13 @@
-use crate::highlight;
-use axum_extra::extract::cookie::Key;
 use std::env::VarError;
 use std::fmt::Display;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::num::{NonZeroUsize, ParseIntError};
 use std::path::PathBuf;
 use std::time::Duration;
+
+use axum_extra::extract::cookie::Key;
+
+use crate::highlight;
 use wastebin_core::env::vars::{
     self, ADDRESS_PORT, BASE_URL, CACHE_SIZE, DATABASE_PATH, HTTP_TIMEOUT, MAX_BODY_SIZE,
     PASTE_EXPIRATIONS, SIGNING_KEY,

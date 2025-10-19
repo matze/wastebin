@@ -1,9 +1,19 @@
 #![cfg_attr(test, allow(clippy::map_unwrap_or, clippy::unwrap_used))]
 
-use crate::cache::Cache;
-use crate::errors::Error;
-use crate::handlers::extract::Theme;
-use crate::handlers::{delete, download, html, insert, raw, robots, theme};
+mod assets;
+mod cache;
+mod env;
+mod errors;
+mod handlers;
+mod highlight;
+mod page;
+#[cfg(test)]
+mod test_helpers;
+
+use std::process::ExitCode;
+use std::sync::Arc;
+use std::time::Duration;
+
 use axum::extract::{DefaultBodyLimit, FromRef, Request, State};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use axum::middleware::{Next, from_fn, from_fn_with_state};
@@ -15,25 +25,17 @@ use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
     X_XSS_PROTECTION,
 };
-use std::process::ExitCode;
-use std::sync::Arc;
-use std::time::Duration;
 use tokio::net::{TcpListener, UnixListener};
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
-use wastebin_core::db::Database;
 
-mod assets;
-mod cache;
-mod env;
-mod errors;
-mod handlers;
-mod highlight;
-mod page;
-#[cfg(test)]
-mod test_helpers;
+use crate::cache::Cache;
+use crate::errors::Error;
+use crate::handlers::extract::Theme;
+use crate::handlers::{delete, download, html, insert, raw, robots, theme};
+use wastebin_core::db::Database;
 
 /// Reference counted [`page::Page`] wrapper.
 pub(crate) type Page = Arc<page::Page>;

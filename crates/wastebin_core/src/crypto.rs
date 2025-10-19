@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use chacha20poly1305::aead::{Aead, AeadCore, KeyInit, OsRng};
+use chacha20poly1305::aead::{Aead, AeadCore, KeyInit};
 use chacha20poly1305::{Key, XChaCha20Poly1305, XNonce};
 use tokio::task::spawn_blocking;
 
@@ -60,8 +60,8 @@ impl From<Vec<u8>> for Plaintext {
 
 fn cipher_from(password: &[u8]) -> Result<XChaCha20Poly1305, Error> {
     let key = argon2::hash_raw(password, SALT.as_bytes(), &CONFIG)?;
-    let key = Key::from_slice(&key);
-    Ok(XChaCha20Poly1305::new(key))
+    let key = Key::try_from(key.as_slice()).map_err(|_| Error::ChaCha20Poly1305Encrypt)?;
+    Ok(XChaCha20Poly1305::new(&key))
 }
 
 impl Plaintext {
@@ -69,7 +69,8 @@ impl Plaintext {
     pub async fn encrypt(self, password: Password) -> Result<Encrypted, Error> {
         spawn_blocking(move || {
             let cipher = cipher_from(&password.0)?;
-            let nonce = XChaCha20Poly1305::generate_nonce(&mut OsRng);
+            let nonce =
+                XChaCha20Poly1305::generate_nonce().map_err(|_| Error::ChaCha20Poly1305Encrypt)?;
             let ciphertext = cipher
                 .encrypt(&nonce, self.0.as_ref())
                 .map_err(|_| Error::ChaCha20Poly1305Encrypt)?;
@@ -90,9 +91,10 @@ impl Encrypted {
     pub async fn decrypt(self, password: Password) -> Result<Vec<u8>, Error> {
         spawn_blocking(move || {
             let cipher = cipher_from(&password.0)?;
-            let nonce = XNonce::from_slice(&self.nonce);
+            let nonce = XNonce::try_from(self.nonce.as_slice())
+                .map_err(|_| Error::ChaCha20Poly1305Decrypt)?;
             let plaintext = cipher
-                .decrypt(nonce, self.ciphertext.as_ref())
+                .decrypt(&nonce, self.ciphertext.as_ref())
                 .map_err(|_| Error::ChaCha20Poly1305Decrypt)?;
             Ok(plaintext)
         })

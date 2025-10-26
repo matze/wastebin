@@ -1,7 +1,6 @@
 use std::num::NonZeroU32;
 
 use axum::extract::{Form, State};
-use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::cookie::{Cookie, SameSite, SignedCookieJar};
 use serde::{Deserialize, Serialize};
@@ -48,7 +47,6 @@ pub async fn post<E: std::fmt::Debug>(
     State(page): State<Page>,
     State(db): State<Database>,
     jar: SignedCookieJar,
-    headers: HeaderMap,
     uid: Option<Uid>,
     theme: Option<Theme>,
     entry: Result<Form<Entry>, E>,
@@ -56,19 +54,6 @@ pub async fn post<E: std::fmt::Debug>(
     let Ok(Form(entry)) = entry else {
         return Err(make_error(crate::Error::MalformedForm, page, theme));
     };
-
-    // TODO: think about something more appropriate because those headers might be all messed up
-    // and yet we still have a proper TLS connection.
-    let is_https = headers
-        .get(http::header::HOST)
-        .zip(headers.get(http::header::ORIGIN))
-        .and_then(|(host, origin)| host.to_str().ok().zip(origin.to_str().ok()))
-        .and_then(|(host, origin)| {
-            origin
-                .strip_prefix("https://")
-                .map(|origin| origin.starts_with(host))
-        })
-        .unwrap_or(false);
 
     async {
         // Use cookie uid or generate a new one.
@@ -93,7 +78,7 @@ pub async fn post<E: std::fmt::Debug>(
 
         let cookie = Cookie::build(("uid", uid.to_string()))
             .http_only(true)
-            .secure(is_https)
+            .secure(true)
             .same_site(SameSite::Strict)
             .build();
 
@@ -180,7 +165,7 @@ mod tests {
         assert!(cookie.domain().is_none());
         assert!(cookie.expires().is_none());
         assert!(cookie.max_age().is_none());
-        assert!(!cookie.secure());
+        assert!(cookie.secure());
 
         Ok(())
     }

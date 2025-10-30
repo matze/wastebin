@@ -1,5 +1,3 @@
-#![cfg_attr(test, allow(clippy::map_unwrap_or, clippy::unwrap_used))]
-
 mod assets;
 mod cache;
 mod env;

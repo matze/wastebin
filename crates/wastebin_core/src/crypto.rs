@@ -38,7 +38,7 @@ pub(crate) struct Encrypted {
     /// Encrypted ciphertext.
     pub ciphertext: Vec<u8>,
     /// Nonce used for encryption.
-    pub nonce: Vec<u8>,
+    pub nonce: XNonce,
 }
 
 pub struct Password(Vec<u8>);
@@ -75,7 +75,7 @@ impl Plaintext {
                 .encrypt(&nonce, self.0.as_ref())
                 .map_err(|_| Error::ChaCha20Poly1305Encrypt)?;
 
-            Ok(Encrypted::new(ciphertext, nonce.to_vec()))
+            Ok(Encrypted::new(ciphertext, nonce))
         })
         .await?
     }
@@ -83,7 +83,7 @@ impl Plaintext {
 
 impl Encrypted {
     /// Create new [`Encrypted`] item from `ciphertext` and `nonce`.
-    pub fn new(ciphertext: Vec<u8>, nonce: Vec<u8>) -> Self {
+    pub fn new(ciphertext: Vec<u8>, nonce: XNonce) -> Self {
         Self { ciphertext, nonce }
     }
 

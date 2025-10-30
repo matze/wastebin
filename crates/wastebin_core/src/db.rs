@@ -2,6 +2,7 @@ use std::io::Cursor;
 use std::path::PathBuf;
 use std::time::Duration;
 
+use chacha20poly1305::XNonce;
 use rusqlite::{Connection, Transaction, params};
 use rusqlite_migration::{HookError, M, Migrations};
 use tokio::sync::oneshot;
@@ -110,6 +111,7 @@ pub mod write {
     use crate::crypto::{Encrypted, Password, Plaintext};
     use crate::db::Error;
     use async_compression::tokio::bufread::ZstdEncoder;
+    use chacha20poly1305::XNonce;
     use serde::{Deserialize, Serialize};
     use std::io::Cursor;
     use std::num::NonZeroU32;
@@ -149,7 +151,7 @@ pub mod write {
         /// Compressed and potentially encrypted data
         pub data: Vec<u8>,
         /// Nonce for this entry
-        pub nonce: Option<Vec<u8>>,
+        pub nonce: Option<XNonce>,
     }
 
     impl Entry {
@@ -195,6 +197,7 @@ pub mod read {
     use crate::expiration::Expiration;
     use crate::id::Id;
     use async_compression::tokio::bufread::ZstdDecoder;
+    use chacha20poly1305::XNonce;
     use std::io::Cursor;
     use tokio::io::AsyncReadExt;
 
@@ -210,7 +213,7 @@ pub mod read {
         /// Entry must be deleted
         pub must_be_deleted: bool,
         /// Nonce for this entry
-        pub nonce: Option<Vec<u8>>,
+        pub nonce: Option<XNonce>,
     }
 
     /// Potentially decrypted but still compressed entry
@@ -444,6 +447,8 @@ impl Handler {
         id: Id,
         write::DatabaseEntry { entry, data, nonce }: write::DatabaseEntry,
     ) -> Result<(), Error> {
+        let nonce = nonce.as_ref().map(|n| n.as_slice());
+
         match entry.expires {
             None => self.conn.execute(
                 "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, title) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
@@ -493,11 +498,23 @@ impl Handler {
             "SELECT data, burn_after_reading, nonce, expires < datetime('now') FROM entries WHERE id=?1",
             params![id.to_i64()],
             |row| {
+                let nonce = row
+                    .get::<_, Option<Vec<_>>>(2)?
+                    .map(|v| XNonce::try_from(v.as_slice()))
+                    .transpose()
+                    .map_err(|err| {
+                        rusqlite::Error::FromSqlConversionFailure(
+                            2,
+                            rusqlite::types::Type::Blob,
+                            Box::new(err),
+                        )
+                    })?;
+
                 Ok(read::DatabaseEntry {
                     data: row.get(0)?,
                     metadata,
                     must_be_deleted: row.get::<_, Option<bool>>(1)?.unwrap_or(false),
-                    nonce: row.get(2)?,
+                    nonce,
                     expired: row.get::<_, Option<bool>>(3)?.unwrap_or(false),
                 })
             },

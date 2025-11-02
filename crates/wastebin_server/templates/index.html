@@ -24,6 +24,7 @@
           <div class="controls-group">
             <div class="controls-row">
               <select class="controls-row" name="extension" id="langs" size="17" aria-label="Language">
+                <option value="" selected>-- highlight style --</option>
               {%- for syntax in highlighter.syntaxes -%}
                 {%- if let Some(extension) = syntax.file_extensions.first() %}
                 <option value="{{ extension }}">{{ syntax.name }}</option>

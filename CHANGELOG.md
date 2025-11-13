@@ -6,6 +6,11 @@
 
 - Customize scrollbar color for the language list.
 
+### Fixed
+
+- Check if Ctrl/Meta/Cmd key is pressed together with C to avoid unexpected
+  behaviour on platforms where Ctrl+C might be registered as just C.
+
 
 ## 3.3.0
 

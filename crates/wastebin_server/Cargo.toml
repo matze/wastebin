@@ -6,7 +6,7 @@ rust-version.workspace = true
 publish = false
 
 [dependencies]
-askama = { version = "0.14.0" }
+askama = { workspace = true }
 askama_web = { version = "0.14.0", features = ["axum-0.8"] }
 axum = { version = "0.8", features = ["json", "query", "macros"] }
 axum-extra = { version = "0.12", features = ["cookie-signed", "typed-header"] }

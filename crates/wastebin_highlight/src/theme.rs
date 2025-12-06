@@ -20,9 +20,14 @@ pub enum Theme {
 impl Theme {
     /// Generate combined light CSS for the given Theme.
     pub fn light_css(&self) -> Vec<u8> {
+        combined_css("light", &self.light_theme())
+    }
+
+    /// Return light syntect highlighting theme.
+    pub fn light_theme(&self) -> syntect::highlighting::Theme {
         let theme_set = two_face::theme::extra();
 
-        let theme = match self {
+        match self {
             Theme::Ayu => {
                 let theme = include_str!("../themes/ayu-light.tmTheme");
                 ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
@@ -36,16 +41,19 @@ impl Theme {
                 .clone(),
             Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfLight).clone(),
             Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedLight).clone(),
-        };
-
-        combined_css("light", &theme)
+        }
     }
 
     /// Generate combined dark CSS for the given Theme.
     pub fn dark_css(&self) -> Vec<u8> {
+        combined_css("dark", &self.dark_theme())
+    }
+
+    /// Return dark syntect highlighting theme.
+    pub fn dark_theme(&self) -> syntect::highlighting::Theme {
         let theme_set = two_face::theme::extra();
 
-        let theme = match self {
+        match self {
             Theme::Ayu => {
                 let theme = include_str!("../themes/ayu-dark.tmTheme");
                 ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
@@ -57,9 +65,7 @@ impl Theme {
             Theme::Monokai => theme_set.get(EmbeddedThemeName::MonokaiExtended).clone(),
             Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfDark).clone(),
             Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedDark).clone(),
-        };
-
-        combined_css("dark", &theme)
+        }
     }
 }
 

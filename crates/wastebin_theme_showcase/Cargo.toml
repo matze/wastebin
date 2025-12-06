@@ -1,0 +1,14 @@
+[package]
+name = "wastebin-theme-showcase"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+askama = { workspace = true }
+syntect = { workspace = true }
+two-face = { workspace = true }
+wastebin_highlight = { path = "../wastebin_highlight/" }
+
+[lints]
+workspace = true

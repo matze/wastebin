@@ -12,6 +12,11 @@
 - Check if Ctrl/Meta/Cmd key is pressed together with C to avoid unexpected
   behaviour on platforms where Ctrl+C might be registered as just C.
 
+### Added
+
+- `wastebin-theme-showcase` binary to generate a static HTML page with theme
+  examples for both light and dark variants.
+
 
 ## 3.3.0
 

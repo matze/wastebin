@@ -2349,6 +2349,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "wastebin-theme-showcase"
+version = "3.3.0"
+dependencies = [
+ "askama",
+ "syntect",
+ "two-face",
+ "wastebin_highlight",
+]
+
+[[package]]
 name = "wastebin_core"
 version = "3.3.0"
 dependencies = [

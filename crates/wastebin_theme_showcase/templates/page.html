@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wastebin themes</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        background-color: #333;
+        color: #39bae6;
+      }
+
+      h1 {
+        margin-bottom: 30px;
+      }
+
+      .theme-variants-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
+          gap: 20px;
+      }
+
+      @media (max-width: 900px) {
+        .theme-variants-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .variant-col {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .variant-col:first-child {
+          margin-bottom: 20px;
+        }
+
+        .code-preview {
+          width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+        }
+      }
+
+      .code-preview {
+        padding: 0;
+        margin: 0;
+        font-family: monospace;
+        line-height: 1.4;
+        font-size: 11pt;
+      }
+
+      .code-preview > pre {
+        padding: 1em;
+        border-radius: 8px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+<body>
+  <header>
+    <h1>wastebin themes</h1>
+  </header>
+
+  <div>
+    {% for example in examples %}
+    <h2 class="theme-name">{{ example.name }}</h2>
+
+    <section class="theme-pair">
+      <div class="theme-variants-grid">
+        <div class="variant-col">
+          <div class="code-preview">
+          {{ example.light_html | safe }}
+          </div>
+        </div>
+
+        <div class="variant-col">
+          <div class="code-preview">
+          {{ example.dark_html | safe }}
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+</body>

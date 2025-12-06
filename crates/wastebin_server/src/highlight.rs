@@ -33,7 +33,15 @@ pub(crate) struct Html(String);
 #[derive(Clone)]
 pub(crate) struct Highlighter {
     syntax_set: SyntaxSet,
-    pub syntaxes: Vec<SyntaxReference>,
+    syntaxes: Vec<SyntaxReference>,
+}
+
+/// Syntax reference.
+pub(crate) struct Syntax<'a> {
+    /// Name of the syntax or the language it is related to.
+    pub(crate) name: &'a str,
+    /// List of possible filename extensions.
+    pub(crate) extensions: &'a [String],
 }
 
 impl Default for Highlighter {
@@ -244,6 +252,15 @@ impl Highlighter {
             tokio::task::spawn_blocking(move || highlighter.highlight_inner(&text, ext.as_deref()))
                 .await??,
         ))
+    }
+
+    /// Return iterator over all available [`Syntax`]es with their canonical name and usual file
+    /// extensions.
+    pub(crate) fn syntaxes<'a>(&'a self) -> impl Iterator<Item = Syntax<'a>> {
+        self.syntaxes.iter().map(|syntax| Syntax {
+            name: syntax.name.as_ref(),
+            extensions: syntax.file_extensions.as_slice(),
+        })
     }
 }
 

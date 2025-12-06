@@ -1,7 +1,7 @@
 # <img width="24px" height="24px" style="position: relative; top: 2px;" src="assets/favicon.png"/> wastebin
 [![Rust](https://github.com/matze/wastebin/actions/workflows/rust.yml/badge.svg)](https://github.com/matze/wastebin/actions/workflows/rust.yml)
 
-## <strong><a href="https://war.ukraine.ua/support-ukraine/">support 🇺🇦</a> • <a href="https://state-of-the-union.ec.europa.eu/state-union-2022/state-union-achievements/defending-eu-values_en">defend 🇪🇺</a></strong>
+## <strong><a href="https://war.ukraine.ua/support-ukraine/">support 🇺🇦</a> • <a href="https://commission.europa.eu/strategy-and-policy/state-union/state-union-2022/defending-eu-values">defend 🇪🇺</a></strong>
 
 A minimal pastebin with a design shamelessly copied from
 [bin](https://github.com/WantGuns/bin).
@@ -24,7 +24,7 @@ to earlier versions here:
 * [axum](https://github.com/tokio-rs/axum) and [sqlite3](https://www.sqlite.org) backend
 * comes as a single binary with low memory footprint
 * compresses pastes using [zstd](https://github.com/facebook/zstd)
-* highlights entries with [syntect](https://github.com/trishume/syntect)
+* syntax highlighting for > 170 languages with [syntect](https://github.com/trishume/syntect)
 * comes with eight color themes in light and dark mode
 * encrypts entries using ChaCha20Poly1305 and argon2 hashed passwords
 * allows deletion after expiration, after reading or by anonymous owners

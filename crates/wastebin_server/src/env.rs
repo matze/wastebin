@@ -7,12 +7,12 @@ use std::time::Duration;
 
 use axum_extra::extract::cookie::Key;
 
-use crate::highlight;
 use wastebin_core::env::vars::{
     self, ADDRESS_PORT, BASE_URL, CACHE_SIZE, DATABASE_PATH, HTTP_TIMEOUT, MAX_BODY_SIZE,
     PASTE_EXPIRATIONS, SIGNING_KEY,
 };
 use wastebin_core::{db, expiration};
+use wastebin_highlight::Theme;
 
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -62,18 +62,18 @@ pub fn title() -> String {
     std::env::var(vars::TITLE).unwrap_or_else(|_| "wastebin".to_string())
 }
 
-pub fn theme() -> Result<highlight::Theme, Error> {
+pub fn theme() -> Result<Theme, Error> {
     std::env::var(vars::THEME).map_or_else(
-        |_| Ok(highlight::Theme::Ayu),
+        |_| Ok(Theme::Ayu),
         |var| match var.as_str() {
-            "ayu" => Ok(highlight::Theme::Ayu),
-            "base16ocean" => Ok(highlight::Theme::Base16Ocean),
-            "catppuccin" => Ok(highlight::Theme::Catppuccin),
-            "coldark" => Ok(highlight::Theme::Coldark),
-            "gruvbox" => Ok(highlight::Theme::Gruvbox),
-            "monokai" => Ok(highlight::Theme::Monokai),
-            "onehalf" => Ok(highlight::Theme::Onehalf),
-            "solarized" => Ok(highlight::Theme::Solarized),
+            "ayu" => Ok(Theme::Ayu),
+            "base16ocean" => Ok(Theme::Base16Ocean),
+            "catppuccin" => Ok(Theme::Catppuccin),
+            "coldark" => Ok(Theme::Coldark),
+            "gruvbox" => Ok(Theme::Gruvbox),
+            "monokai" => Ok(Theme::Monokai),
+            "onehalf" => Ok(Theme::Onehalf),
+            "solarized" => Ok(Theme::Solarized),
             _ => Err(Error::UnknownTheme(var)),
         },
     )

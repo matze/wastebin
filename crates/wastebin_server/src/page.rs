@@ -1,8 +1,8 @@
 use url::Url;
 
 use crate::assets::{Asset, Css, Kind};
-use crate::highlight::Theme;
 use wastebin_core::expiration::{Expiration, ExpirationSet};
+use wastebin_highlight::Theme;
 
 /// Static page assets.
 pub(crate) struct Assets {

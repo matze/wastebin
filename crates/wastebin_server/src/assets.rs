@@ -8,7 +8,7 @@ use syntect::highlighting::{self, ThemeSet};
 use syntect::html::{ClassStyle, css_for_theme_with_class_style};
 use two_face::theme::EmbeddedThemeName;
 
-use crate::highlight::Theme;
+use wastebin_highlight::Theme;
 
 /// An asset associated with a MIME type.
 #[derive(Clone)]

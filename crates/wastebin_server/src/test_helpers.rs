@@ -8,11 +8,11 @@ use reqwest::RequestBuilder;
 use tokio::net::TcpListener;
 
 use crate::cache::Cache;
-use crate::highlight::{Highlighter, Theme};
 use crate::page;
 
 use wastebin_core::db::{self, Database};
 use wastebin_core::expiration::ExpirationSet;
+use wastebin_highlight::{Highlighter, Theme};
 
 pub(crate) struct Client {
     client: reqwest::Client,

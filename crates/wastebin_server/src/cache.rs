@@ -6,9 +6,9 @@ use std::sync::{Arc, Mutex};
 use cached::{Cached, SizedCache};
 
 use crate::errors::Error;
-use crate::highlight::Html;
 
 use wastebin_core::id::Id;
+use wastebin_highlight::Html;
 
 /// Cache based on identifier and format.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

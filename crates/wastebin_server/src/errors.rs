@@ -14,10 +14,8 @@ pub(crate) enum Error {
     IntConversion(#[from] TryFromIntError),
     #[error("join error: {0}")]
     Join(#[from] tokio::task::JoinError),
-    #[error("syntax highlighting error: {0}")]
-    SyntaxHighlighting(#[from] syntect::Error),
-    #[error("syntax parsing error: {0}")]
-    SyntaxParsing(#[from] syntect::parsing::ParsingError),
+    #[error("highlighting error: {0}")]
+    SyntaxHighlighting(#[from] wastebin_highlight::Error),
     #[error("could not generate QR code: {0}")]
     QrCode(#[from] qrcodegen::DataTooLong),
     #[error("could not parse URL: {0}")]
@@ -54,7 +52,6 @@ impl From<Error> for StatusCode {
             | Error::Database(_)
             | Error::IntConversion(_)
             | Error::SyntaxHighlighting(_)
-            | Error::SyntaxParsing(_)
             | Error::Axum(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

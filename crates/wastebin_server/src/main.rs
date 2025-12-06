@@ -3,7 +3,6 @@ mod cache;
 mod env;
 mod errors;
 mod handlers;
-mod highlight;
 mod page;
 #[cfg(test)]
 mod test_helpers;
@@ -39,7 +38,7 @@ use wastebin_core::db::Database;
 pub(crate) type Page = Arc<page::Page>;
 
 /// Reference counted [`highlight::Highlighter`] wrapper.
-pub(crate) type Highlighter = Arc<highlight::Highlighter>;
+pub(crate) type Highlighter = Arc<wastebin_highlight::Highlighter>;
 
 #[derive(Clone)]
 pub(crate) struct AppState {
@@ -239,7 +238,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!("enforcing a http timeout of {timeout:#?}");
 
     let page = Arc::new(page::Page::new(title, base_url, theme, expirations));
-    let highlighter = Arc::new(highlight::Highlighter::default());
+    let highlighter = Arc::new(wastebin_highlight::Highlighter::default());
     let state = AppState {
         db,
         cache,

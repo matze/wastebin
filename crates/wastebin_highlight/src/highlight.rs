@@ -10,37 +10,31 @@ use syntect::util::LinesWithEndings;
 #[expect(deprecated)]
 use syntect::parsing::SCOPE_REPO;
 
-use crate::errors::Error;
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("syntax highlighting error: {0}")]
+    SyntaxHighlighting(#[from] syntect::Error),
+    #[error("syntax parsing error: {0}")]
+    SyntaxParsing(#[from] syntect::parsing::ParsingError),
+}
 
 const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
 
-/// Supported themes.
-#[derive(Copy, Clone)]
-pub(crate) enum Theme {
-    Ayu,
-    Base16Ocean,
-    Catppuccin,
-    Coldark,
-    Gruvbox,
-    Monokai,
-    Onehalf,
-    Solarized,
-}
+#[derive(Clone)]
+pub struct Html(String);
 
 #[derive(Clone)]
-pub(crate) struct Html(String);
-
-pub(crate) struct Highlighter {
+pub struct Highlighter {
     syntax_set: SyntaxSet,
     syntaxes: Vec<SyntaxReference>,
 }
 
 /// Syntax reference.
-pub(crate) struct Syntax<'a> {
+pub struct Syntax<'a> {
     /// Name of the syntax or the language it is related to.
-    pub(crate) name: &'a str,
+    pub name: &'a str,
     /// List of possible filename extensions.
-    pub(crate) extensions: &'a [String],
+    pub extensions: &'a [String],
 }
 
 impl Default for Highlighter {
@@ -225,7 +219,9 @@ impl Highlighter {
             html.push_str(r#"<td class="line">"#);
 
             if delta < 0 {
-                html.push_str(&"<span>".repeat(delta.abs().try_into()?));
+                html.push_str(
+                    &"<span>".repeat(delta.abs().try_into().expect("isize fits into usize")),
+                );
             }
 
             // Strip stray newlines that cause vertically stretched lines.
@@ -234,7 +230,7 @@ impl Highlighter {
             }
 
             if delta > 0 {
-                html.push_str(&"</span>".repeat(delta.try_into()?));
+                html.push_str(&"</span>".repeat(delta.try_into().expect("isize fits into usize")));
             }
 
             html.push_str("</td></tr>");
@@ -247,7 +243,7 @@ impl Highlighter {
 
     /// Return iterator over all available [`Syntax`]es with their canonical name and usual file
     /// extensions.
-    pub(crate) fn syntaxes<'a>(&'a self) -> impl Iterator<Item = Syntax<'a>> {
+    pub fn syntaxes<'a>(&'a self) -> impl Iterator<Item = Syntax<'a>> {
         self.syntaxes.iter().map(|syntax| Syntax {
             name: syntax.name.as_ref(),
             extensions: syntax.file_extensions.as_slice(),

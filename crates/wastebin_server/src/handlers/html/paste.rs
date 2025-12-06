@@ -81,7 +81,10 @@ pub async fn get<E>(
             tracing::trace!(?key, "found cached item");
             html.into_inner()
         } else {
-            let html = highlighter.highlight(text, key.ext.clone()).await?;
+            let ext = key.ext.clone();
+            let highlighter = highlighter.clone();
+            let html =
+                tokio::task::spawn_blocking(move || highlighter.highlight(text, ext)).await??;
 
             if is_available && no_password {
                 tracing::trace!(?key, "cache item");

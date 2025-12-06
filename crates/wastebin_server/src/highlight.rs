@@ -30,7 +30,6 @@ pub(crate) enum Theme {
 #[derive(Clone)]
 pub(crate) struct Html(String);
 
-#[derive(Clone)]
 pub(crate) struct Highlighter {
     syntax_set: SyntaxSet,
     syntaxes: Vec<SyntaxReference>,
@@ -183,10 +182,12 @@ fn line_tokens_to_classed_spans_md(
 }
 
 impl Highlighter {
-    fn highlight_inner(&self, source: &str, ext: Option<&str>) -> Result<String, Error> {
+    /// Highlight `text` with the given file extension which is used to
+    /// determine the right syntax. If not given or does not exist, plain text will be generated.
+    pub fn highlight(&self, text: String, ext: Option<String>) -> Result<Html, Error> {
         let syntax_ref = self
             .syntax_set
-            .find_syntax_by_extension(ext.unwrap_or("txt"))
+            .find_syntax_by_extension(ext.as_deref().unwrap_or("txt"))
             .unwrap_or_else(|| {
                 self.syntax_set
                     .find_syntax_by_extension("txt")
@@ -198,7 +199,7 @@ impl Highlighter {
         let mut html = String::from("<table><tbody>");
         let mut scope_stack = ScopeStack::new();
 
-        for (mut line_number, line) in LinesWithEndings::from(source).enumerate() {
+        for (mut line_number, line) in LinesWithEndings::from(&text).enumerate() {
             let (formatted, delta) = if line.len() > HIGHLIGHT_LINE_LENGTH_CUTOFF {
                 (line.to_string(), 0)
             } else {
@@ -241,17 +242,7 @@ impl Highlighter {
 
         html.push_str("</tbody></table>");
 
-        Ok(html)
-    }
-
-    /// Highlight `data` with the given file extension.
-    pub async fn highlight(&self, text: String, ext: Option<String>) -> Result<Html, Error> {
-        let highlighter = self.clone();
-
-        Ok(Html(
-            tokio::task::spawn_blocking(move || highlighter.highlight_inner(&text, ext.as_deref()))
-                .await??,
-        ))
+        Ok(Html(html))
     }
 
     /// Return iterator over all available [`Syntax`]es with their canonical name and usual file
@@ -277,10 +268,13 @@ mod tests {
     #[test]
     fn markdown_links() -> Result<(), Box<dyn std::error::Error>> {
         let highlighter = Highlighter::default();
-        let html = highlighter
-            .highlight_inner("[hello](https://github.com/matze/wastebin)", Some("md"))?;
 
-        assert!(html.contains("<span class=\"markup underline link markdown\"><a href=\"https://github.com/matze/wastebin\">https://github.com/matze/wastebin</span></a>"));
+        let html = highlighter.highlight(
+            "[hello](https://github.com/matze/wastebin)".into(),
+            Some("md".into()),
+        )?;
+
+        assert!(html.into_inner().contains("<span class=\"markup underline link markdown\"><a href=\"https://github.com/matze/wastebin\">https://github.com/matze/wastebin</span></a>"));
 
         Ok(())
     }

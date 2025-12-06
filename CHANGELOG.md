@@ -5,6 +5,7 @@
 ### Changed
 
 - Customize scrollbar color for the language list.
+- Avoid unnecessary memory allocation when highlighting.
 
 ### Fixed
 

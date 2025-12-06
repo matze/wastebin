@@ -1,12 +1,8 @@
-use std::io::Cursor;
 use std::time::Duration;
 
 use axum::response::{IntoResponse, Response};
 use axum_extra::{TypedHeader, headers};
 use sha2::{Digest, Sha256};
-use syntect::highlighting::{self, ThemeSet};
-use syntect::html::{ClassStyle, css_for_theme_with_class_style};
-use two_face::theme::EmbeddedThemeName;
 
 use wastebin_highlight::Theme;
 
@@ -91,76 +87,14 @@ pub(crate) struct Css {
     pub dark: Asset,
 }
 
-/// Generate the highlighting colors for `theme` and add main foreground and background colors
-/// based on the theme.
-fn combined_css(color_scheme: &str, theme: &highlighting::Theme) -> Vec<u8> {
-    let fg = theme.settings.foreground.expect("existing color");
-    let bg = theme.settings.background.expect("existing color");
-
-    let main_colors = format!(
-        ":root {{
-  color-scheme: {color_scheme};
-  --main-bg-color: rgb({}, {}, {}, {});
-  --main-fg-color: rgb({}, {}, {}, {});
-}}",
-        bg.r, bg.g, bg.b, bg.a, fg.r, fg.g, fg.b, fg.a
-    );
-
-    format!(
-        "{main_colors} {}",
-        css_for_theme_with_class_style(theme, ClassStyle::Spaced).expect("generating CSS")
-    )
-    .into_bytes()
-}
-
 impl Css {
     /// Create CSS assets for `theme`.
     pub fn new(theme: Theme) -> Self {
-        let light_theme = light_theme(theme);
-        let dark_theme = dark_theme(theme);
         let style = Asset::new_hashed("style", Kind::Css, include_str!("style.css").into());
-        let light = Asset::new_hashed("light", Kind::Css, combined_css("light", &light_theme));
-        let dark = Asset::new_hashed("dark", Kind::Css, combined_css("dark", &dark_theme));
+        let light = Asset::new_hashed("light", Kind::Css, theme.light_css());
+        let dark = Asset::new_hashed("dark", Kind::Css, theme.dark_css());
 
         Self { style, light, dark }
-    }
-}
-
-fn light_theme(theme: Theme) -> syntect::highlighting::Theme {
-    let theme_set = two_face::theme::extra();
-
-    match theme {
-        Theme::Ayu => {
-            let theme = include_str!("themes/ayu-light.tmTheme");
-            ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
-        }
-        Theme::Base16Ocean => theme_set.get(EmbeddedThemeName::Base16OceanLight).clone(),
-        Theme::Catppuccin => theme_set.get(EmbeddedThemeName::CatppuccinLatte).clone(),
-        Theme::Coldark => theme_set.get(EmbeddedThemeName::ColdarkCold).clone(),
-        Theme::Gruvbox => theme_set.get(EmbeddedThemeName::GruvboxLight).clone(),
-        Theme::Monokai => theme_set
-            .get(EmbeddedThemeName::MonokaiExtendedLight)
-            .clone(),
-        Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfLight).clone(),
-        Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedLight).clone(),
-    }
-}
-
-fn dark_theme(theme: Theme) -> syntect::highlighting::Theme {
-    let theme_set = two_face::theme::extra();
-
-    match theme {
-        Theme::Ayu => {
-            let theme = include_str!("themes/ayu-dark.tmTheme");
-            ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
-        }
-        Theme::Base16Ocean => theme_set.get(EmbeddedThemeName::Base16OceanDark).clone(),
-        Theme::Catppuccin => theme_set.get(EmbeddedThemeName::CatppuccinMocha).clone(),
-        Theme::Coldark => theme_set.get(EmbeddedThemeName::ColdarkDark).clone(),
-        Theme::Gruvbox => theme_set.get(EmbeddedThemeName::GruvboxDark).clone(),
-        Theme::Monokai => theme_set.get(EmbeddedThemeName::MonokaiExtended).clone(),
-        Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfDark).clone(),
-        Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedDark).clone(),
     }
 }
 

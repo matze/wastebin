@@ -25,7 +25,7 @@ to earlier versions here:
 * comes as a single binary with low memory footprint
 * compresses pastes using [zstd](https://github.com/facebook/zstd)
 * syntax highlighting for > 170 languages with [syntect](https://github.com/trishume/syntect)
-* comes with eight color themes in light and dark mode
+* comes with [eight color themes](https://matze.github.io/wastebin/) in light and dark mode
 * encrypts entries using ChaCha20Poly1305 and argon2 hashed passwords
 * allows deletion after expiration, after reading or by anonymous owners
 * shows QR code to browse a paste's URL on mobile devices

@@ -1,3 +1,6 @@
+#![expect(clippy::unwrap_used)]
+#![expect(clippy::print_stdout)]
+
 use askama::Template;
 
 #[derive(Template)]
@@ -22,7 +25,7 @@ fn main() {
         .unwrap();
 
     let highlight = |theme: &syntect::highlighting::Theme| {
-        syntect::html::highlighted_html_for_string(code, &syntax_set, &syntax, theme).unwrap()
+        syntect::html::highlighted_html_for_string(code, &syntax_set, syntax, theme).unwrap()
     };
 
     let examples = [

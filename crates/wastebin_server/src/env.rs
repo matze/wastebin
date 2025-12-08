@@ -12,7 +12,7 @@ use wastebin_core::env::vars::{
     PASTE_EXPIRATIONS, SIGNING_KEY,
 };
 use wastebin_core::{db, expiration};
-use wastebin_highlight::Theme;
+use wastebin_highlight::{Theme, theme::ParseThemeNameError};
 
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -34,8 +34,8 @@ pub(crate) enum Error {
     HttpTimeout(ParseIntError),
     #[error("failed to parse {PASTE_EXPIRATIONS}: {0}")]
     ParsePasteExpiration(#[from] expiration::Error),
-    #[error("unknown theme {0}")]
-    UnknownTheme(String),
+    #[error("failed to parse theme name")]
+    ParseTheme(#[from] ParseThemeNameError),
     #[error("binding to both TCP and Unix socket is not possible")]
     BothListeners,
 }
@@ -63,20 +63,7 @@ pub fn title() -> String {
 }
 
 pub fn theme() -> Result<Theme, Error> {
-    std::env::var(vars::THEME).map_or_else(
-        |_| Ok(Theme::Ayu),
-        |var| match var.as_str() {
-            "ayu" => Ok(Theme::Ayu),
-            "base16ocean" => Ok(Theme::Base16Ocean),
-            "catppuccin" => Ok(Theme::Catppuccin),
-            "coldark" => Ok(Theme::Coldark),
-            "gruvbox" => Ok(Theme::Gruvbox),
-            "monokai" => Ok(Theme::Monokai),
-            "onehalf" => Ok(Theme::Onehalf),
-            "solarized" => Ok(Theme::Solarized),
-            _ => Err(Error::UnknownTheme(var)),
-        },
-    )
+    Ok(std::env::var(vars::THEME).map_or_else(|_| Ok(Theme::Ayu), |var| var.parse())?)
 }
 
 pub fn cache_size() -> Result<NonZeroUsize, Error> {

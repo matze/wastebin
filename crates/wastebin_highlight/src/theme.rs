@@ -1,4 +1,5 @@
 use std::io::Cursor;
+use std::str::FromStr;
 
 use syntect::highlighting::{self, ThemeSet};
 use syntect::html::{ClassStyle, css_for_theme_with_class_style};
@@ -15,6 +16,29 @@ pub enum Theme {
     Monokai,
     Onehalf,
     Solarized,
+}
+
+/// An error which can be returned when parsing a [`Theme`] from its string representation.
+#[derive(thiserror::Error, Debug)]
+#[error("failed to parse theme name")]
+pub struct ParseThemeNameError;
+
+impl FromStr for Theme {
+    type Err = ParseThemeNameError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ayu" => Ok(Theme::Ayu),
+            "base16ocean" => Ok(Theme::Base16Ocean),
+            "catppuccin" => Ok(Theme::Catppuccin),
+            "coldark" => Ok(Theme::Coldark),
+            "gruvbox" => Ok(Theme::Gruvbox),
+            "monokai" => Ok(Theme::Monokai),
+            "onehalf" => Ok(Theme::Onehalf),
+            "solarized" => Ok(Theme::Solarized),
+            _ => Err(ParseThemeNameError),
+        }
+    }
 }
 
 impl Theme {
@@ -65,6 +89,21 @@ impl Theme {
             Theme::Monokai => theme_set.get(EmbeddedThemeName::MonokaiExtended).clone(),
             Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfDark).clone(),
             Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedDark).clone(),
+        }
+    }
+
+    /// Return string representation of the theme name.
+    pub fn name(&self) -> &'static str {
+        // Make sure that these match the ones in the `FromStr` implementation.
+        match self {
+            Theme::Ayu => "ayu",
+            Theme::Base16Ocean => "base16ocean",
+            Theme::Catppuccin => "catppuccin",
+            Theme::Coldark => "coldark",
+            Theme::Gruvbox => "gruvbox",
+            Theme::Monokai => "monokai",
+            Theme::Onehalf => "onehalf",
+            Theme::Solarized => "solarized",
         }
     }
 }

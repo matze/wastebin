@@ -24,7 +24,7 @@ pub(crate) enum Error {
     Database(#[from] db::Error),
     #[error("id error: {0}")]
     Id(#[from] id::Error),
-    #[error("malformed form data")]
+    #[error("payload too large")]
     MalformedForm,
 }
 

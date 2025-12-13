@@ -3,6 +3,7 @@ name = "wastebin-theme-showcase"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+publish = false
 
 [dependencies]
 askama = { workspace = true }

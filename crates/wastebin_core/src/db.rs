@@ -37,8 +37,6 @@ pub enum Error {
     ResultSendError,
     #[error("failed to send result: {0}")]
     ResultRecvError(#[from] oneshot::error::RecvError),
-    #[error("failed to receive command: {0}")]
-    NoCommand(#[from] kanal::ReceiveError),
 }
 
 /// The programmatic database interface. However, database calls are not translated directly to
@@ -390,7 +388,10 @@ impl Handler {
     /// Run database command loop.
     fn run(mut self) -> Result<(), Error> {
         loop {
-            let command = self.receiver.recv()?;
+            let command = match self.receiver.recv() {
+                Ok(command) => command,
+                Err(kanal::ReceiveError::Closed | kanal::ReceiveError::SendClosed) => return Ok(()), // sender closed, application is shutting down..
+            };
 
             match command {
                 Command::Insert { id, entry, result } => {

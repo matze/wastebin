@@ -243,7 +243,7 @@ impl Highlighter {
 
     /// Return iterator over all available [`Syntax`]es with their canonical name and usual file
     /// extensions.
-    pub fn syntaxes<'a>(&'a self) -> impl Iterator<Item = Syntax<'a>> {
+    pub fn syntaxes(&self) -> impl Iterator<Item = Syntax<'_>> {
         self.syntaxes.iter().map(|syntax| Syntax {
             name: syntax.name.as_ref(),
             extensions: syntax.file_extensions.as_slice(),

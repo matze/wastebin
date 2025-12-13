@@ -1,5 +1,6 @@
 # Cross-compile Dockerfile supporting both x86_64-unknown-linux-musl and
-# aarch64-unknown-linux-musl using zig to link against musl libc.
+# aarch64-unknown-linux-musl targets using zig to link against musl libc. Note
+# that this is to be used from an x86_64 host.
 
 # --- build image
 

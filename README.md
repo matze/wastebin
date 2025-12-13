@@ -114,38 +114,24 @@ cargo run --release
 
 ### Build a container image
 
-It is possible to build a container image using Docker or Podman. Assuming you
-are in the root directory of the repository run
+It is possible to build a container image using Docker or Podman. The
+`Dockerfile` is designed to be run on an x86_64 host but capable of building
+images for both x86_64 and aarch64 via the `--target` flag:
 
 ```bash
 # Docker
-sudo docker build -t wastebin:v3.0.0 -f Dockerfile .
+docker build -t wastebin:v3.0.0 -f Dockerfile --target amd64 .
+docker build -t wastebin:v3.0.0 -f Dockerfile --target arm64 .
 
 # Podman
-podman build -t wastebin:v3.0.0 -f Dockerfile
+podman build -t wastebin:v3.0.0 -f Dockerfile --target amd64
+podman build -t wastebin:v3.0.0 -f Dockerfile --target arm64
 ```
 
-To cross-compile, make sure that your container engine of choice supports it,
-e.g. Docker:
+Note that you *cannot* build aarch64 images on aarch64 hosts with it.
 
-```bash
-sudo docker buildx ls
-NAME/NODE     DRIVER/ENDPOINT   STATUS    BUILDKIT   PLATFORMS
-default*      docker
- \_ default    \_ default       running   v0.14.1    linux/amd64, linux/amd64/v2, linux/386, linux/arm64, linux/riscv64, linux/ppc64, linux/ppc64le, linux/s390x, linux/mips64le, linux/mips64, linux/loong64, linux/arm/v7, linux/arm/v6
-```
-
-To build an arm64 image on an x86_64 host run
-
-```bash
-# Docker
-sudo docker build --platform linux/arm64 -t wastebin:v3.0.0-arm64 -f Dockerfile.arm .
-
-# Podman
-podman build --arch=arm64 -t wastebin:v3.0.0-arm64 -f Dockerfile.arm
-```
-
-To interact with a running wastebin instance the bundled `wastebin-ctl` tool can be used, e.g.:
+To interact with a running wastebin instance the bundled `wastebin-ctl` tool can
+be used, e.g.:
 
 ```bash
 podman exec -e RUST_LOG=debug -it wastebin /app/wastebin-ctl

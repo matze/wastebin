@@ -44,7 +44,7 @@ fn get_download(key: &Key, data: Data) -> impl IntoResponse {
 
     let content_type = "text; charset=utf-8";
     let content_disposition =
-        HeaderValue::from_str(&format!(r#"attachment; filename="{filename}""#))
+        HeaderValue::try_from(format!(r#"attachment; filename="{filename}""#))
             .expect("constructing valid header value");
 
     (

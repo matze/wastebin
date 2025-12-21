@@ -114,17 +114,16 @@ fn combined_css(color_scheme: &str, theme: &highlighting::Theme) -> Vec<u8> {
     let fg = theme.settings.foreground.expect("existing color");
     let bg = theme.settings.background.expect("existing color");
 
-    let main_colors = format!(
-        ":root {{
-  color-scheme: {color_scheme};
-  --main-bg-color: rgb({}, {}, {}, {});
-  --main-fg-color: rgb({}, {}, {}, {});
-}}",
-        bg.r, bg.g, bg.b, bg.a, fg.r, fg.g, fg.b, fg.a
-    );
-
     format!(
-        "{main_colors} {}",
+        "{} {}",
+        format_args!(
+            ":root {{
+      color-scheme: {color_scheme};
+      --main-bg-color: rgb({}, {}, {}, {});
+      --main-fg-color: rgb({}, {}, {}, {});
+    }}",
+            bg.r, bg.g, bg.b, bg.a, fg.r, fg.g, fg.b, fg.a
+        ),
         css_for_theme_with_class_style(theme, ClassStyle::Spaced).expect("generating CSS")
     )
     .into_bytes()

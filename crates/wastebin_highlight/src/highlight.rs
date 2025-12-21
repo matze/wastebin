@@ -125,10 +125,10 @@ fn line_tokens_to_classed_spans_md(
                 // Insert href and close attribute ...
                 escape(&line[cur_index..i], &mut s)?;
                 s.push_str(r#"">"#);
-                escape(&line[cur_index..i], &mut s)?;
-            } else {
-                escape(&line[cur_index..i], &mut s)?;
             }
+
+            escape(&line[cur_index..i], &mut s)?;
+
             cur_index = i;
         }
         stack.apply_with_hook(op, |basic_op, _| match basic_op {

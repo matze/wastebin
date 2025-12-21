@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 use std::fmt::Write;
 
 use syntect::html::{ClassStyle, line_tokens_to_classed_spans};
@@ -26,7 +25,7 @@ pub struct Html(String);
 #[derive(Clone)]
 pub struct Highlighter {
     syntax_set: SyntaxSet,
-    syntaxes: Vec<SyntaxReference>,
+    ordered_syntaxes: Vec<SyntaxReference>,
 }
 
 /// Syntax reference.
@@ -41,16 +40,11 @@ impl Default for Highlighter {
     fn default() -> Self {
         let syntax_set = two_face::syntax::extra_newlines();
         let mut syntaxes = syntax_set.syntaxes().to_vec();
-        syntaxes.sort_by(|a, b| {
-            a.name
-                .to_lowercase()
-                .partial_cmp(&b.name.to_lowercase())
-                .unwrap_or(Ordering::Less)
-        });
+        syntaxes.sort_unstable_by_key(|s| s.name.to_lowercase());
 
         Self {
             syntax_set,
-            syntaxes,
+            ordered_syntaxes: syntaxes,
         }
     }
 }
@@ -244,7 +238,7 @@ impl Highlighter {
     /// Return iterator over all available [`Syntax`]es with their canonical name and usual file
     /// extensions.
     pub fn syntaxes(&self) -> impl Iterator<Item = Syntax<'_>> {
-        self.syntaxes.iter().map(|syntax| Syntax {
+        self.ordered_syntaxes.iter().map(|syntax| Syntax {
             name: syntax.name.as_ref(),
             extensions: syntax.file_extensions.as_slice(),
         })

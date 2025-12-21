@@ -56,22 +56,18 @@ fn escape(s: &str, buf: &mut String) -> std::fmt::Result {
     let pile_o_bits = s;
     let mut last = 0;
     for (i, ch) in s.bytes().enumerate() {
-        match ch as char {
-            '<' | '>' | '&' | '\'' | '"' => {
-                buf.write_str(&pile_o_bits[last..i])?;
-                let s = match ch as char {
-                    '>' => "&gt;",
-                    '<' => "&lt;",
-                    '&' => "&amp;",
-                    '\'' => "&#39;",
-                    '"' => "&quot;",
-                    _ => unreachable!(),
-                };
-                buf.write_str(s)?;
-                last = i + 1;
-            }
-            _ => {}
-        }
+        let escaping = match ch as char {
+            '>' => "&gt;",
+            '<' => "&lt;",
+            '&' => "&amp;",
+            '\'' => "&#39;",
+            '"' => "&quot;",
+            _ => continue,
+        };
+
+        buf.write_str(&pile_o_bits[last..i])?;
+        buf.write_str(escaping)?;
+        last = i + 1;
     }
 
     if last < s.len() {

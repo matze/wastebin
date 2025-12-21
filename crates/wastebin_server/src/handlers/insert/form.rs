@@ -67,14 +67,17 @@ pub async fn post<E: std::fmt::Debug>(
         entry.uid = Some(uid);
 
         let id = Id::rand();
-        let mut url = id.to_url_path(&entry);
 
-        if entry.burn_after_reading.unwrap_or(false) {
-            url = format!("burn/{url}");
-        }
+        let url = {
+            let url_path = id.to_url_path(&entry);
+            if entry.burn_after_reading.unwrap_or(false) {
+                format!("/burn/{url_path}")
+            } else {
+                format!("/{url_path}")
+            }
+        };
 
         db.insert(id, entry).await?;
-        let url = format!("/{url}");
 
         let cookie = Cookie::build(("uid", uid.to_string()))
             .http_only(true)

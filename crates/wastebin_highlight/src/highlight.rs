@@ -215,6 +215,7 @@ impl Highlighter {
             }
 
             // Strip stray newlines that cause vertically stretched lines.
+            html.reserve(formatted.len());
             for c in formatted.chars().filter(|c| *c != '\n') {
                 html.push(c);
             }

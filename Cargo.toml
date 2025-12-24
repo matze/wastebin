@@ -8,7 +8,7 @@ edition = "2024"
 rust-version = "1.88"
 
 [workspace.dependencies]
-askama = { version = "0.14.0" }
+askama = { version = "0.15.0" }
 serde = { version = "1", features = ["derive"] }
 syntect = { version = "5", default-features = false, features = ["html", "plist-load", "regex-fancy"] }
 tokio = { version = "1", default-features = false }

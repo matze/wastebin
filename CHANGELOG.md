@@ -2,20 +2,27 @@
 
 ## Unreleased
 
+### Added
+
+- `wastebin-theme-showcase` binary to generate a static HTML page with theme
+  examples for both light and dark variants. See
+  [here](https://matze.github.io/wastebin/) for example output.
+- <kbd>w</kbd> key to toggle line wrapping.
+
 ### Changed
 
+- Re-wrote the `Dockerfile` to compile for both x86_64-unknown-linux and
+  aarch64-unknown-linux from an x86_64-unknown-linux host.
+- Unconditionally set the `Secure` attribute on cookies and do not try to derive
+  applicability from the origin header.
 - Customize scrollbar color for the language list.
-- Avoid unnecessary memory allocation when highlighting.
+- Many small memory-related optimizations, thanks to @cgzones for a bunch of
+  these.
 
 ### Fixed
 
 - Check if Ctrl/Meta/Cmd key is pressed together with C to avoid unexpected
   behaviour on platforms where Ctrl+C might be registered as just C.
-
-### Added
-
-- `wastebin-theme-showcase` binary to generate a static HTML page with theme
-  examples for both light and dark variants.
 
 
 ## 3.3.0

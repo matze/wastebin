@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 3.4.0
+
+**2025-12-25**
+
 ### Added
 
 - `wastebin-theme-showcase` binary to generate a static HTML page with theme

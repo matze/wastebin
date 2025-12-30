@@ -15,7 +15,7 @@ pub async fn delete(
     async {
         let id = id.parse()?;
         db.delete_for(id, uid).await?;
-        Ok(Redirect::to("/"))
+        Ok(crate::redirect("/"))
     }
     .await
     .map_err(|err| make_error(err, page.clone(), theme))

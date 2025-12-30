@@ -85,7 +85,7 @@ pub async fn post<E: std::fmt::Debug>(
             .same_site(SameSite::Strict)
             .build();
 
-        Ok((jar.add(cookie), Redirect::to(&url)))
+        Ok((jar.add(cookie), crate::redirect(&url)))
     }
     .await
     .map_err(|err| make_error(err, page, theme))

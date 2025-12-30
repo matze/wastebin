@@ -15,7 +15,7 @@ use std::time::Duration;
 use axum::extract::{DefaultBodyLimit, FromRef, Request, State};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use axum::middleware::{Next, from_fn, from_fn_with_state};
-use axum::response::{IntoResponse, Response};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{Router, get, post};
 use axum_extra::extract::cookie::Key;
 use futures::future::TryFutureExt;
@@ -24,6 +24,7 @@ use http::header::{
     X_XSS_PROTECTION,
 };
 use tokio::net::{TcpListener, UnixListener};
+use tokio::task_local;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
@@ -35,6 +36,10 @@ use crate::handlers::extract::Theme;
 use crate::handlers::{delete, download, html, insert, raw, robots, theme};
 use crate::i18n::Lang;
 use wastebin_core::db::Database;
+
+task_local! {
+    static PATH_PREFIX: String;
+}
 
 /// Reference counted [`page::Page`] wrapper.
 pub(crate) type Page = Arc<page::Page>;
@@ -79,6 +84,26 @@ impl FromRef<AppState> for Cache {
     fn from_ref(state: &AppState) -> Self {
         state.cache.clone()
     }
+}
+
+fn path_prefix() -> String {
+    PATH_PREFIX.with(|val| val.to_string())
+}
+
+fn redirect(uri: &str) -> Redirect {
+    let prefixed_uri = path_prefix() + uri;
+    Redirect::to(&prefixed_uri)
+}
+
+async fn path_prefix_layer(req: Request, next: Next) -> Response {
+    let prefix = req
+        .headers()
+        .get("x-forwarded-prefix")
+        .and_then(|val| val.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+
+    PATH_PREFIX.scope(prefix, next.run(req)).await
 }
 
 async fn security_headers_layer(req: Request, next: Next) -> impl IntoResponse {
@@ -239,6 +264,7 @@ fn make_app(state: AppState, timeout: Duration, max_body_size: usize) -> Router 
                     timeout,
                 ))
                 .layer(from_fn_with_state(state.clone(), handle_service_errors))
+                .layer(from_fn(path_prefix_layer))
                 .layer(from_fn(security_headers_layer)),
         )
         .with_state(state)

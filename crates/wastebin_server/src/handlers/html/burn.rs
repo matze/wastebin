@@ -43,6 +43,7 @@ pub async fn get(
 #[template(path = "burn.html", escape = "none")]
 pub(crate) struct Burn {
     page: Page,
+    prefix: str,
     key: Key,
     code: qrcodegen::QrCode,
     theme: Option<Theme>,

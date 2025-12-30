@@ -41,6 +41,6 @@
   </div>
   {{ html|safe }}
   {% if !is_available %}
-  <script defer src="{{ page.assets.burn_js.route()}}"></script>
+  <script defer src="{{ path_prefix }}{{ page.assets.burn_js.route()}}"></script>
   {% endif %}
 {% endblock %}

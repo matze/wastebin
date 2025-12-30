@@ -2,7 +2,7 @@
 {% block content %}
 <div class="flex-center">
   <div>
-    Copy and send <a class="text-link" href="/{{ key }}">this link</a>. After opening it for the first time, it will be deleted.
+    Copy and send <a class="text-link" href="{{ path_prefix }}/{{ key }}">this link</a>. After opening it for the first time, it will be deleted.
   </div>
   <div>
     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 {{ code.size() + 4 }} {{ code.size() + 4 }}" stroke="none" width="16rem">

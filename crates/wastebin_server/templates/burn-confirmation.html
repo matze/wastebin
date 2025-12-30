@@ -10,9 +10,9 @@
     {% if let Some(title) = title %}
     <div class="dialog-section dialog-subtitle">{{ title }}</div>
     {% endif %}
-    <form class="dialog-section dialog-actions" action="/{{ id }}" method="post">
+    <form class="dialog-section dialog-actions" action="{{ path_prefix }}/{{ id }}" method="post">
       <input type="hidden" name="confirm_burn" value="1">
-      <a class="button button-secondary" href="/">cancel</a>
+      <a class="button button-secondary" href="{{ path_prefix }}/">cancel</a>
       <button class="button" type="submit">reveal</button>
     </form>
   </div>

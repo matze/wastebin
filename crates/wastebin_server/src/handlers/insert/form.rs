@@ -83,7 +83,7 @@ pub async fn post<E: std::fmt::Debug>(
         let mut cookie = cookie("uid", uid.to_string());
         cookie.set_secure(true);
 
-        Ok((jar.add(cookie), Redirect::to(&url)))
+        Ok((jar.add(cookie), crate::redirect(&url)))
     }
     .await
     .map_err(|err| make_error(err, page, theme))

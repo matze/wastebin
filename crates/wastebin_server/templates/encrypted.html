@@ -5,10 +5,11 @@
 {% endblock %}
 
 {% block content %}
+<<<<<<< HEAD
 <div class="flex-center">
   <div class="dialog">
     <div class="dialog-header">Encrypted paste</div>
-    <form action="/{{ id }}" method="post">
+    <form action="{{ path_prefix }}/{{ id }}" method="post">
       <input type="hidden" name="confirm_burn" value="1">
       <div class="dialog-section">
         <div class="password-input-wrap">
@@ -20,7 +21,7 @@
         </div>
       </div>
       <div class="dialog-section dialog-actions">
-        <a class="button button-secondary" href="/">cancel</a>
+        <a class="button button-secondary" href="{{ path_prefix }}/">cancel</a>
         <button class="button" type="submit">decrypt</button>
       </div>
     </form>

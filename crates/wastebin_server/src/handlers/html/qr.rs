@@ -23,13 +23,7 @@ pub async fn get(
     async {
         let key: Key = id.parse()?;
 
-        let code = {
-            let page = page.clone();
-
-            tokio::task::spawn_blocking(move || code_from(&page.base_url, &id))
-                .await
-                .map_err(Error::from)??
-        };
+        let code = code_from(&page.base_url, &id).map_err(Error::from)?;
 
         let Metadata {
             uid: owner_uid,

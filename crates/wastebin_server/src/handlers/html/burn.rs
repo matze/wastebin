@@ -17,12 +17,7 @@ pub async fn get(
     async {
         let key: Key = id.parse()?;
 
-        let code = tokio::task::spawn_blocking({
-            let page = page.clone();
-            move || code_from(&page.base_url, &id)
-        })
-        .await
-        .map_err(Error::from)??;
+        let code = code_from(&page.base_url, &id) .map_err(Error::from)?;
 
         Ok(Burn {
             page: page.clone(),

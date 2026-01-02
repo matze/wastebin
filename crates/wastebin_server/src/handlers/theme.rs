@@ -10,7 +10,7 @@ pub async fn get(headers: HeaderMap, Query(pref): Query<Preference>) -> impl Int
     let response = headers
         .get(REFERER)
         .and_then(|referer| referer.to_str().ok())
-        .map_or_else(|| Redirect::to("/"), Redirect::to);
+        .map_or_else(|| crate::redirect("/"), Redirect::to);
 
     ([(SET_COOKIE, format!("pref={}", pref.pref))], response)
 }

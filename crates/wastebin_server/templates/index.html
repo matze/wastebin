@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block head %}
-<script defer src="{{ page.assets.index_js.route() }}"></script>
+<script defer src="{{ path_prefix }}{{ page.assets.index_js.route() }}"></script>
 {% endblock %}
 
 {% block nav_specific %}
@@ -15,7 +15,7 @@
 {% endblock %}
 
 {%- block content -%}
-    <form id="form" action="/new" method="post">
+    <form id="form" action="{{ path_prefix }}/new" method="post">
       <div class="container">
         <div class="content">
           <textarea id="text" name="text" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="<paste text or drop file here>" autofocus required></textarea>

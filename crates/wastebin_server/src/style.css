@@ -338,8 +338,17 @@ td.line-number {
     gap: 16px;
   }
 
+  .content {
+    min-height: 40vh;
+    padding-bottom: 16px;
+    border-bottom-color: color-mix(in srgb, var(--main-accent-color) 50%, transparent);
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+  }
+
   .controls {
     width: 100%;
+    gap: 16px;
   }
 
   .controls-group {
@@ -349,5 +358,16 @@ td.line-number {
 
   .controls-row {
     width: 100%;
+  }
+
+  #langs {
+    height: 8rem;
+    overflow-y: auto;
+  }
+
+  #expiration-list {
+    height: auto;
+    max-height: 6rem;
+    overflow-y: auto;
   }
 }

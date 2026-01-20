@@ -30,7 +30,7 @@ wastebin_core = { path = "../wastebin_core/" }
 wastebin_highlight = { path = "../wastebin_highlight/" }
 
 [dev-dependencies]
-reqwest = { version = "0.12", default-features = false, features = ["cookies", "json"] }
+reqwest = { version = "0.13", default-features = false, features = ["cookies", "form", "json", "query"] }
 tower = { version = "0.5", default-features = false, features = ["util", "make"] }
 
 [lints]

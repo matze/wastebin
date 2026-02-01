@@ -14,10 +14,12 @@ RUN update-ca-certificates
 
 ENV ZIGVERSION=0.15.2
 
-RUN wget https://ziglang.org/download/$ZIGVERSION/zig-x86_64-linux-$ZIGVERSION.tar.xz && \
-    tar -C /usr/local --strip-components=1 -xf zig-x86_64-linux-$ZIGVERSION.tar.xz && \
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "aarch64" ]; then ZIGARCH="aarch64"; else ZIGARCH="x86_64"; fi && \
+    wget https://ziglang.org/download/$ZIGVERSION/zig-$ZIGARCH-linux-$ZIGVERSION.tar.xz && \
+    tar -C /usr/local --strip-components=1 -xf zig-$ZIGARCH-linux-$ZIGVERSION.tar.xz && \
     mv /usr/local/zig /usr/local/bin && \
-    rm zig-x86_64-linux-$ZIGVERSION.tar.xz
+    rm zig-$ZIGARCH-linux-$ZIGVERSION.tar.xz
 
 RUN cargo install --locked cargo-zigbuild
 

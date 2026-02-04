@@ -1,7 +1,8 @@
 use std::sync::LazyLock;
 
-use chacha20poly1305::aead::{Aead, AeadCore, KeyInit};
+use chacha20poly1305::aead::{Aead, KeyInit};
 use chacha20poly1305::{Key, XChaCha20Poly1305, XNonce};
+use rand::Rng;
 use tokio::task::spawn_blocking;
 
 use crate::env;
@@ -69,8 +70,7 @@ impl Plaintext {
     pub async fn encrypt(self, password: Password) -> Result<Encrypted, Error> {
         spawn_blocking(move || {
             let cipher = cipher_from(&password.0)?;
-            let nonce =
-                XChaCha20Poly1305::generate_nonce().map_err(|_| Error::ChaCha20Poly1305Encrypt)?;
+            let nonce = XNonce::from(rand::rng().random::<[u8; 24]>());
             let ciphertext = cipher
                 .encrypt(&nonce, self.0.as_ref())
                 .map_err(|_| Error::ChaCha20Poly1305Encrypt)?;

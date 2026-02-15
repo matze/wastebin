@@ -13,3 +13,8 @@ ignore = true
 
 [bans]
 multiple-versions = "allow"
+
+[advisories]
+ignore = [
+    { id = "RUSTSEC-2025-0141", reason = "unmaintained but open for CVE fixes" }
+]

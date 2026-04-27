@@ -12,6 +12,7 @@ use crate::page;
 
 use wastebin_core::db::{self, Database};
 use wastebin_core::expiration::ExpirationSet;
+use wastebin_core::id::UrlScheme;
 use wastebin_highlight::{Highlighter, Theme};
 
 pub(crate) struct Client {
@@ -41,6 +42,7 @@ impl Client {
             key,
             page,
             highlighter: Arc::new(Highlighter::default()),
+            url_scheme: UrlScheme::Compact,
         };
 
         let listener = TcpListener::bind("127.0.0.1:0")

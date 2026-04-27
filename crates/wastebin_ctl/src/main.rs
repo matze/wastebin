@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use anyhow::{Context, Result};
 #[cfg(feature = "completion")]
@@ -14,7 +13,7 @@ use tabled::{Table, Tabled};
 use wastebin_core::db::read::ListEntry;
 use wastebin_core::db::{Database, Open};
 use wastebin_core::env::vars;
-use wastebin_core::id::Id;
+use wastebin_core::id::{EncodedId, UrlScheme};
 
 #[derive(Parser)]
 #[command(version, about)]
@@ -103,13 +102,23 @@ enum Expired {
 
 #[derive(Tabled)]
 struct Entry {
-    id: Id,
+    id: String,
     #[tabled(display("display::option", ""))]
     title: Option<String>,
     encrypted: Encrypted,
     #[tabled(display("display::option", ""))]
     expiration: Option<String>,
     expired: Expired,
+}
+
+/// Read the active URL scheme from the environment, defaulting to compact.
+fn read_url_scheme() -> Result<UrlScheme> {
+    match std::env::var(vars::URL_SCHEME) {
+        Ok(v) => v.parse().with_context(|| {
+            format!("invalid {}: expected `compact` or `words`", vars::URL_SCHEME)
+        }),
+        Err(_) => Ok(UrlScheme::Compact),
+    }
 }
 
 impl From<bool> for Encrypted {
@@ -142,10 +151,10 @@ impl std::fmt::Display for Expired {
     }
 }
 
-impl From<ListEntry> for Entry {
-    fn from(entry: ListEntry) -> Self {
+impl Entry {
+    fn from_list_entry(entry: ListEntry, scheme: UrlScheme) -> Self {
         Self {
-            id: entry.id,
+            id: EncodedId::from_id(entry.id, scheme).into_string(),
             title: entry.title,
             encrypted: entry.is_encrypted.into(),
             expiration: entry.expiration,
@@ -180,8 +189,9 @@ async fn main() -> Result<()> {
             expired_filter,
             sort,
         } => {
+            let scheme = read_url_scheme()?;
             let identifier = identifier
-                .map(|id| Id::from_str(&id))
+                .map(|id| EncodedId::parse(&id, scheme).map(|(_, id)| id))
                 .transpose()
                 .with_context(|| "Invalid identifier")?;
 
@@ -215,7 +225,7 @@ async fn main() -> Result<()> {
                         true
                     }
                 })
-                .map(Entry::from)
+                .map(|entry| Entry::from_list_entry(entry, scheme))
                 .collect();
 
             if let Some(sort_order) = sort {
@@ -242,9 +252,10 @@ async fn main() -> Result<()> {
             database,
             identifier,
         } => {
+            let scheme = read_url_scheme()?;
             let ids = identifier
                 .iter()
-                .map(|id| Id::from_str(id))
+                .map(|id| EncodedId::parse(id, scheme).map(|(_, id)| id))
                 .collect::<Result<Vec<_>, _>>()
                 .with_context(|| "Invalid identifier")?;
 
@@ -258,6 +269,7 @@ async fn main() -> Result<()> {
             );
         }
         Commands::Purge { database } => {
+            let scheme = read_url_scheme()?;
             let (db, db_handler) = Database::new(Open::Path(database))?;
             tokio::task::spawn(db_handler);
 
@@ -273,7 +285,7 @@ async fn main() -> Result<()> {
                 );
 
                 for id in ids {
-                    println!("{id}");
+                    println!("{}", EncodedId::from_id(id, scheme));
                 }
             }
         }

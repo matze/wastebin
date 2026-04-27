@@ -9,8 +9,9 @@ use axum_extra::extract::cookie::Key;
 
 use wastebin_core::env::vars::{
     self, ADDRESS_PORT, BASE_URL, CACHE_SIZE, DATABASE_PATH, HTTP_TIMEOUT, MAX_BODY_SIZE,
-    PASTE_EXPIRATIONS, SIGNING_KEY,
+    PASTE_EXPIRATIONS, SIGNING_KEY, URL_SCHEME,
 };
+use wastebin_core::id::UrlScheme;
 use wastebin_core::{db, expiration};
 use wastebin_highlight::{Theme, theme::ParseThemeNameError};
 
@@ -38,6 +39,8 @@ pub(crate) enum Error {
     ParseTheme(#[from] ParseThemeNameError),
     #[error("binding to both TCP and Unix socket is not possible")]
     BothListeners,
+    #[error("failed to parse {URL_SCHEME}: expected `compact` or `words`")]
+    ParseUrlScheme,
 }
 
 pub(crate) enum SocketType {
@@ -147,6 +150,14 @@ pub fn http_timeout() -> Result<Duration, Error> {
             |s| s.parse::<u64>().map(|v| Duration::new(v, 0)),
         )
         .map_err(Error::HttpTimeout)
+}
+
+/// Parse the URL scheme used to render and accept paste IDs. Defaults to
+/// `Compact` (the existing 6/11-character format).
+pub fn url_scheme() -> Result<UrlScheme, Error> {
+    std::env::var(vars::URL_SCHEME)
+        .map_or_else(|_| Ok(UrlScheme::Compact), |v| v.parse())
+        .map_err(|_| Error::ParseUrlScheme)
 }
 
 /// Parse [`expiration::ExpirationSet`] from environment or return default.

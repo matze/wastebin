@@ -1,20 +1,23 @@
-use std::fmt::Display;
+use std::fmt::{self, Display};
 use std::num::NonZeroUsize;
-use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 use cached::{Cached, SizedCache};
 
 use crate::errors::Error;
 
-use wastebin_core::id::Id;
+use wastebin_core::id::{EncodedId, Id, UrlScheme};
 use wastebin_highlight::Html;
 
 /// Cache based on identifier and format.
+///
+/// Carries the active [`UrlScheme`] so the [`Display`] impl renders the id and
+/// extension into a URL fragment without consulting any global state.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Key {
     pub id: Id,
     pub ext: Option<String>,
+    pub scheme: UrlScheme,
 }
 
 /// Which representation of a paste a cached entry holds.
@@ -74,32 +77,36 @@ impl Cache {
 }
 
 impl Key {
-    /// Make a copy of the owned id.
+    /// Render the id (without extension) under the active URL scheme.
     pub fn id(&self) -> String {
-        self.id.to_string()
+        EncodedId::from_id(self.id, self.scheme).into_string()
+    }
+
+    /// Parse `value` (`<id>` or `<id>.<ext>`) under `scheme`.
+    pub fn parse(value: &str, scheme: UrlScheme) -> Result<Self, Error> {
+        let (id, ext) = match value.split_once('.') {
+            None => {
+                let (_, id) = EncodedId::parse(value, scheme).map_err(Error::Id)?;
+                (id, None)
+            }
+            Some((id, ext)) => {
+                let (_, id) = EncodedId::parse(id, scheme).map_err(Error::Id)?;
+                (id, Some(ext.to_string()))
+            }
+        };
+
+        Ok(Self { id, ext, scheme })
     }
 }
 
 impl Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let encoded = EncodedId::from_id(self.id, self.scheme);
         if let Some(ext) = &self.ext {
-            write!(f, "{}.{}", self.id, ext)
+            write!(f, "{encoded}.{ext}")
         } else {
-            write!(f, "{}", self.id)
+            fmt::Display::fmt(&encoded, f)
         }
-    }
-}
-
-impl FromStr for Key {
-    type Err = Error;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let (id, ext) = match value.split_once('.') {
-            None => (value.parse()?, None),
-            Some((id, ext)) => (id.parse().map_err(Error::Id)?, Some(ext.to_string())),
-        };
-
-        Ok(Self { id, ext })
     }
 }
 
@@ -109,17 +116,17 @@ mod tests {
 
     #[test]
     fn cache_key() {
-        let key = Key::from_str("bJZCna").unwrap();
+        let key = Key::parse("bJZCna", UrlScheme::Compact).unwrap();
         assert_eq!(key.id(), "bJZCna");
         assert_eq!(key.id, Id::from(104_651_828_u32));
         assert_eq!(key.ext, None);
 
-        let key = Key::from_str("sIiFec.rs").unwrap();
+        let key = Key::parse("sIiFec.rs", UrlScheme::Compact).unwrap();
         assert_eq!(key.id(), "sIiFec");
         assert_eq!(key.id, 1_243_750_162_u32.into());
         assert_eq!(key.ext.unwrap(), "rs");
 
-        assert!(Key::from_str("foo").is_err());
-        assert!(Key::from_str("bar.rs").is_err());
+        assert!(Key::parse("foo", UrlScheme::Compact).is_err());
+        assert!(Key::parse("bar.rs", UrlScheme::Compact).is_err());
     }
 }

@@ -24,6 +24,8 @@ pub mod vars {
     pub const TITLE: &str = "WASTEBIN_TITLE";
     /// Unix socket path the server binds to.
     pub const SOCKET_PATH: &str = "WASTEBIN_UNIX_SOCKET_PATH";
+    /// URL scheme used for paste IDs (`compact` or `words`).
+    pub const URL_SCHEME: &str = "WASTEBIN_URL_SCHEME";
 }
 
 pub(crate) fn password_hash_salt() -> String {

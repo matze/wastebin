@@ -35,6 +35,7 @@ use crate::handlers::extract::Theme;
 use crate::handlers::{delete, download, html, insert, raw, robots, theme};
 use crate::i18n::Lang;
 use wastebin_core::db::Database;
+use wastebin_core::id::UrlScheme;
 
 /// Reference counted [`page::Page`] wrapper.
 pub(crate) type Page = Arc<page::Page>;
@@ -49,6 +50,13 @@ pub(crate) struct AppState {
     key: Key,
     page: Page,
     highlighter: Highlighter,
+    url_scheme: UrlScheme,
+}
+
+impl FromRef<AppState> for UrlScheme {
+    fn from_ref(state: &AppState) -> Self {
+        state.url_scheme
+    }
 }
 
 impl FromRef<AppState> for Key {
@@ -257,6 +265,8 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let expirations = env::expiration_set()?;
     let theme = env::theme()?;
     let title = env::title();
+    let url_scheme = env::url_scheme()?;
+    tracing::debug!("url scheme: {url_scheme:?}");
 
     let cache = Cache::new(cache_size);
     let (db, db_handler) = Database::new(method)?;
@@ -280,6 +290,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
         key,
         page,
         highlighter,
+        url_scheme,
     };
 
     let app = make_app(state, timeout, max_body_size);

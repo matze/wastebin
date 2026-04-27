@@ -8,19 +8,21 @@ use crate::i18n::Lang;
 use crate::{Database, Page};
 use wastebin_core::db;
 use wastebin_core::db::read::Entry;
+use wastebin_core::id::UrlScheme;
 
 /// GET handler for raw content of a paste.
 pub async fn get(
     Path(id): Path<String>,
     State(db): State<Database>,
     State(page): State<Page>,
+    State(scheme): State<UrlScheme>,
     theme: Option<Theme>,
     lang: Lang,
     password: Option<Password>,
 ) -> Result<Response, ErrorResponse> {
     async {
         let password = password.map(|Password(password)| password);
-        let key: Key = id.parse()?;
+        let key = Key::parse(&id, scheme)?;
 
         match db.get(key.id, password).await {
             Ok(Entry::Regular(data) | Entry::Burned(data)) => Ok(data.text.into_response()),
@@ -28,7 +30,7 @@ pub async fn get(
                 page: page.clone(),
                 theme: theme.clone(),
                 lang,
-                id: key.id.to_string(),
+                id: key.id(),
             }
             .into_response()),
             Err(err) => Err(err.into()),

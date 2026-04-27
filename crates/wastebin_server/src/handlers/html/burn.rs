@@ -8,16 +8,18 @@ use crate::handlers::html::qr::{code_from, dark_modules};
 use crate::handlers::html::{ErrorResponse, make_error};
 use crate::i18n::Lang;
 use crate::{Error, Page};
+use wastebin_core::id::UrlScheme;
 
 /// GET handler for the burn page.
 pub async fn get(
     Path(id): Path<String>,
     State(page): State<Page>,
+    State(scheme): State<UrlScheme>,
     theme: Option<Theme>,
     lang: Lang,
 ) -> Result<Burn, ErrorResponse> {
     async {
-        let key: Key = id.parse()?;
+        let key = Key::parse(&id, scheme)?;
 
         let code = tokio::task::spawn_blocking({
             let page = page.clone();

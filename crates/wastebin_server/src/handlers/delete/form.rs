@@ -1,21 +1,24 @@
 use axum::extract::{Path, State};
 use axum::response::Redirect;
 
+use crate::errors::Error;
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::{ErrorResponse, make_error};
 use crate::i18n::Lang;
 use crate::{Database, Page};
+use wastebin_core::id::{EncodedId, UrlScheme};
 
 pub async fn delete(
     Path(id): Path<String>,
     State(db): State<Database>,
     State(page): State<Page>,
+    State(scheme): State<UrlScheme>,
     Uid(uid): Uid,
     theme: Option<Theme>,
     lang: Lang,
 ) -> Result<Redirect, ErrorResponse> {
     async {
-        let id = id.parse()?;
+        let (_, id) = EncodedId::parse(&id, scheme).map_err(Error::Id)?;
         db.delete_for(id, uid).await?;
         Ok(Redirect::to("/"))
     }

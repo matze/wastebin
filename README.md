@@ -199,12 +199,20 @@ run-time behavior:
 | `WASTEBIN_THEME`                  | Theme colors, one of `ayu`, `base16ocean`, `catppuccin`, `coldark`, `gruvbox`, `monokai`, `onehalf`, `solarized`. See [this page](https://matze.github.io/wastebin/) for a preview. | `ayu` |
 | `WASTEBIN_TITLE`                  | HTML page title.                                              | `wastebin`            |
 | `WASTEBIN_UNIX_SOCKET_PATH`       | Path to a Unix socket to accept connections from.             |                       |
+| `WASTEBIN_URL_SCHEME`             | URL format for paste IDs: `compact` (e.g. `eVI4Z48hybf`) or `words` (seven dash-separated words forming a pseudo-sentence, e.g. `the-quiet-cloud-carries-a-bright-dawn`). | `compact` |
 | `RUST_LOG`                        | Log level. Besides the typical `trace`, `debug`, `info` etc. keys, you can also set the `tower_http` key to a log level to get additional request and response logs. |  |
 
 > [!NOTE]
 > `WASTEBIN_ADDRESS_PORT` and `WASTEBIN_UNIX_SOCKET_PATH` are mutually
 > exclusive, which means that setting both will lead to an error. Setting
 > neither will implicitly bind via TCP on `0.0.0.0:8088`.
+
+> [!WARNING]
+> Switching `WASTEBIN_URL_SCHEME` between `compact` and `words` breaks all
+> previously shared external URLs. The underlying paste IDs are unchanged —
+> only the URL encoding differs — so pastes remain accessible under their new
+> URLs, but old `compact` links will return 404 once `words` is active (and
+> vice versa).
 
 
 ### API endpoints

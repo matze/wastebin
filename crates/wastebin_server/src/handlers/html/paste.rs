@@ -13,6 +13,7 @@ use wastebin_core::crypto::Password;
 use wastebin_core::db;
 use wastebin_core::db::read::{Data, Entry, Metadata};
 use wastebin_core::expiration::Expiration;
+use wastebin_core::id::UrlScheme;
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct PasswordForm {
@@ -57,6 +58,7 @@ pub async fn get<E>(
     State(page): State<Page>,
     State(db): State<Database>,
     State(highlighter): State<Highlighter>,
+    State(scheme): State<UrlScheme>,
     Path(id): Path<String>,
     uid: Option<Uid>,
     theme: Option<Theme>,
@@ -72,7 +74,7 @@ pub async fn get<E>(
             .map(|password| Password::from(password.as_bytes().to_vec()));
         let confirmed = form.as_ref().and_then(|form| form.confirm_burn.as_deref()) == Some("1");
         let no_password = password.is_none();
-        let key: Key = id.parse()?;
+        let key = Key::parse(&id, scheme)?;
 
         let metadata = match db.get_metadata(key.id).await {
             Ok(metadata) => metadata,

@@ -11,6 +11,7 @@ use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::make_error;
 use crate::i18n::Lang;
 use wastebin_core::db::{Database, write};
+use wastebin_core::id::UrlScheme;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub(crate) struct Entry {
@@ -47,6 +48,7 @@ impl From<Entry> for write::Entry {
 pub async fn post<E: std::fmt::Debug>(
     State(page): State<Page>,
     State(db): State<Database>,
+    State(scheme): State<UrlScheme>,
     jar: SignedCookieJar,
     uid: Option<Uid>,
     theme: Option<Theme>,
@@ -71,7 +73,7 @@ pub async fn post<E: std::fmt::Debug>(
         let (id, entry) = db.insert(entry).await?;
 
         let url = {
-            let url_path = id.to_url_path(&entry);
+            let url_path = id.to_url_path(&entry, scheme);
             if entry.burn_after_reading.unwrap_or(false) {
                 format!("/burn/{url_path}")
             } else {

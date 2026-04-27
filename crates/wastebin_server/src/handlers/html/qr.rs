@@ -13,18 +13,20 @@ use crate::{Error, Page};
 use wastebin_core::db::Database;
 use wastebin_core::db::read::Metadata;
 use wastebin_core::expiration::Expiration;
+use wastebin_core::id::UrlScheme;
 
 /// GET handler for a QR page.
 pub async fn get(
     Path(id): Path<String>,
     State(page): State<Page>,
     State(db): State<Database>,
+    State(scheme): State<UrlScheme>,
     uid: Option<Uid>,
     theme: Option<Theme>,
     lang: Lang,
 ) -> Result<Qr, ErrorResponse> {
     async {
-        let key: Key = id.parse()?;
+        let key = Key::parse(&id, scheme)?;
 
         let code = {
             let page = page.clone();

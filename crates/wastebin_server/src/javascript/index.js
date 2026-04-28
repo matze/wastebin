@@ -22,14 +22,18 @@ textarea.addEventListener("input", updateLineNumbers);
 textarea.addEventListener("scroll", syncScroll);
 updateLineNumbers();
 
-const MAX_BYTES = parseInt($("stats").dataset.maxBytes, 10) || 1024 * 1024;
+const stats = $("stats");
+const MAX_BYTES = parseInt(stats.dataset.maxBytes, 10) || 1024 * 1024;
+const UNIT_KB = stats.dataset.unitKb;
+const UNIT_MB = stats.dataset.unitMb;
+const LABEL_LIMIT = stats.dataset.labelLimit;
 
 function formatSize(bytes) {
-  if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " mb";
-  return (bytes / 1024).toFixed(0) + " kb";
+  if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " " + UNIT_MB;
+  return (bytes / 1024).toFixed(0) + " " + UNIT_KB;
 }
 
-$("progress-limit").textContent = "limit " + formatSize(MAX_BYTES);
+$("progress-limit").textContent = LABEL_LIMIT + " " + formatSize(MAX_BYTES);
 
 function updateStats() {
   const text = textarea.value;
@@ -50,7 +54,7 @@ function updateStats() {
   } else {
     fill.classList.remove("warn");
   }
-  $("progress-kb").textContent = (bytes / 1024).toFixed(1) + " kb";
+  $("progress-kb").textContent = (bytes / 1024).toFixed(1) + " " + UNIT_KB;
 }
 
 textarea.addEventListener("input", updateStats);

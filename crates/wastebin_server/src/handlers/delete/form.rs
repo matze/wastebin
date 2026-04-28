@@ -3,6 +3,7 @@ use axum::response::Redirect;
 
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::{ErrorResponse, make_error};
+use crate::i18n::Lang;
 use crate::{Database, Page};
 
 pub async fn delete(
@@ -11,6 +12,7 @@ pub async fn delete(
     State(page): State<Page>,
     Uid(uid): Uid,
     theme: Option<Theme>,
+    lang: Lang,
 ) -> Result<Redirect, ErrorResponse> {
     async {
         let id = id.parse()?;
@@ -18,7 +20,7 @@ pub async fn delete(
         Ok(Redirect::to("/"))
     }
     .await
-    .map_err(|err| make_error(err, page.clone(), theme))
+    .map_err(|err| make_error(err, page.clone(), theme, lang))
 }
 
 #[cfg(test)]

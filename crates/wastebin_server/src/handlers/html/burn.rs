@@ -6,6 +6,7 @@ use crate::cache::Key;
 use crate::handlers::extract::Theme;
 use crate::handlers::html::qr::{code_from, dark_modules};
 use crate::handlers::html::{ErrorResponse, make_error};
+use crate::i18n::Lang;
 use crate::{Error, Page};
 
 /// GET handler for the burn page.
@@ -13,6 +14,7 @@ pub async fn get(
     Path(id): Path<String>,
     State(page): State<Page>,
     theme: Option<Theme>,
+    lang: Lang,
 ) -> Result<Burn, ErrorResponse> {
     async {
         let key: Key = id.parse()?;
@@ -29,10 +31,11 @@ pub async fn get(
             key,
             code,
             theme: theme.clone(),
+            lang,
         })
     }
     .await
-    .map_err(|err| make_error(err, page, theme))
+    .map_err(|err| make_error(err, page, theme, lang))
 }
 
 /// Burn page shown if "burn-after-reading" was selected during insertion.
@@ -43,6 +46,7 @@ pub(crate) struct Burn {
     key: Key,
     code: qrcodegen::QrCode,
     theme: Option<Theme>,
+    lang: Lang,
 }
 
 impl Burn {

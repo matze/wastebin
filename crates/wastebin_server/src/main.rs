@@ -3,6 +3,7 @@ mod cache;
 mod env;
 mod errors;
 mod handlers;
+mod i18n;
 mod page;
 #[cfg(test)]
 mod test_helpers;
@@ -32,6 +33,7 @@ use crate::cache::Cache;
 use crate::errors::Error;
 use crate::handlers::extract::Theme;
 use crate::handlers::{delete, download, html, insert, raw, robots, theme};
+use crate::i18n::Lang;
 use wastebin_core::db::Database;
 
 /// Reference counted [`page::Page`] wrapper.
@@ -113,6 +115,7 @@ async fn security_headers_layer(req: Request, next: Next) -> impl IntoResponse {
 async fn handle_service_errors(
     State(page): State<Page>,
     theme: Option<Theme>,
+    lang: Lang,
     req: Request,
     next: Next,
 ) -> Response {
@@ -124,6 +127,7 @@ async fn handle_service_errors(
             html::Error {
                 page,
                 theme,
+                lang,
                 description: String::from("payload exceeded limit"),
             },
         )
@@ -133,6 +137,7 @@ async fn handle_service_errors(
             html::Error {
                 page,
                 theme,
+                lang,
                 description: String::from("unsupported media type"),
             },
         )

@@ -1,14 +1,14 @@
 {% extends "paste.html" %}
 
 {% block qr_button %}
-  <a href="/{{ key }}" class="nav-button" title="source view" aria-label="source view">
+  <a href="/{{ key }}" class="nav-button" title="{{ lang.t("nav.source") }}" aria-label="{{ lang.t("nav.source") }}">
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg>
   </a>
 {% endblock %}
 
 {% block view_toggle %}
   {% if is_markdown %}
-    <a id="view-toggle" href="/md/{{ key }}" class="nav-button" title="rendered view" aria-label="rendered view">
+    <a id="view-toggle" href="/md/{{ key }}" class="nav-button" title="{{ lang.t("nav.rendered") }}" aria-label="{{ lang.t("nav.rendered") }}">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none"><path d="M22.269 19.385H1.731A1.73 1.73 0 0 1 0 17.654V6.345a1.73 1.73 0 0 1 1.731-1.73h20.538A1.73 1.73 0 0 1 24 6.345v11.308a1.73 1.73 0 0 1-1.731 1.731zm-16.5-3.462v-4.5l2.308 2.885 2.307-2.885v4.5h2.308V8.078h-2.308l-2.307 2.885-2.308-2.885H3.46v7.847zM21.231 12h-2.308V8.077h-2.307V12h-2.308l3.461 4.039z"/></svg>
     </a>
   {% endif %}
@@ -16,7 +16,7 @@
 
 {% block content %}
   <div class="flex-center">
-    <div class="centered-label">qr code</div>
+    <div class="centered-label">{{ lang.t("qr.label") }}</div>
     <div class="qr-container">
       <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 {{ code.size() + 4 }} {{ code.size() + 4 }}" stroke="none" width="16rem">
         <rect width="100%" height="100%" fill="#fafafa"/>

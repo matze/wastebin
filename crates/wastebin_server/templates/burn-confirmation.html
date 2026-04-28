@@ -2,18 +2,17 @@
 {% block content %}
 <div class="flex-center">
   <div class="dialog">
-    <div class="dialog-header">Burn after reading</div>
+    <div class="dialog-header">{{ lang.t("burn.title") }}</div>
     <div class="dialog-section">
-      This paste will be <strong>permanently deleted</strong> the moment it is revealed.
-      You will not be able to view it again.
+      {{ lang.t("burn_confirm.body")|safe }}
     </div>
     {% if let Some(title) = title %}
     <div class="dialog-section dialog-subtitle">{{ title }}</div>
     {% endif %}
     <form class="dialog-section dialog-actions" action="/{{ id }}" method="post">
       <input type="hidden" name="confirm_burn" value="1">
-      <a class="button button-secondary" href="/">cancel</a>
-      <button class="button" type="submit">reveal</button>
+      <a class="button button-secondary" href="/">{{ lang.t("burn_confirm.cancel") }}</a>
+      <button class="button" type="submit">{{ lang.t("burn_confirm.reveal") }}</button>
     </form>
   </div>
 </div>

@@ -1,1 +1,1 @@
-showToast("Content is burned and cannot be looked up again!", 3000);
+showToast(document.getElementById("burn-message").dataset.message, 3000);

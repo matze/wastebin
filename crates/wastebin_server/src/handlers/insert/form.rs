@@ -9,6 +9,7 @@ use crate::Page;
 use crate::handlers::cookie;
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::make_error;
+use crate::i18n::Lang;
 use wastebin_core::db::{Database, write};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -49,10 +50,11 @@ pub async fn post<E: std::fmt::Debug>(
     jar: SignedCookieJar,
     uid: Option<Uid>,
     theme: Option<Theme>,
+    lang: Lang,
     entry: Result<Form<Entry>, E>,
 ) -> Result<(SignedCookieJar, Redirect), impl IntoResponse> {
     let Ok(Form(entry)) = entry else {
-        return Err(make_error(crate::Error::MalformedForm, page, theme));
+        return Err(make_error(crate::Error::MalformedForm, page, theme, lang));
     };
 
     async {
@@ -83,7 +85,7 @@ pub async fn post<E: std::fmt::Debug>(
         Ok((jar.add(cookie), Redirect::to(&url)))
     }
     .await
-    .map_err(|err| make_error(err, page, theme))
+    .map_err(|err| make_error(err, page, theme, lang))
 }
 
 #[cfg(test)]

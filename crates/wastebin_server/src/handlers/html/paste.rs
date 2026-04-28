@@ -7,6 +7,7 @@ use serde::Deserialize;
 use crate::cache::{Key, Mode};
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::{BurnConfirmation, ErrorResponse, PasswordInput, make_error};
+use crate::i18n::Lang;
 use crate::{Cache, Database, Highlighter, Page};
 use wastebin_core::crypto::Password;
 use wastebin_core::db;
@@ -33,6 +34,7 @@ pub(crate) struct Paste {
     page: Page,
     key: Key,
     theme: Option<Theme>,
+    lang: Lang,
     can_delete: bool,
     /// If the paste still in the database and can be fetched with another request.
     is_available: bool,
@@ -58,6 +60,7 @@ pub async fn get<E>(
     Path(id): Path<String>,
     uid: Option<Uid>,
     theme: Option<Theme>,
+    lang: Lang,
     form: Result<Form<PasteForm>, E>,
 ) -> Result<Response, ErrorResponse> {
     async {
@@ -80,6 +83,7 @@ pub async fn get<E>(
             return Ok(BurnConfirmation {
                 page: page.clone(),
                 theme: theme.clone(),
+                lang,
                 id,
                 title: metadata.title.clone(),
             }
@@ -93,6 +97,7 @@ pub async fn get<E>(
                 return Ok(PasswordInput {
                     page: page.clone(),
                     theme: theme.clone(),
+                    lang,
                     id,
                 }
                 .into_response());
@@ -134,6 +139,7 @@ pub async fn get<E>(
             page: page.clone(),
             key,
             theme: theme.clone(),
+            lang,
             can_delete,
             is_available,
             expiration,
@@ -145,7 +151,7 @@ pub async fn get<E>(
         Ok(paste.into_response())
     }
     .await
-    .map_err(|err| make_error(err, page, theme))
+    .map_err(|err| make_error(err, page, theme, lang))
 }
 
 #[cfg(test)]

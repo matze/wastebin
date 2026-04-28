@@ -3,7 +3,10 @@ function $(id) {
 }
 
 document.addEventListener('keydown', onKey);
-$("copy-button").addEventListener("click", copy);
+const copyButton = $("copy-button");
+copyButton.addEventListener("click", copy);
+const TOAST_CONTENT = copyButton.dataset.toastContent;
+const TOAST_URL = copyButton.dataset.toastUrl;
 
 function highlightLines(scroll) {
   document.querySelectorAll('.line-highlight').forEach(el => {
@@ -70,7 +73,7 @@ function copy() {
 
   navigator.clipboard.writeText(content)
     .then(() => {
-      showToast("Copied content", 1500);
+      showToast(TOAST_CONTENT, 1500);
     }, function(err) {
       console.error("failed to copy content", err);
     });
@@ -99,7 +102,7 @@ function onKey(e) {
   }
   else if (e.key == 'y') {
     navigator.clipboard.writeText(window.location.href);
-    showToast("Copied URL", 1500);
+    showToast(TOAST_URL, 1500);
   }
   else if (e.key == 'd' && pasteId) {
     window.location.href = "/dl/" + pasteId;
@@ -125,46 +128,12 @@ function onKey(e) {
   }
 }
 
-function buildOverlay() {
-  const rows = [
-    ['n', 'Go home'],
-    ['p', 'Go here'],
-    ['y', 'Copy URL'],
-    ['c', 'Copy content'],
-    ['d', 'Download'],
-    ['q', 'Show QR code'],
-    ['w', 'Toggle line wrapping'],
-  ];
-  if (document.getElementById('view-toggle')) {
-    rows.push(['m', 'Toggle rendered view']);
-  }
-  rows.push(['?', 'Toggle help']);
-
-  const overlay = document.createElement('div');
-  overlay.id = 'overlay';
-  const content = document.createElement('div');
-  content.id = 'overlay-content';
-  const table = document.createElement('table');
-  for (const [key, label] of rows) {
-    const tr = document.createElement('tr');
-    const tdKey = document.createElement('td');
-    const kbd = document.createElement('kbd');
-    kbd.textContent = key;
-    tdKey.appendChild(kbd);
-    const tdLabel = document.createElement('td');
-    tdLabel.textContent = label;
-    tr.appendChild(tdKey);
-    tr.appendChild(tdLabel);
-    table.appendChild(tr);
-  }
-  content.appendChild(table);
-  overlay.appendChild(content);
-  overlay.addEventListener('click', () => { overlay.style.display = 'none'; });
-  document.body.appendChild(overlay);
-  return overlay;
-}
-
 function toggleOverlay() {
-  const overlay = document.getElementById('overlay') || buildOverlay();
+  const overlay = document.getElementById('overlay');
+  if (!overlay) return;
   overlay.style.display = overlay.style.display != 'block' ? 'block' : 'none';
+  if (!overlay.dataset.bound) {
+    overlay.addEventListener('click', () => { overlay.style.display = 'none'; });
+    overlay.dataset.bound = '1';
+  }
 }

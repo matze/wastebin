@@ -1,7 +1,7 @@
 {% extends "paste.html" %}
 
 {% block view_toggle %}
-  <a id="view-toggle" href="/{{ key }}" class="nav-button" title="source view" aria-label="source view">
+  <a id="view-toggle" href="/{{ key }}" class="nav-button" title="{{ lang.t("nav.source") }}" aria-label="{{ lang.t("nav.source") }}">
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg>
   </a>
 {% endblock %}

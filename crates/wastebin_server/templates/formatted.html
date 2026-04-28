@@ -2,7 +2,7 @@
 
 {% block view_toggle %}
   {% if is_markdown %}
-    <a id="view-toggle" href="/md/{{ key }}" class="nav-button" title="rendered view" aria-label="rendered view">
+    <a id="view-toggle" href="/md/{{ key }}" class="nav-button" title="{{ lang.t("nav.rendered") }}" aria-label="{{ lang.t("nav.rendered") }}">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none"><path d="M22.269 19.385H1.731A1.73 1.73 0 0 1 0 17.654V6.345a1.73 1.73 0 0 1 1.731-1.73h20.538A1.73 1.73 0 0 1 24 6.345v11.308a1.73 1.73 0 0 1-1.731 1.731zm-16.5-3.462v-4.5l2.308 2.885 2.307-2.885v4.5h2.308V8.078h-2.308l-2.307 2.885-2.308-2.885H3.46v7.847zM21.231 12h-2.308V8.077h-2.307V12h-2.308l3.461 4.039z"/></svg>
     </a>
   {% endif %}
@@ -13,6 +13,7 @@
     {{ html|safe }}
   </div>
   {% if !is_available %}
+  <div id="burn-message" hidden data-message="{{ lang.t("paste.toast.burned") }}"></div>
   <script defer src="{{ page.assets.burn_js.route()}}"></script>
   {% endif %}
 {% endblock %}

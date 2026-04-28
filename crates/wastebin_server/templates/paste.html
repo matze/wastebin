@@ -5,7 +5,7 @@
     <span class="nav-title">{{ title }}</span>
   {% endif %}
   {% if let Some(expiration) = expiration %}
-    <span class="nav-title nav-title-dim">expires in {{ expiration }}</span>
+    <span class="nav-title nav-title-dim">{{ lang.t("paste.expires_in") }} {{ expiration }}</span>
   {% endif %}
 {% endblock %}
 
@@ -21,25 +21,45 @@
   {% if is_available %}
     {% if can_delete %}
     <form method="POST" action="/delete/{{ key.id() }}" class="contents">
-      <button type="submit" class="nav-button nav-button-danger" title="delete paste" aria-label="delete paste">
+      <button type="submit" class="nav-button nav-button-danger" title="{{ lang.t("nav.delete") }}" aria-label="{{ lang.t("nav.delete") }}">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
       </button>
     </form>
     {% endif %}
-    <a href="/dl/{{ key }}" class="nav-button" title="download file" aria-label="download file">
+    <a href="/dl/{{ key }}" class="nav-button" title="{{ lang.t("nav.download") }}" aria-label="{{ lang.t("nav.download") }}">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
     </a>
-    <a href="/raw/{{ key }}" class="nav-button" title="display raw file" aria-label="display raw file">
+    <a href="/raw/{{ key }}" class="nav-button" title="{{ lang.t("nav.raw") }}" aria-label="{{ lang.t("nav.raw") }}">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v6h6"/><path d="m9 18 3-3-3-3"/><path d="m5 12-3 3 3 3"/></svg>
     </a>
-    <button class="nav-button" title="copy to clipboard" aria-label="copy to clipboard" id="copy-button">
+    <button class="nav-button" title="{{ lang.t("nav.copy") }}" aria-label="{{ lang.t("nav.copy") }}" id="copy-button" data-toast-content="{{ lang.t("paste.toast.copied_content") }}" data-toast-url="{{ lang.t("paste.toast.copied_url") }}">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M21 14H11"/><path d="m15 10-4 4 4 4"/></svg>
     </button>
     {% block qr_button %}
-    <a href="/qr/{{ key }}" class="nav-button" title="qr code" aria-label="qr code">
+    <a href="/qr/{{ key }}" class="nav-button" title="{{ lang.t("nav.qr") }}" aria-label="{{ lang.t("nav.qr") }}">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
     </a>
     {% endblock %}
     {% block view_toggle %}{% endblock %}
   {% endif %}
+{% endblock %}
+
+{% block overlay %}
+<div id="overlay">
+  <div id="overlay-content">
+    <table>
+      <tr><td><kbd>n</kbd></td><td>{{ lang.t("paste.help.go_home") }}</td></tr>
+      <tr><td><kbd>p</kbd></td><td>{{ lang.t("paste.help.go_here") }}</td></tr>
+      <tr><td><kbd>y</kbd></td><td>{{ lang.t("paste.help.copy_url") }}</td></tr>
+      <tr><td><kbd>c</kbd></td><td>{{ lang.t("paste.help.copy_content") }}</td></tr>
+      <tr><td><kbd>d</kbd></td><td>{{ lang.t("paste.help.download") }}</td></tr>
+      <tr><td><kbd>q</kbd></td><td>{{ lang.t("paste.help.show_qr") }}</td></tr>
+      <tr><td><kbd>w</kbd></td><td>{{ lang.t("paste.help.toggle_wrap") }}</td></tr>
+      {% if is_markdown %}
+      <tr><td><kbd>m</kbd></td><td>{{ lang.t("paste.help.toggle_rendered") }}</td></tr>
+      {% endif %}
+      <tr><td><kbd>?</kbd></td><td>{{ lang.t("paste.help.toggle_help") }}</td></tr>
+    </table>
+  </div>
+</div>
 {% endblock %}

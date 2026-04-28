@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block nav_actions %}
-  <button type="button" id="open" class="nav-button" title="upload" aria-label="upload">
+  <button type="button" id="open" class="nav-button" title="{{ lang.t("nav.upload") }}" aria-label="{{ lang.t("nav.upload") }}">
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
   </button>
 {% endblock %}
@@ -16,54 +16,54 @@
   <div id="main-container">
     <header>
       <div class="nav-group">
-        <a href="/" class="nav-button" title="home" aria-label="home">
+        <a href="/" class="nav-button" title="{{ lang.t("nav.home") }}" aria-label="{{ lang.t("nav.home") }}">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
         </a>
       </div>
       <div class="nav-group">
-        <button type="button" id="open" class="nav-button" title="upload" aria-label="upload">
+        <button type="button" id="open" class="nav-button" title="{{ lang.t("nav.upload") }}" aria-label="{{ lang.t("nav.upload") }}">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
         </button>
         <div class="theme-switcher">
           {% match theme %}
             {% when None %}
-              <a href="/theme?pref=dark" class="theme-opt" title="dark mode">
+              <a href="/theme?pref=dark" class="theme-opt" title="{{ lang.t("theme.dark") }}">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
               </a>
-              <a href="/theme?pref=light" class="theme-opt" title="light mode">
+              <a href="/theme?pref=light" class="theme-opt" title="{{ lang.t("theme.light") }}">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
               </a>
-              <a href="/theme?pref=system" class="theme-opt active" title="auto mode">
+              <a href="/theme?pref=system" class="theme-opt active" title="{{ lang.t("theme.auto") }}">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
               </a>
             {% when Some with (Theme::System) %}
-              <a href="/theme?pref=dark" class="theme-opt" title="dark mode">
+              <a href="/theme?pref=dark" class="theme-opt" title="{{ lang.t("theme.dark") }}">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
               </a>
-              <a href="/theme?pref=light" class="theme-opt" title="light mode">
+              <a href="/theme?pref=light" class="theme-opt" title="{{ lang.t("theme.light") }}">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
               </a>
-              <a href="/theme?pref=system" class="theme-opt active" title="auto mode">
+              <a href="/theme?pref=system" class="theme-opt active" title="{{ lang.t("theme.auto") }}">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
               </a>
             {% when Some with (Theme::Dark) %}
-              <a href="/theme?pref=dark" class="theme-opt active" title="dark mode">
+              <a href="/theme?pref=dark" class="theme-opt active" title="{{ lang.t("theme.dark") }}">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
               </a>
-              <a href="/theme?pref=light" class="theme-opt" title="light mode">
+              <a href="/theme?pref=light" class="theme-opt" title="{{ lang.t("theme.light") }}">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
               </a>
-              <a href="/theme?pref=system" class="theme-opt" title="auto mode">
+              <a href="/theme?pref=system" class="theme-opt" title="{{ lang.t("theme.auto") }}">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
               </a>
             {% when Some with (Theme::Light) %}
-              <a href="/theme?pref=dark" class="theme-opt" title="dark mode">
+              <a href="/theme?pref=dark" class="theme-opt" title="{{ lang.t("theme.dark") }}">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
               </a>
-              <a href="/theme?pref=light" class="theme-opt active" title="light mode">
+              <a href="/theme?pref=light" class="theme-opt active" title="{{ lang.t("theme.light") }}">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
               </a>
-              <a href="/theme?pref=system" class="theme-opt" title="auto mode">
+              <a href="/theme?pref=system" class="theme-opt" title="{{ lang.t("theme.auto") }}">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
               </a>
           {% endmatch %}
@@ -74,11 +74,11 @@
       <main class="editor-area">
         <div class="editor" id="editor-wrap">
           <div id="line-numbers" aria-hidden="true"></div>
-          <textarea id="text" name="text" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="paste, type, or drop a file here …" autofocus required></textarea>
+          <textarea id="text" name="text" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="{{ lang.t("index.placeholder.paste") }}" autofocus required></textarea>
           <div class="drop-overlay" id="drop-overlay">
             <div>
               <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
-              <div class="drop-overlay-text">drop to load file</div>
+              <div class="drop-overlay-text">{{ lang.t("index.drop") }}</div>
             </div>
           </div>
         </div>
@@ -86,14 +86,14 @@
 
       <aside class="panel">
         <section class="panel-section">
-          <div class="panel-label">title</div>
-          <input type="text" name="title" id="title" class="input-base" placeholder="untitled">
+          <div class="panel-label">{{ lang.t("index.label.title") }}</div>
+          <input type="text" name="title" id="title" class="input-base" placeholder="{{ lang.t("index.placeholder.title") }}">
         </section>
 
         <section class="panel-section">
-          <div class="panel-label">language</div>
-          <input type="search" id="filter" class="input-base lang-filter" placeholder="filter …" autocomplete="off">
-          <select name="extension" id="langs" class="lang-select" size="12" aria-label="Language">
+          <div class="panel-label">{{ lang.t("index.label.language") }}</div>
+          <input type="search" id="filter" class="input-base lang-filter" placeholder="{{ lang.t("index.placeholder.filter") }}" autocomplete="off">
+          <select name="extension" id="langs" class="lang-select" size="12" aria-label="{{ lang.t("index.aria.language") }}">
           {%- for syntax in highlighter.syntaxes() -%}
             {%- if let Some(extension) = syntax.extensions.first() %}
             <option value="{{ extension }}">{{ syntax.name }}</option>
@@ -103,7 +103,7 @@
         </section>
 
         <section class="panel-section">
-          <div class="panel-label">expires</div>
+          <div class="panel-label">{{ lang.t("index.label.expires") }}</div>
           <div class="expiry-list" id="expiry-list">
             {% for expiration in page.expirations %}
             <label class="expiry-btn">
@@ -115,11 +115,11 @@
         </section>
 
         <section class="panel-section">
-          <div class="panel-label">options</div>
+          <div class="panel-label">{{ lang.t("index.label.options") }}</div>
           <label class="toggle-row" id="burn-row">
             <div>
-              <div class="toggle-label">burn after reading</div>
-              <div class="toggle-hint">delete on first view</div>
+              <div class="toggle-label">{{ lang.t("index.toggle.burn") }}</div>
+              <div class="toggle-hint">{{ lang.t("index.toggle.burn.hint") }}</div>
             </div>
             <span class="toggle-track">
               <input type="checkbox" name="burn-after-reading" id="burn-after-reading" class="toggle-input">
@@ -129,8 +129,8 @@
           <div class="toggle-gap"></div>
           <label class="toggle-row" id="encrypt-row">
             <div>
-              <div class="toggle-label">encrypt</div>
-              <div class="toggle-hint">password-protect the paste</div>
+              <div class="toggle-label">{{ lang.t("index.toggle.encrypt") }}</div>
+              <div class="toggle-hint">{{ lang.t("index.toggle.encrypt.hint") }}</div>
             </div>
             <span class="toggle-track">
               <input type="checkbox" id="encrypt-toggle" class="toggle-input">
@@ -139,8 +139,8 @@
           </label>
           <div class="password-group" id="password-group">
             <div class="password-input-wrap">
-              <input type="password" name="password" id="password" class="input-base" placeholder="password">
-              <button type="button" id="password-toggle" class="password-toggle" title="show password" aria-label="show password">
+              <input type="password" name="password" id="password" class="input-base" placeholder="{{ lang.t("index.placeholder.password") }}">
+              <button type="button" id="password-toggle" class="password-toggle" title="{{ lang.t("password.show") }}" aria-label="{{ lang.t("password.show") }}" data-show-label="{{ lang.t("password.show") }}" data-hide-label="{{ lang.t("password.hide") }}">
                 <svg class="eye-show" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                 <svg class="eye-hide" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="m2 2 20 20"/></svg>
               </button>
@@ -149,29 +149,29 @@
         </section>
 
         <section class="panel-section panel-footer">
-          <div class="stats" id="stats" data-max-bytes="{{ page.max_body_size }}">
+          <div class="stats" id="stats" data-max-bytes="{{ page.max_body_size }}" data-unit-kb="{{ lang.t("stats.unit.kb") }}" data-unit-mb="{{ lang.t("stats.unit.mb") }}" data-label-limit="{{ lang.t("stats.label.limit") }}">
             <div class="stats-grid">
               <div>
-                <div class="stat-label">lines</div>
+                <div class="stat-label">{{ lang.t("index.stat.lines") }}</div>
                 <div class="stat-value" id="stat-lines">0</div>
               </div>
               <div>
-                <div class="stat-label">chars</div>
+                <div class="stat-label">{{ lang.t("index.stat.chars") }}</div>
                 <div class="stat-value" id="stat-chars">0</div>
               </div>
               <div>
-                <div class="stat-label">bytes</div>
+                <div class="stat-label">{{ lang.t("index.stat.bytes") }}</div>
                 <div class="stat-value" id="stat-bytes">0</div>
               </div>
             </div>
             <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
             <div class="progress-label">
-              <span id="progress-kb">0.0 kb</span>
+              <span id="progress-kb">0.0 {{ lang.t("stats.unit.kb") }}</span>
               <span id="progress-limit"></span>
             </div>
           </div>
-          <button type="submit" title="Paste" class="paste-btn">
-            <span>paste</span>
+          <button type="submit" title="{{ lang.t("index.button.paste") }}" class="paste-btn">
+            <span>{{ lang.t("index.button.paste.label") }}</span>
           </button>
         </section>
       </aside>

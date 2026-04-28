@@ -7,6 +7,7 @@ use crate::cache::{Key, Mode};
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::paste::PasswordForm;
 use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
+use crate::i18n::Lang;
 use crate::{Cache, Database, Highlighter, Page};
 use wastebin_core::crypto::Password;
 use wastebin_core::db;
@@ -21,8 +22,11 @@ pub(crate) struct Rendered {
     page: Page,
     key: Key,
     theme: Option<Theme>,
+    lang: Lang,
     can_delete: bool,
     is_available: bool,
+    /// Always `true` for this view; needed by the inherited paste template.
+    is_markdown: bool,
     expiration: Option<Expiration>,
     html: String,
     title: Option<String>,
@@ -37,6 +41,7 @@ pub async fn get<E>(
     Path(id): Path<String>,
     uid: Option<Uid>,
     theme: Option<Theme>,
+    lang: Lang,
     form: Result<Form<PasswordForm>, E>,
 ) -> Result<Response, ErrorResponse> {
     async {
@@ -53,6 +58,7 @@ pub async fn get<E>(
                 return Ok(PasswordInput {
                     page: page.clone(),
                     theme: theme.clone(),
+                    lang,
                     id,
                 }
                 .into_response());
@@ -93,8 +99,10 @@ pub async fn get<E>(
             page: page.clone(),
             key,
             theme: theme.clone(),
+            lang,
             can_delete,
             is_available,
+            is_markdown: true,
             expiration,
             html,
             title,
@@ -103,7 +111,7 @@ pub async fn get<E>(
         Ok(rendered.into_response())
     }
     .await
-    .map_err(|err| make_error(err, page, theme))
+    .map_err(|err| make_error(err, page, theme, lang))
 }
 
 #[cfg(test)]

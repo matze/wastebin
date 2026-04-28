@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Internationalization (i18n) support and initial German translation.
+
 
 ## 3.6.2
 

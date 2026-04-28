@@ -2,12 +2,12 @@
 {% block content %}
 <div class="flex-center">
   <div class="dialog">
-    <div class="dialog-header">Error 😢</div>
+    <div class="dialog-header">{{ lang.t("error.title") }}</div>
     <div class="dialog-section">
       {{ description }}
     </div>
     <div class="dialog-section dialog-actions">
-      <a class="button button-secondary" href="/">go back</a>
+      <a class="button button-secondary" href="/">{{ lang.t("error.back") }}</a>
     </div>
   </div>
 </div>

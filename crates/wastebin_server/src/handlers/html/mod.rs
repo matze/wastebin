@@ -10,6 +10,7 @@ use axum::http::StatusCode;
 
 use crate::Page;
 use crate::handlers::extract::Theme;
+use crate::i18n::Lang;
 
 /// Error page showing a message.
 #[derive(Template, WebTemplate)]
@@ -17,6 +18,7 @@ use crate::handlers::extract::Theme;
 pub(crate) struct Error {
     pub page: Page,
     pub theme: Option<Theme>,
+    pub lang: Lang,
     pub description: String,
 }
 
@@ -26,6 +28,7 @@ pub(crate) struct Error {
 pub(crate) struct PasswordInput {
     pub page: Page,
     pub theme: Option<Theme>,
+    pub lang: Lang,
     pub id: String,
 }
 
@@ -35,6 +38,7 @@ pub(crate) struct PasswordInput {
 pub(crate) struct BurnConfirmation {
     pub page: Page,
     pub theme: Option<Theme>,
+    pub lang: Lang,
     pub id: String,
     pub title: Option<String>,
 }
@@ -44,13 +48,19 @@ pub(crate) type ErrorResponse = (StatusCode, Error);
 
 /// Create an error response from `error` consisting of [`StatusCode`] derive from `error` as well
 /// as a rendered page with a description.
-pub fn make_error(error: crate::Error, page: Page, theme: Option<Theme>) -> ErrorResponse {
+pub fn make_error(
+    error: crate::Error,
+    page: Page,
+    theme: Option<Theme>,
+    lang: Lang,
+) -> ErrorResponse {
     let description = error.to_string();
     (
         error.into(),
         Error {
             page,
             theme,
+            lang,
             description,
         },
     )

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang.code() }}">
   <head>
     <meta charset="utf-8">
     <meta name="generator" content="wastebin {{ page.version }}">
@@ -27,7 +27,7 @@
     <div id="main-container">
       <header>
         <div class="nav-group">
-          <a href="/" class="nav-button" title="home" aria-label="home">
+          <a href="/" class="nav-button" title="{{ lang.t("nav.home") }}" aria-label="{{ lang.t("nav.home") }}">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
           </a>
           {% block title %}{% endblock %}
@@ -37,43 +37,43 @@
           <div class="theme-switcher">
             {% match theme %}
               {% when None %}
-                <a href="/theme?pref=dark" class="theme-opt" title="dark mode">
+                <a href="/theme?pref=dark" class="theme-opt" title="{{ lang.t("theme.dark") }}">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
                 </a>
-                <a href="/theme?pref=light" class="theme-opt" title="light mode">
+                <a href="/theme?pref=light" class="theme-opt" title="{{ lang.t("theme.light") }}">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
                 </a>
-                <a href="/theme?pref=system" class="theme-opt active" title="auto mode">
+                <a href="/theme?pref=system" class="theme-opt active" title="{{ lang.t("theme.auto") }}">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
                 </a>
               {% when Some with (Theme::System) %}
-                <a href="/theme?pref=dark" class="theme-opt" title="dark mode">
+                <a href="/theme?pref=dark" class="theme-opt" title="{{ lang.t("theme.dark") }}">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
                 </a>
-                <a href="/theme?pref=light" class="theme-opt" title="light mode">
+                <a href="/theme?pref=light" class="theme-opt" title="{{ lang.t("theme.light") }}">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
                 </a>
-                <a href="/theme?pref=system" class="theme-opt active" title="auto mode">
+                <a href="/theme?pref=system" class="theme-opt active" title="{{ lang.t("theme.auto") }}">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
                 </a>
               {% when Some with (Theme::Dark) %}
-                <a href="/theme?pref=dark" class="theme-opt active" title="dark mode">
+                <a href="/theme?pref=dark" class="theme-opt active" title="{{ lang.t("theme.dark") }}">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
                 </a>
-                <a href="/theme?pref=light" class="theme-opt" title="light mode">
+                <a href="/theme?pref=light" class="theme-opt" title="{{ lang.t("theme.light") }}">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
                 </a>
-                <a href="/theme?pref=system" class="theme-opt" title="auto mode">
+                <a href="/theme?pref=system" class="theme-opt" title="{{ lang.t("theme.auto") }}">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
                 </a>
               {% when Some with (Theme::Light) %}
-                <a href="/theme?pref=dark" class="theme-opt" title="dark mode">
+                <a href="/theme?pref=dark" class="theme-opt" title="{{ lang.t("theme.dark") }}">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
                 </a>
-                <a href="/theme?pref=light" class="theme-opt active" title="light mode">
+                <a href="/theme?pref=light" class="theme-opt active" title="{{ lang.t("theme.light") }}">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
                 </a>
-                <a href="/theme?pref=system" class="theme-opt" title="auto mode">
+                <a href="/theme?pref=system" class="theme-opt" title="{{ lang.t("theme.auto") }}">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
                 </a>
             {% endmatch %}
@@ -89,5 +89,6 @@
     </div>
     {% endblock %}
     <div id="toast" class="toast hidden"></div>
+    {% block overlay %}{% endblock %}
   </body>
 </html>

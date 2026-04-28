@@ -12,6 +12,8 @@ use serde::Deserialize;
 
 use wastebin_core::crypto;
 
+use crate::i18n::Lang;
+
 /// A safe redirect back to the referer.
 ///
 /// Extracts the `Referer` header and strips it down to just the path (and query string),
@@ -190,5 +192,86 @@ where
             .await
             .ok()
             .map(|data| Password(data.password.as_bytes().to_vec().into())))
+    }
+}
+
+/// Map a single language tag (e.g. `en`, `de-AT`) to a supported [`Lang`].
+fn lang_from_tag(tag: &str) -> Option<Lang> {
+    match tag.split('-').next()?.trim() {
+        "en" | "eN" | "En" | "EN" => Some(Lang::En),
+        "de" | "dE" | "De" | "DE" => Some(Lang::De),
+        _ => None,
+    }
+}
+
+/// Pick the best supported language from an `Accept-Language` header value,
+/// honoring `q=` weights. Falls back to the default language if nothing
+/// matches.
+fn lang_from_accept_language(header: &str) -> Lang {
+    header
+        .split(',')
+        .enumerate()
+        .filter_map(|(idx, entry)| {
+            let mut parts = entry.split(';');
+            let tag = parts.next().map(str::trim).filter(|t| !t.is_empty())?;
+            let lang = lang_from_tag(tag)?;
+
+            let q = parts
+                .find_map(|p| {
+                    let p = p.trim();
+                    p.strip_prefix("q=").or_else(|| p.strip_prefix("Q="))
+                })
+                .and_then(|s| s.parse::<f32>().ok())
+                .unwrap_or(1.0);
+
+            // Use position as a tie-breaker so the first listed entry wins
+            // when weights are equal.
+            #[expect(clippy::cast_precision_loss)]
+            let weighted = q - (idx as f32) * 1e-6;
+            Some((weighted, lang))
+        })
+        .max_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+        .map_or(Lang::default(), |(_, l)| l)
+}
+
+impl<S> FromRequestParts<S> for Lang
+where
+    S: Send + Sync,
+{
+    type Rejection = Infallible;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        Ok(parts
+            .headers
+            .get(http::header::ACCEPT_LANGUAGE)
+            .and_then(|v| v.to_str().ok())
+            .map_or_else(Lang::default, lang_from_accept_language))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn picks_highest_q() {
+        assert_eq!(lang_from_accept_language("en;q=0.5,de;q=0.9"), Lang::De);
+    }
+
+    #[test]
+    fn defaults_to_english_when_unsupported() {
+        assert_eq!(lang_from_accept_language("ja,fr;q=0.7"), Lang::En);
+    }
+
+    #[test]
+    fn handles_region_subtags() {
+        assert_eq!(lang_from_accept_language("de-AT"), Lang::De);
+    }
+
+    #[test]
+    fn first_listed_wins_on_tie() {
+        // Both implicit q=1.0; first listed should win.
+        assert_eq!(lang_from_accept_language("de,en"), Lang::De);
+        assert_eq!(lang_from_accept_language("en,de"), Lang::En);
     }
 }

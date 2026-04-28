@@ -8,6 +8,7 @@ use crate::cache::Key;
 use crate::handlers::extract::{Theme, Uid};
 use crate::handlers::html::paste::is_markdown_ext;
 use crate::handlers::html::{ErrorResponse, make_error};
+use crate::i18n::Lang;
 use crate::{Error, Page};
 use wastebin_core::db::Database;
 use wastebin_core::db::read::Metadata;
@@ -20,6 +21,7 @@ pub async fn get(
     State(db): State<Database>,
     uid: Option<Uid>,
     theme: Option<Theme>,
+    lang: Lang,
 ) -> Result<Qr, ErrorResponse> {
     async {
         let key: Key = id.parse()?;
@@ -48,6 +50,7 @@ pub async fn get(
         Ok(Qr {
             page: page.clone(),
             theme: theme.clone(),
+            lang,
             key,
             can_delete,
             is_available: true,
@@ -58,7 +61,7 @@ pub async fn get(
         })
     }
     .await
-    .map_err(|err| make_error(err, page, theme))
+    .map_err(|err| make_error(err, page, theme, lang))
 }
 
 /// Paste view showing the formatted paste as well as a bunch of links.
@@ -67,6 +70,7 @@ pub async fn get(
 pub(crate) struct Qr {
     page: Page,
     theme: Option<Theme>,
+    lang: Lang,
     key: Key,
     can_delete: bool,
     is_available: bool,

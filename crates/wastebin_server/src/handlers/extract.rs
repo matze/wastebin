@@ -143,7 +143,7 @@ where
             .and_then(|referer| referer.to_str().ok())
             .map(|referer| {
                 if referer.starts_with('/') && !referer.starts_with("//") {
-                    Redirect::to(referer)
+                    crate::redirect(referer)
                 } else {
                     referer
                         .parse::<url::Url>()
@@ -155,10 +155,10 @@ where
                                 |q| Redirect::to(&format!("{path}?{q}")),
                             )
                         })
-                        .unwrap_or_else(|| Redirect::to("/"))
+                        .unwrap_or_else(|| crate::redirect("/"))
                 }
             })
-            .unwrap_or_else(|| Redirect::to("/"));
+            .unwrap_or_else(|| crate::redirect("/"));
 
         Ok(SafeReferer(redirect))
     }

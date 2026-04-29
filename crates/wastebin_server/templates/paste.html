@@ -15,6 +15,8 @@
 <script defer src="{{ page.assets.paste_js.route() }}"></script>
 {% endblock %}
 
+{% block body_attrs %} data-paste-id="{{ key }}"{% endblock %}
+
 {% block nav_actions %}
   {% if is_available %}
     {% if can_delete %}

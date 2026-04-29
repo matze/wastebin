@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Fixed
+
+- Broken shortcut behaviour when <kbd>ctrl</kbd>/<kbd>meta</kbd> is pressed.
+  This was previously handled correctly for <kbd>c</kbd> but not for the others.
+- Use the paste key to correctly set the window target, i.e. going to raw view
+  from Markdown view works.
+
 
 ## 3.6.1
 

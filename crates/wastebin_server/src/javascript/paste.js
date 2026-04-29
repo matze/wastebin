@@ -77,26 +77,40 @@ function copy() {
 }
 
 function onKey(e) {
+  if (e.keyCode == 27) {
+    const overlay = document.getElementById("overlay");
+    if (overlay && overlay.style.display == "block") {
+      overlay.style.display = "none";
+    }
+    return;
+  }
+
+  if (e.ctrlKey || e.metaKey) {
+    return;
+  }
+
+  const pasteId = document.body.dataset.pasteId;
+
   if (e.key == 'n') {
     window.location.href = "/";
   }
-  else if (e.key == 'r') {
-    window.location.href = "/raw" + window.location.pathname;
+  else if (e.key == 'r' && pasteId) {
+    window.location.href = "/raw/" + pasteId;
   }
   else if (e.key == 'y') {
     navigator.clipboard.writeText(window.location.href);
     showToast("Copied URL", 1500);
   }
-  else if (e.key == 'd') {
-    window.location.href = "/dl" + window.location.pathname;
+  else if (e.key == 'd' && pasteId) {
+    window.location.href = "/dl/" + pasteId;
   }
-  else if (e.key == 'q') {
-    window.location.href = "/qr" + window.location.pathname;
+  else if (e.key == 'q' && pasteId) {
+    window.location.href = "/qr/" + pasteId;
   }
   else if (e.key == 'p') {
     window.location.href = window.location.href.split("?")[0];
   }
-  else if (e.key == 'c' && !(e.ctrlKey || e.metaKey)) {
+  else if (e.key == 'c') {
     copy();
   }
   else if (e.key == 'w') {
@@ -108,13 +122,6 @@ function onKey(e) {
   }
   else if (e.key == '?') {
     toggleOverlay();
-  }
-
-  if (e.keyCode == 27) {
-    const overlay = document.getElementById("overlay");
-    if (overlay && overlay.style.display == "block") {
-      overlay.style.display = "none";
-    }
   }
 }
 

@@ -22,7 +22,7 @@
     <noscript><link rel="stylesheet" href="{{ page.assets.css.no_js.route() }}"></noscript>
     {% block head %}{% endblock %}
   </head>
-  <body>
+  <body{% block body_attrs %}{% endblock %}>
     {% block body %}
     <div id="main-container">
       <header>

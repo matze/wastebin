@@ -6,6 +6,7 @@
 
 - Internationalization (i18n) support and initial Chinese and German
   translations.
+- Signed `owner` token in the JSON insert response for easier API-based deletions.
 
 
 ## 3.6.2

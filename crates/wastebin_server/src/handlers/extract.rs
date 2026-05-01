@@ -8,6 +8,7 @@ use axum::http::request::Parts;
 use axum::response::Redirect;
 use axum_extra::extract::cookie::Key;
 use axum_extra::extract::{CookieJar, SignedCookieJar};
+use cookie::Cookie;
 use serde::Deserialize;
 
 use wastebin_core::crypto;
@@ -41,7 +42,12 @@ pub(crate) struct Preference {
 pub(crate) struct Password(pub crypto::Password);
 
 /// Uid cookie value extractor, extracted from the `uid` cookie.
-pub(crate) struct Uid(pub i64);
+///
+/// The cookie holds a comma-separated list of i64 values: index 0 is the client's
+/// primary identity (used by the form route when tagging new pastes), subsequent
+/// entries are uids claimed via the magic-link `?owner=` handoff. An empty list
+/// is valid (e.g. cookie was just signed-but-empty).
+pub(crate) struct Uids(pub Vec<i64>);
 
 /// Password header to encrypt a paste.
 pub(crate) const PASSWORD_HEADER_NAME: http::HeaderName =
@@ -89,7 +95,45 @@ where
     }
 }
 
-impl<S> FromRequestParts<S> for Uid
+/// Parse the comma-separated `uid` cookie value into a list of i64s.
+/// Non-numeric tokens are skipped silently — a tampered cookie that survives
+/// HMAC verification but contains junk should not 500 the request.
+pub(crate) fn parse_uids(value: &str) -> Vec<i64> {
+    value
+        .split(',')
+        .filter_map(|s| s.trim().parse::<i64>().ok())
+        .collect()
+}
+
+/// Serialize a uid list back into the cookie wire format.
+pub(crate) fn serialize_uids(uids: &[i64]) -> String {
+    uids.iter()
+        .map(i64::to_string)
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+/// Sign a single uid using the same key as the `uid` cookie. The returned
+/// string is meant to be carried in the `?owner=` query of a paste URL so the
+/// server can promote it to a proper signed cookie on first GET.
+pub(crate) fn sign_owner_token(key: &Key, uid: i64) -> String {
+    let mut jar = cookie::CookieJar::new();
+    jar.signed_mut(key).add(Cookie::new("uid", uid.to_string()));
+    jar.get("uid")
+        .map(|cookie| cookie.value().to_string())
+        .unwrap_or_default()
+}
+
+/// Verify a token produced by [`sign_owner_token`] and recover the uid.
+pub(crate) fn verify_owner_token(key: &Key, token: &str) -> Option<i64> {
+    let mut jar = cookie::CookieJar::new();
+    jar.add(Cookie::new("uid", token.to_owned()));
+    jar.signed(key)
+        .get("uid")
+        .and_then(|cookie| cookie.value().parse::<i64>().ok())
+}
+
+impl<S> FromRequestParts<S> for Uids
 where
     S: Send + Sync,
     Key: FromRef<S>,
@@ -101,19 +145,16 @@ where
             .await
             .map_err(|_| ())?;
 
-        jar.get("uid")
-            .map(|cookie| {
-                cookie
-                    .value_trimmed()
-                    .parse::<i64>()
-                    .map(Uid)
-                    .map_err(|_| ())
-            })
-            .ok_or(())?
+        let uids = jar
+            .get("uid")
+            .map(|cookie| parse_uids(cookie.value_trimmed()))
+            .ok_or(())?;
+
+        Ok(Uids(uids))
     }
 }
 
-impl<S> OptionalFromRequestParts<S> for Uid
+impl<S> OptionalFromRequestParts<S> for Uids
 where
     S: Send + Sync,
     Key: FromRef<S>,
@@ -125,7 +166,7 @@ where
         state: &S,
     ) -> Result<Option<Self>, Self::Rejection> {
         Ok(
-            <Uid as FromRequestParts<S>>::from_request_parts(parts, state)
+            <Uids as FromRequestParts<S>>::from_request_parts(parts, state)
                 .await
                 .ok(),
         )

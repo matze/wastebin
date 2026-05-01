@@ -5,7 +5,7 @@ use qrcodegen::QrCode;
 use url::Url;
 
 use crate::cache::Key;
-use crate::handlers::extract::{Theme, Uid};
+use crate::handlers::extract::{Theme, Uids};
 use crate::handlers::html::paste::is_markdown_ext;
 use crate::handlers::html::{ErrorResponse, make_error};
 use crate::i18n::Lang;
@@ -19,7 +19,7 @@ pub async fn get(
     Path(id): Path<String>,
     State(page): State<Page>,
     State(db): State<Database>,
-    uid: Option<Uid>,
+    uids: Option<Uids>,
     theme: Option<Theme>,
     lang: Lang,
 ) -> Result<Qr, ErrorResponse> {
@@ -41,9 +41,10 @@ pub async fn get(
             ..
         } = db.get_metadata(key.id).await?;
 
-        let can_delete = uid
-            .zip(owner_uid)
-            .is_some_and(|(Uid(user_uid), owner_uid)| user_uid == owner_uid);
+        let can_delete = match (uids, owner_uid) {
+            (Some(Uids(uids)), Some(owner_uid)) => uids.contains(&owner_uid),
+            _ => false,
+        };
 
         let is_markdown = is_markdown_ext(key.ext.as_deref());
 

@@ -1,11 +1,14 @@
 use askama::Template;
 use askama_web::WebTemplate;
-use axum::extract::{Form, Path, State};
-use axum::response::{IntoResponse, Response};
+use axum::extract::{Form, Path, Query, State};
+use axum::response::{IntoResponse, Redirect, Response};
+use axum_extra::extract::SignedCookieJar;
+use axum_extra::extract::cookie::Key as CookieKey;
 use serde::Deserialize;
 
 use crate::cache::{Key, Mode};
-use crate::handlers::extract::{Theme, Uid};
+use crate::handlers::cookie;
+use crate::handlers::extract::{Theme, Uids, serialize_uids, verify_owner_token};
 use crate::handlers::html::{BurnConfirmation, ErrorResponse, PasswordInput, make_error};
 use crate::i18n::Lang;
 use crate::{Cache, Database, Highlighter, Page};
@@ -13,6 +16,15 @@ use wastebin_core::crypto::Password;
 use wastebin_core::db;
 use wastebin_core::db::read::{Data, Entry, Metadata};
 use wastebin_core::expiration::Expiration;
+
+/// Magic-link handoff: when a paste was created via the JSON API, the response contains a signed
+/// `owner` token. Opening `/<id>?owner=<token>` lets the browser claim ownership of the paste, the
+/// server validates the token, appends the uid to the user's signed `uid` cookie, and redirects to
+/// the clean paste URL so the token never leaks via Referer.
+#[derive(Deserialize, Debug)]
+pub(crate) struct OwnerHandoff {
+    pub(crate) owner: Option<String>,
+}
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct PasswordForm {
@@ -57,12 +69,30 @@ pub async fn get<E>(
     State(page): State<Page>,
     State(db): State<Database>,
     State(highlighter): State<Highlighter>,
+    State(cookie_key): State<CookieKey>,
     Path(id): Path<String>,
-    uid: Option<Uid>,
+    Query(handoff): Query<OwnerHandoff>,
+    jar: SignedCookieJar,
+    uids: Option<Uids>,
     theme: Option<Theme>,
     lang: Lang,
     form: Result<Form<PasteForm>, E>,
 ) -> Result<Response, ErrorResponse> {
+    if let Some(token) = handoff.owner.as_deref()
+        && let Some(claimed_uid) = verify_owner_token(&cookie_key, token)
+    {
+        let mut new_uids = uids
+            .as_ref()
+            .map(|Uids(list)| list.clone())
+            .unwrap_or_default();
+        if !new_uids.contains(&claimed_uid) {
+            new_uids.push(claimed_uid);
+        }
+        let mut cookie = cookie("uid", serialize_uids(&new_uids));
+        cookie.set_secure(true);
+        return Ok((jar.add(cookie), Redirect::to(&format!("/{id}"))).into_response());
+    }
+
     async {
         let form = form.ok().map(|Form(form)| form);
         let password = form
@@ -113,9 +143,10 @@ pub async fn get<E>(
             ..
         } = metadata;
 
-        let can_delete = uid
-            .zip(owner_uid)
-            .is_some_and(|(Uid(user_uid), owner_uid)| user_uid == owner_uid);
+        let can_delete = match (uids, owner_uid) {
+            (Some(Uids(uids)), Some(owner_uid)) => uids.contains(&owner_uid),
+            _ => false,
+        };
 
         let html = if let Some(html) = cache.get(&key, Mode::Source) {
             tracing::trace!(?key, "found cached item");

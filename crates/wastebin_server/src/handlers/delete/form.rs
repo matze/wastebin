@@ -1,7 +1,7 @@
 use axum::extract::{Path, State};
 use axum::response::Redirect;
 
-use crate::handlers::extract::{Theme, Uid};
+use crate::handlers::extract::{Theme, Uids};
 use crate::handlers::html::{ErrorResponse, make_error};
 use crate::i18n::Lang;
 use crate::{Database, Page};
@@ -10,13 +10,13 @@ pub async fn delete(
     Path(id): Path<String>,
     State(db): State<Database>,
     State(page): State<Page>,
-    Uid(uid): Uid,
+    Uids(uids): Uids,
     theme: Option<Theme>,
     lang: Lang,
 ) -> Result<Redirect, ErrorResponse> {
     async {
         let id = id.parse()?;
-        db.delete_for(id, uid).await?;
+        db.delete_for(id, &uids).await?;
         Ok(Redirect::to("/"))
     }
     .await

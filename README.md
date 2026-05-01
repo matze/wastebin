@@ -219,22 +219,32 @@ POST a new paste to the `/` endpoint with the following JSON payload:
   "expires": <number of seconds from now, optional>,
   "burn_after_reading": <true/false, optional>,
   "password": <password for encryption optional>,
+  "owner": "<owner token from a previous insert, optional>"
 }
 ```
 
 After successful insertion, you will receive a JSON response with the path to
-the newly created paste:
+the newly created paste and a signed `owner` token authorizing deletion:
 
 ```json
-{"path":"/Ibv9Fa.rs"}
+{"path":"/Ibv9Fa.rs","owner":"<signed token>"}
 ```
+
+By default every insert gets its own owner identity. Passing the `owner` token
+of a previous insert back in the `owner` field makes the new paste reuse that
+identity, letting a client group several pastes under a single owner. An absent
+or invalid token mints a fresh identity. Note that a reused token is a shared
+credential: whoever holds it can delete every paste created under it.
 
 To retrieve the raw content, make a GET request on the `/raw/:id` route. In case
 the paste was encrypted, pass the password via the `wastebin-password` header.
 
 To delete a paste, make a DELETE request on the `/:id` route with the `uid`
-cookie set that was sent back in the `Set-Cookie` header of the redirect
-response after creation.
+cookie set. A browser obtains that cookie by opening `/<id>?owner=<token>` with
+the `owner` token from the insert response: the server validates the token,
+appends the uid to the signed `uid` cookie and redirects to the clean paste URL.
+The form-based UI sets the same cookie in the `Set-Cookie` header of the
+redirect response after creation.
 
 
 ### wastebin-ctl command line tool

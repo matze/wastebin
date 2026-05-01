@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use chacha20poly1305::XNonce;
-use rusqlite::{Connection, Transaction, params};
+use rusqlite::{Connection, Transaction, params, params_from_iter};
 use rusqlite_migration::{HookError, M, Migrations};
 use tokio::sync::oneshot;
 
@@ -80,7 +80,7 @@ enum Command {
     },
     DeleteFor {
         id: Id,
-        uid: i64,
+        uids: Vec<i64>,
         result: oneshot::Sender<Result<(), Error>>,
     },
     NextUid {
@@ -420,9 +420,9 @@ impl Handler {
                         .send(self.delete_many(ids))
                         .map_err(|_| Error::ResultSendError)?;
                 }
-                Command::DeleteFor { id, uid, result } => {
+                Command::DeleteFor { id, uids, result } => {
                     result
-                        .send(self.delete_for(id, uid))
+                        .send(self.delete_for(id, &uids))
                         .map_err(|_| Error::ResultSendError)?;
                 }
                 Command::NextUid { result } => {
@@ -571,29 +571,26 @@ impl Handler {
         Ok(affected)
     }
 
-    fn delete_for(&mut self, id: Id, uid: i64) -> Result<(), Error> {
-        let tx = self.conn.transaction()?;
-
-        let exists = match tx.query_row(
-            "SELECT 1 FROM entries WHERE (id=?1 AND uid=?2)",
-            params![id.to_i64(), uid],
-            |row| row.get::<_, i64>(0),
-        ) {
-            Ok(_) => true,
-            Err(rusqlite::Error::QueryReturnedNoRows) => false,
-            Err(e) => return Err(Error::Sqlite(e)),
-        };
-
-        if !exists {
+    fn delete_for(&mut self, id: Id, uids: &[i64]) -> Result<(), Error> {
+        if uids.is_empty() {
             return Err(Error::Delete);
         }
 
-        tx.execute(
-            "DELETE FROM entries WHERE (id=?1 AND uid=?2)",
-            params![id.to_i64(), uid],
-        )?;
+        let placeholders = vec!["?"; uids.len()].join(",");
+        let delete_sql = format!("DELETE FROM entries WHERE id=? AND uid IN ({placeholders})");
 
-        tx.commit()?;
+        let mut params = Vec::with_capacity(uids.len() + 1);
+        params.push(id.to_i64());
+        params.extend_from_slice(uids);
+
+        let affected = self
+            .conn
+            .execute(&delete_sql, params_from_iter(&params))?;
+
+        if affected == 0 {
+            return Err(Error::Delete);
+        }
+
         Ok(())
     }
 
@@ -722,11 +719,15 @@ impl Database {
         command_result.await?
     }
 
-    /// Delete paste with `id` for user `uid`.
-    pub async fn delete_for(&self, id: Id, uid: i64) -> Result<(), Error> {
+    /// Delete paste with `id` if any of `uids` owns it.
+    pub async fn delete_for(&self, id: Id, uids: &[i64]) -> Result<(), Error> {
         let (result, command_result) = oneshot::channel();
         self.sender
-            .send(Command::DeleteFor { id, uid, result })
+            .send(Command::DeleteFor {
+                id,
+                uids: uids.to_vec(),
+                result,
+            })
             .await
             .map_err(|_| Error::SendError)?;
         command_result.await?
@@ -867,7 +868,7 @@ mod tests {
         let (id, _entry) = db.insert(entry).await?;
 
         assert!(db.get(id, None).await.is_ok());
-        assert!(db.delete_for(id, uid).await.is_ok());
+        assert!(db.delete_for(id, &[uid]).await.is_ok());
         assert!(db.get(id, None).await.is_err());
 
         let entry = write::Entry {
@@ -878,9 +879,28 @@ mod tests {
 
         let incorrect_uid = 99;
         assert!(matches!(
-            db.delete_for(id, incorrect_uid).await,
+            db.delete_for(id, &[incorrect_uid]).await,
             Err(Error::Delete)
         ));
+
+        // Multi-uid: passes if any uid in the list matches.
+        let entry = write::Entry {
+            uid: Some(uid),
+            ..Default::default()
+        };
+        let (id, _entry) = db.insert(entry).await?;
+
+        assert!(db.delete_for(id, &[99, uid, 7]).await.is_ok());
+        assert!(db.get(id, None).await.is_err());
+
+        // Empty slice: nothing to authorize against.
+        let entry = write::Entry {
+            uid: Some(uid),
+            ..Default::default()
+        };
+        let (id, _entry) = db.insert(entry).await?;
+
+        assert!(matches!(db.delete_for(id, &[]).await, Err(Error::Delete)));
 
         assert!(db.get(id, None).await.is_ok());
 

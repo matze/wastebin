@@ -4,7 +4,7 @@ use axum::extract::{Form, Path, State};
 use axum::response::{IntoResponse, Response};
 
 use crate::cache::{Key, Mode};
-use crate::handlers::extract::{Theme, Uid};
+use crate::handlers::extract::{Theme, Uids};
 use crate::handlers::html::paste::PasswordForm;
 use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
 use crate::i18n::Lang;
@@ -39,7 +39,7 @@ pub async fn get<E>(
     State(db): State<Database>,
     State(highlighter): State<Highlighter>,
     Path(id): Path<String>,
-    uid: Option<Uid>,
+    uids: Option<Uids>,
     theme: Option<Theme>,
     lang: Lang,
     form: Result<Form<PasswordForm>, E>,
@@ -74,9 +74,10 @@ pub async fn get<E>(
             ..
         } = metadata;
 
-        let can_delete = uid
-            .zip(owner_uid)
-            .is_some_and(|(Uid(user_uid), owner_uid)| user_uid == owner_uid);
+        let can_delete = match (uids, owner_uid) {
+            (Some(Uids(uids)), Some(owner_uid)) => uids.contains(&owner_uid),
+            _ => false,
+        };
 
         let html = if let Some(cached) = cache.get(&key, Mode::Rendered) {
             tracing::trace!(?key, "found cached rendered markdown");

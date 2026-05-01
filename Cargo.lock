@@ -2785,6 +2785,7 @@ dependencies = [
  "axum",
  "axum-extra",
  "cached",
+ "cookie",
  "futures",
  "headers",
  "hex",

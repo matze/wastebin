@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Page;
 use crate::handlers::cookie;
-use crate::handlers::extract::{Theme, Uid};
+use crate::handlers::extract::{Theme, Uids, serialize_uids};
 use crate::handlers::html::make_error;
 use crate::i18n::Lang;
 use wastebin_core::db::{Database, write};
@@ -48,7 +48,7 @@ pub async fn post<E: std::fmt::Debug>(
     State(page): State<Page>,
     State(db): State<Database>,
     jar: SignedCookieJar,
-    uid: Option<Uid>,
+    uids: Option<Uids>,
     theme: Option<Theme>,
     lang: Lang,
     entry: Result<Form<Entry>, E>,
@@ -58,15 +58,20 @@ pub async fn post<E: std::fmt::Debug>(
     };
 
     async {
-        // Use cookie uid or generate a new one.
-        let uid = if let Some(Uid(uid)) = uid {
-            uid
-        } else {
-            db.next_uid().await?
+        // Pick the existing primary uid (first in the cookie list) or mint a new one.
+        // Re-set the cookie with the full list unchanged so claimed uids survive.
+        let mut uids = uids.map(|Uids(uids)| uids).unwrap_or_default();
+        let primary = match uids.first().copied() {
+            Some(uid) => uid,
+            None => {
+                let uid = db.next_uid().await?;
+                uids.push(uid);
+                uid
+            }
         };
 
         let mut entry: write::Entry = entry.into();
-        entry.uid = Some(uid);
+        entry.uid = Some(primary);
 
         let (id, entry) = db.insert(entry).await?;
 
@@ -79,7 +84,7 @@ pub async fn post<E: std::fmt::Debug>(
             }
         };
 
-        let mut cookie = cookie("uid", uid.to_string());
+        let mut cookie = cookie("uid", serialize_uids(&uids));
         cookie.set_secure(true);
 
         Ok((jar.add(cookie), Redirect::to(&url)))

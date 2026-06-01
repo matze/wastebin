@@ -3,7 +3,7 @@ use std::num::NonZeroUsize;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
-use cached::{Cached, SizedCache};
+use cached::{Cached, LruCache};
 
 use crate::errors::Error;
 
@@ -47,12 +47,12 @@ impl Slot {
 /// Stores formatted HTML.
 #[derive(Clone)]
 pub(crate) struct Cache {
-    inner: Arc<Mutex<SizedCache<Slot, Html>>>,
+    inner: Arc<Mutex<LruCache<Slot, Html>>>,
 }
 
 impl Cache {
     pub fn new(size: NonZeroUsize) -> Self {
-        let inner = Arc::new(Mutex::new(SizedCache::with_size(size.into())));
+        let inner = Arc::new(Mutex::new(LruCache::with_size(size.into())));
 
         Self { inner }
     }

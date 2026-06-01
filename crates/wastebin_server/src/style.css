@@ -989,6 +989,7 @@ textarea:focus-visible {
   color: var(--fg);
   line-height: 1.65;
   word-wrap: break-word;
+  hanging-punctuation: first last;
 }
 
 .markdown-body > :first-child { margin-top: 0; }
@@ -1023,15 +1024,17 @@ textarea:focus-visible {
 
 .markdown-body ul,
 .markdown-body ol {
-  padding-left: 1.6em;
+  padding-left: 0;
+  list-style-position: outside;
 }
 
 .markdown-body li + li { margin-top: 0.25em; }
 .markdown-body li > ul,
-.markdown-body li > ol { margin: 0.25em 0; }
+.markdown-body li > ol { padding-left: 1.4em; margin: 0.25em 0; }
 
+.markdown-body li:has(> input[type="checkbox"]) { list-style: none; }
 .markdown-body li input[type="checkbox"] {
-  margin: 0 0.35em 0 -1.4em;
+  margin: 0 0.35em 0 0;
   vertical-align: middle;
 }
 
@@ -1064,6 +1067,7 @@ textarea:focus-visible {
   border: 1px solid var(--border-soft);
   border-radius: 6px;
   padding: 14px 16px;
+  margin-inline: -16px;
   line-height: 1.55;
 }
 
@@ -1077,7 +1081,7 @@ textarea:focus-visible {
 }
 
 .markdown-body blockquote {
-  margin-left: 0;
+  margin-inline: calc(-1em - 3px) -1em;
   padding: 0.1em 1em;
   color: var(--fg-dim);
   border-left: 3px solid var(--border);
@@ -1087,6 +1091,7 @@ textarea:focus-visible {
 .markdown-body blockquote[class^="markdown-alert-"] {
   color: var(--fg);
   border-left-width: 4px;
+  margin-inline: calc(-1em - 4px) -1em;
   padding: 0.6em 1em;
 }
 
@@ -1150,6 +1155,7 @@ textarea:focus-visible {
 .markdown-body table {
   width: auto;
   min-width: 0;
+  margin-inline: -12px;
   border-collapse: collapse;
   display: block;
   overflow-x: auto;
@@ -1222,4 +1228,6 @@ textarea:focus-visible {
   .theme-switcher span {
     display: none;
   }
+
+  .markdown-body table { margin-inline: 0; }
 }

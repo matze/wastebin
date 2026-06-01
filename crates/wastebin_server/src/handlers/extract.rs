@@ -200,6 +200,7 @@ fn lang_from_tag(tag: &str) -> Option<Lang> {
     match tag.split('-').next()?.trim() {
         "en" | "eN" | "En" | "EN" => Some(Lang::En),
         "de" | "dE" | "De" | "DE" => Some(Lang::De),
+        "zh" | "zH" | "Zh" | "ZH" => Some(Lang::Zh),
         _ => None,
     }
 }

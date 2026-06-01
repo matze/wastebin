@@ -7,6 +7,7 @@ pub(crate) enum Lang {
     #[default]
     En,
     De,
+    Zh,
 }
 
 impl Lang {
@@ -15,6 +16,7 @@ impl Lang {
         match self {
             Lang::En => "en",
             Lang::De => "de",
+            Lang::Zh => "zh",
         }
     }
 
@@ -25,6 +27,7 @@ impl Lang {
         let map: &phf::Map<&'static str, &'static str> = match self {
             Lang::En => &EN,
             Lang::De => &DE,
+            Lang::Zh => &ZH,
         };
 
         map.get(key).or_else(|| EN.get(key)).copied().unwrap_or(key)
@@ -185,9 +188,84 @@ static DE: phf::Map<&'static str, &'static str> = phf_map! {
     "qr.label" => "QR-Code",
 };
 
+static ZH: phf::Map<&'static str, &'static str> = phf_map! {
+    "nav.home" => "主页",
+    "nav.upload" => "上传",
+    "nav.delete" => "删除剪贴",
+    "nav.download" => "下载文件",
+    "nav.raw" => "显示原始内容",
+    "nav.copy" => "复制到剪贴板",
+    "nav.qr" => "二维码",
+    "nav.rendered" => "渲染视图",
+    "nav.source" => "源码视图",
+
+    "theme.dark" => "深色模式",
+    "theme.light" => "浅色模式",
+    "theme.auto" => "自动模式",
+
+    "index.placeholder.paste" => "在此处粘贴、输入或拖放文件…",
+    "index.drop" => "拖放以加载文件",
+    "index.label.title" => "标题",
+    "index.placeholder.title" => "无标题",
+    "index.label.language" => "语言",
+    "index.aria.language" => "语言",
+    "index.placeholder.filter" => "过滤…",
+    "index.label.expires" => "过期时间",
+    "index.label.options" => "选项",
+    "index.toggle.burn" => "阅后即焚",
+    "index.toggle.burn.hint" => "首次查看后删除",
+    "index.toggle.encrypt" => "加密",
+    "index.toggle.encrypt.hint" => "使用密码保护剪贴",
+    "index.placeholder.password" => "密码",
+    "index.stat.lines" => "行",
+    "index.stat.chars" => "字符",
+    "index.stat.bytes" => "字节",
+    "index.button.paste" => "粘贴",
+    "index.button.paste.label" => "粘贴",
+
+    "paste.expires_in" => "过期于",
+    "paste.toast.copied_content" => "已复制内容",
+    "paste.toast.copied_url" => "已复制链接",
+    "paste.toast.burned" => "内容已销毁，无法再次查看！",
+    "paste.help.go_home" => "返回主页",
+    "paste.help.go_here" => "返回此处",
+    "paste.help.copy_url" => "复制链接",
+    "paste.help.copy_content" => "复制内容",
+    "paste.help.download" => "下载",
+    "paste.help.show_qr" => "显示二维码",
+    "paste.help.toggle_wrap" => "切换自动换行",
+    "paste.help.toggle_rendered" => "切换渲染视图",
+    "paste.help.toggle_help" => "切换帮助",
+
+    "password.show" => "显示密码",
+    "password.hide" => "隐藏密码",
+
+    "stats.unit.kb" => "kb",
+    "stats.unit.mb" => "mb",
+    "stats.label.limit" => "限制",
+
+    "burn.title" => "阅后即焚",
+    "burn.body" => "复制并发送 <a class=\"text-link\" href=\"/{0}\">此链接</a>。收件人将看到确认提示。在他们确认的那一刻，剪贴将被删除。",
+
+    "burn_confirm.body" => "此剪贴在显示的那一刻将被 <strong>永久删除</strong>。您将无法再次查看它。",
+    "burn_confirm.cancel" => "取消",
+    "burn_confirm.reveal" => "显示",
+
+    "encrypted.title" => "加密的剪贴",
+    "encrypted.placeholder" => "密码…",
+    "encrypted.cancel" => "取消",
+    "encrypted.decrypt" => "解密",
+
+    "error.title" => "错误 😢",
+    "error.back" => "返回",
+
+    "qr.label" => "二维码",
+};
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use itertools::Itertools;
 
     #[test]
     fn falls_back_to_english_for_missing_keys() {
@@ -205,12 +283,17 @@ mod tests {
 
     #[test]
     fn translations_intersect() {
-        for key in EN.keys() {
-            assert!(DE.contains_key(key));
-        }
+        for perms in [&DE, &EN, &ZH].iter().permutations(2) {
+            let a = perms[0];
+            let b = perms[1];
 
-        for key in DE.keys() {
-            assert!(EN.contains_key(key));
+            for key in a.keys() {
+                assert!(b.contains_key(key));
+            }
+
+            for key in b.keys() {
+                assert!(a.contains_key(key));
+            }
         }
     }
 }

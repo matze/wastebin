@@ -4,7 +4,8 @@
 
 ### Added
 
-- Internationalization (i18n) support and initial German translation.
+- Internationalization (i18n) support and initial Chinese and German
+  translations.
 
 
 ## 3.6.2

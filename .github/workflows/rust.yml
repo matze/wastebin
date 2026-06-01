@@ -16,7 +16,7 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v4
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@1.88.0
+      uses: dtolnay/rust-toolchain@1.95.0
       with:
         components: clippy,rustfmt
     - run: cargo clippy -- -Dwarnings

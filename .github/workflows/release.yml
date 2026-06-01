@@ -41,7 +41,7 @@ jobs:
         uses: houseabsolute/actions-rust-cross@v0
         with:
           target: ${{ matrix.target }}
-          toolchain: 1.88.0
+          toolchain: 1.95.0
           args: "--locked --release --bin wastebin --bin wastebin-ctl"
           strip: true
 

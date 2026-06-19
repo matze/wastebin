@@ -4,7 +4,7 @@
 
 # --- build image
 
-FROM rust:1.90 AS builder
+FROM rust:1.95 AS builder
 
 RUN rustup target add \
     aarch64-unknown-linux-musl \

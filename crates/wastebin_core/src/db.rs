@@ -583,9 +583,7 @@ impl Handler {
         params.push(id.to_i64());
         params.extend_from_slice(uids);
 
-        let affected = self
-            .conn
-            .execute(&delete_sql, params_from_iter(&params))?;
+        let affected = self.conn.execute(&delete_sql, params_from_iter(&params))?;
 
         if affected == 0 {
             return Err(Error::Delete);

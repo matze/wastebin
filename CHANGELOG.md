@@ -13,6 +13,15 @@
   translations.
 - Signed `owner` token in the JSON insert response for easier API-based deletions.
 
+### Changed
+
+- Render Markdown punctuation and blocks in hanging fashion so that text stays
+  aligned with surrounding text.
+
+### Fixed
+
+- Padding of admonition blocks.
+
 
 ## 3.6.2
 

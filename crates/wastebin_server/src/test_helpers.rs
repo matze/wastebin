@@ -25,7 +25,7 @@ pub(crate) struct StoreCookies(pub bool);
 impl Client {
     pub(crate) async fn new(store_cookies: StoreCookies) -> Self {
         let (db, handler) = Database::new(db::Open::Memory).expect("open memory database");
-        let cache = Cache::new(NonZeroUsize::new(128).unwrap());
+        let cache = Cache::new(NonZeroUsize::new(128).unwrap()).unwrap();
         let key = Key::generate();
         let expirations = "0".parse::<ExpirationSet>().unwrap();
         let page = Arc::new(page::Page::new(

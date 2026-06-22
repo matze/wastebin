@@ -258,7 +258,7 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let theme = env::theme()?;
     let title = env::title();
 
-    let cache = Cache::new(cache_size);
+    let cache = Cache::new(cache_size)?;
     let (db, db_handler) = Database::new(method)?;
 
     tracing::debug!("serving on {socket_type}");

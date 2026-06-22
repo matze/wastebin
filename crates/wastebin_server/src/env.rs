@@ -18,6 +18,8 @@ pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
 #[derive(thiserror::Error, Debug)]
 pub(crate) enum Error {
+    #[error("failed to construct cache")]
+    CacheConstruction(#[from] cached::BuildError),
     #[error("failed to parse {CACHE_SIZE}, expected number of elements: {0}")]
     CacheSize(ParseIntError),
     #[error("failed to parse {DATABASE_PATH}, contains non-Unicode data")]

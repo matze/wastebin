@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use cached::{Cached, LruCache};
 
+use crate::env;
 use crate::errors::Error;
 
 use wastebin_core::id::Id;
@@ -51,10 +52,11 @@ pub(crate) struct Cache {
 }
 
 impl Cache {
-    pub fn new(size: NonZeroUsize) -> Self {
-        let inner = Arc::new(Mutex::new(LruCache::with_size(size.into())));
+    pub fn new(size: NonZeroUsize) -> Result<Self, env::Error> {
+        let cache = LruCache::builder().max_size(size.into()).build()?;
+        let inner = Arc::new(Mutex::new(cache));
 
-        Self { inner }
+        Ok(Self { inner })
     }
 
     pub fn put(&self, key: &Key, mode: Mode, value: Html) {

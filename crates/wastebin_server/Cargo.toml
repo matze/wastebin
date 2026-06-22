@@ -10,7 +10,7 @@ askama = { workspace = true }
 askama_web = { version = "0.16.0", features = ["axum-0.8"] }
 axum = { version = "0.8", features = ["json", "query", "macros"] }
 axum-extra = { version = "0.12", features = ["cookie-signed", "typed-header"] }
-cached = { version = "1.1.0", default-features = false }
+cached = { version = "2.0.0", default-features = false }
 cookie = { version = "0.18", features = ["signed"] }
 futures = "0.3.31"
 hex = "0.4"

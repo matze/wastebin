@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+## 3.7.0
+
+**2026-06-22**
+
 ### Added
 
 - Internationalization (i18n) support and initial Chinese and German

@@ -17,14 +17,14 @@ hex = "0.4"
 hostname = "0.4.0"
 http = "1.3"
 mime = "0.3"
-phf = { version = "0.11", features = ["macros"] }
+phf = { version = "0.14", features = ["macros"] }
 qrcodegen = "1"
 sha2 = "0.11"
 serde = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "signal"] }
 tower = { version = "0.5", default-features = false }
-tower-http = { version = "0.6", features = ["compression-full", "limit", "timeout", "trace"] }
+tower-http = { version = "0.7", features = ["compression-full", "limit", "timeout", "trace"] }
 tracing = { workspace = true }
 tracing-subscriber = "0.3"
 url = "2"
@@ -33,7 +33,7 @@ wastebin_highlight = { path = "../wastebin_highlight/" }
 headers = "0.4.1"
 
 [dev-dependencies]
-itertools = "0.14.0"
+itertools = "0.15.0"
 reqwest = { version = "0.13", default-features = false, features = ["cookies", "form", "json", "query"] }
 tower = { version = "0.5", default-features = false, features = ["util", "make"] }
 

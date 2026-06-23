@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- Press <kbd>Tab</kbd> in the editor to insert a tab character instead of
+  moving focus to the next control.
+
 
 ## 3.7.0
 

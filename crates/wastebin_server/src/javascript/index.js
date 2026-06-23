@@ -170,9 +170,27 @@ textarea.addEventListener("keydown", function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === "s") {
     e.preventDefault();
     $("form").submit();
+    return;
   }
+
   if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
     e.preventDefault();
     $("form").submit();
+    return;
+  }
+
+  if (e.key === "Tab" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+    e.preventDefault();
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    // Prefer `execCommand` so the insertion stays in the native undo history.
+    if (!document.execCommand("insertText", false, "\t")) {
+      textarea.setRangeText("\t", start, end, "end");
+    }
+
+    updateLineNumbers();
+    updateStats();
   }
 });

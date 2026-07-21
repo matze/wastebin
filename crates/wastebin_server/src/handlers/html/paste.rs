@@ -90,7 +90,7 @@ pub async fn get<E>(
         }
         let mut cookie = cookie("uid", serialize_uids(&new_uids));
         cookie.set_secure(true);
-        return Ok((jar.add(cookie), Redirect::to(&format!("/{id}"))).into_response());
+        return Ok((jar.add(cookie), crate::redirect(&format!("/{id}"))).into_response());
     }
 
     async {

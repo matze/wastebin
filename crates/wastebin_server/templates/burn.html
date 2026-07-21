@@ -4,7 +4,7 @@
   <div class="dialog">
     <div class="dialog-header">{{ lang.t("burn.title") }}</div>
     <div class="dialog-section">
-      {{ lang.t_with("burn.body", key) }}
+      {{ lang.t_with("burn.body", path_prefix, key) }}
     </div>
     <div class="dialog-section dialog-qr">
       <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 {{ code.size() + 4 }} {{ code.size() + 4 }}" stroke="none">

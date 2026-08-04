@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Replace control characters in titles listed by `wastebin-ctl`, which let a
+  paste send escape sequences to the operator's terminal.
 - Reject off-origin and scheme-relative `Referer` values when redirecting back
   after a theme change, closing an open-redirect bypass via `//`-prefixed paths.
 - Unlink Unix domain socket after shutdown.

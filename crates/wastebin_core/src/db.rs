@@ -72,7 +72,7 @@ enum Command {
     },
     Delete {
         id: Id,
-        result: oneshot::Sender<Result<(), Error>>,
+        result: oneshot::Sender<Result<bool, Error>>,
     },
     DeleteMany {
         ids: Vec<Id>,
@@ -551,11 +551,11 @@ impl Handler {
         Ok(entry)
     }
 
-    fn delete(&self, id: Id) -> Result<(), Error> {
-        self.conn
-            .execute("DELETE FROM entries WHERE id=?1", params![id.to_i64()])?;
-
-        Ok(())
+    fn delete(&self, id: Id) -> Result<bool, Error> {
+        Ok(self
+            .conn
+            .execute("DELETE FROM entries WHERE id=?1", params![id.to_i64()])?
+            != 0)
     }
 
     fn delete_many(&mut self, ids: Vec<Id>) -> Result<usize, Error> {
@@ -680,7 +680,10 @@ impl Database {
         let data = read::Data { text, metadata };
 
         if must_be_deleted {
-            self.delete(id).await?;
+            if !self.delete(id).await? {
+                return Err(Error::NotFound);
+            }
+
             return Ok(read::Entry::Burned(data));
         }
 
@@ -697,8 +700,8 @@ impl Database {
         command_result.await?
     }
 
-    /// Delete paste with `id`.
-    async fn delete(&self, id: Id) -> Result<(), Error> {
+    /// Delete paste with `id`. Returns whether the entry was still present.
+    async fn delete(&self, id: Id) -> Result<bool, Error> {
         let (result, command_result) = oneshot::channel();
         self.sender
             .send(Command::Delete { id, result })
@@ -849,6 +852,61 @@ mod tests {
         assert!(db.get(id, None).await.is_ok());
         assert!(db.delete(id).await.is_ok());
         assert!(db.get(id, None).await.is_err());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn burn_after_reading() -> Result<(), Box<dyn std::error::Error>> {
+        let db = new_db()?;
+
+        let entry = write::Entry {
+            text: "burn me".to_string(),
+            burn_after_reading: Some(true),
+            ..Default::default()
+        };
+
+        let (id, _entry) = db.insert(entry).await?;
+
+        assert!(matches!(db.get(id, None).await?, read::Entry::Burned(_)));
+        assert!(matches!(db.get(id, None).await, Err(Error::NotFound)));
+
+        Ok(())
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn burn_after_reading_single_view() -> Result<(), Box<dyn std::error::Error>> {
+        let db = new_db()?;
+
+        let entry = write::Entry {
+            text: "burn me".repeat(10_000),
+            burn_after_reading: Some(true),
+            ..Default::default()
+        };
+
+        let (id, _entry) = db.insert(entry).await?;
+
+        let mut set = tokio::task::JoinSet::new();
+        for _ in 0..20 {
+            let db = db.clone();
+            set.spawn(async move { db.get(id, None).await });
+        }
+
+        let results: Vec<_> = set.join_all().await;
+
+        let (burned, not_found, regular, other) = results.into_iter().fold(
+            (0, 0, 0, 0),
+            |(burned, not_found, regular, other), result| match result {
+                Ok(read::Entry::Burned(_)) => (burned + 1, not_found, regular, other),
+                Err(Error::NotFound) => (burned, not_found + 1, regular, other),
+                Ok(read::Entry::Regular(_)) => (burned, not_found, regular + 1, other),
+                Err(_) => (burned, not_found, regular, other + 1),
+            },
+        );
+        assert_eq!(burned, 1);
+        assert_eq!(not_found, 19);
+        assert_eq!(regular, 0);
+        assert_eq!(other, 0);
 
         Ok(())
     }

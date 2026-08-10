@@ -3,6 +3,15 @@
 ## Unreleased
 
 
+## 3.7.2
+
+**2026-08-10**
+
+### Fixed
+
+- Race condition that could leak a burned paste.
+
+
 ## 3.7.1
 
 **2026-07-31**

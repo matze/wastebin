@@ -1167,6 +1167,7 @@ textarea:focus-visible {
   padding: 6px 12px;
   border: 1px solid var(--border-soft);
   text-align: left;
+  vertical-align: top;
 }
 
 .markdown-body th {

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Top-align Markdown-rendered table cells.
+
 
 ## 3.7.2
 

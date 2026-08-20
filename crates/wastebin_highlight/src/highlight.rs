@@ -209,7 +209,11 @@ impl Highlighter {
 
         for (mut line_number, line) in LinesWithEndings::from(&text).enumerate() {
             let (formatted, delta) = if line.len() > HIGHLIGHT_LINE_LENGTH_CUTOFF {
-                (line.to_string(), 0)
+                // Skipping the highlighter must not skip escaping: `formatted` is written
+                // into the page as raw HTML further down.
+                let mut plain = String::with_capacity(line.len());
+                escape(line, &mut plain).map_err(syntect::Error::from)?;
+                (plain, 0)
             } else {
                 let parsed = parse_state.parse_line(line, &self.syntax_set)?;
 
@@ -323,6 +327,24 @@ impl Html {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn long_lines_are_escaped() -> Result<(), Box<dyn std::error::Error>> {
+        let highlighter = Highlighter::default();
+        let payload = "<img src=x onerror=alert(1)>";
+        let line = format!("{}{payload}", "A".repeat(HIGHLIGHT_LINE_LENGTH_CUTOFF));
+        assert!(line.len() > HIGHLIGHT_LINE_LENGTH_CUTOFF);
+
+        let html = highlighter.highlight(line, None)?.into_inner();
+
+        assert!(
+            !html.contains(payload),
+            "long line reached the page unescaped"
+        );
+        assert!(html.contains("&lt;img src=x onerror=alert(1)&gt;"));
+
+        Ok(())
+    }
 
     #[test]
     fn markdown_links() -> Result<(), Box<dyn std::error::Error>> {

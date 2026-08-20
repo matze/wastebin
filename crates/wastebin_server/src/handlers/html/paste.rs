@@ -80,6 +80,7 @@ pub async fn get<E>(
 ) -> Result<Response, ErrorResponse> {
     if let Some(token) = handoff.owner.as_deref()
         && let Some(claimed_uid) = verify_owner_token(&cookie_key, token)
+        && let Ok(key) = id.parse::<Key>()
     {
         let mut new_uids = uids
             .as_ref()
@@ -90,7 +91,10 @@ pub async fn get<E>(
         }
         let mut cookie = cookie("uid", serialize_uids(&new_uids));
         cookie.set_secure(true);
-        return Ok((jar.add(cookie), Redirect::to(&format!("/{id}"))).into_response());
+        // Redirect to the canonical paste URL, never the raw path parameter. An
+        // unvalidated `id` such as `\evil.example.com` would otherwise become an
+        // off-site redirect once the browser normalises the backslash to `/`.
+        return Ok((jar.add(cookie), Redirect::to(&format!("/{key}"))).into_response());
     }
 
     async {
@@ -196,6 +200,55 @@ mod tests {
 
         let res = client.get("/000000").send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn owner_handoff_does_not_open_redirect() -> Result<(), Box<dyn std::error::Error>> {
+        #[derive(serde::Serialize)]
+        struct Api {
+            text: String,
+        }
+        #[derive(serde::Deserialize)]
+        struct Resp {
+            owner: String,
+        }
+
+        let client = Client::new(StoreCookies(false)).await;
+
+        // Mint a valid owner token so the handoff branch is actually reached.
+        let owner = client
+            .post_json()
+            .json(&Api { text: "x".into() })
+            .send()
+            .await?
+            .json::<Resp>()
+            .await?
+            .owner;
+
+        // `%5C` decodes to a backslash; `/\host` is normalised to `//host` (an
+        // authority) by browsers. The handoff must not redirect there.
+        let res = client
+            .get("/%5Cevil.example.com")
+            .query(&[("owner", &owner)])
+            .send()
+            .await?;
+
+        assert_ne!(
+            res.status(),
+            StatusCode::SEE_OTHER,
+            "handoff issued a redirect for a non-paste id"
+        );
+        if let Some(location) = res.headers().get("location") {
+            let location = location.to_str()?;
+            assert!(
+                location.starts_with('/')
+                    && !location.starts_with("//")
+                    && !location.starts_with("/\\"),
+                "off-site redirect Location: {location}"
+            );
+        }
 
         Ok(())
     }

@@ -178,6 +178,21 @@ where
     }
 }
 
+/// Build a redirect that can only point back into this origin. Anything that is
+/// not a single-slash absolute path — including scheme-relative `//host` and
+/// backslash-authority `/\host`, both of which a browser resolves to a different
+/// origin — collapses to `"/"`.
+fn safe_local_redirect(target: &str) -> Redirect {
+    let bytes = target.as_bytes();
+    let is_local = bytes.first() == Some(&b'/') && !matches!(bytes.get(1), Some(b'/' | b'\\'));
+
+    if is_local {
+        Redirect::to(target)
+    } else {
+        Redirect::to("/")
+    }
+}
+
 impl<S> FromRequestParts<S> for SafeReferer
 where
     S: Send + Sync,
@@ -190,18 +205,23 @@ where
             .get(http::header::REFERER)
             .and_then(|referer| referer.to_str().ok())
             .map(|referer| {
-                if referer.starts_with('/') && !referer.starts_with("//") {
-                    Redirect::to(referer)
+                if referer.starts_with('/') {
+                    // Already a relative reference; safe unless it is
+                    // scheme-relative (`//`) or a backslash authority (`/\`).
+                    safe_local_redirect(referer)
                 } else {
+                    // Absolute URL: reduce to its path (and query), then apply
+                    // the same origin-local check — `url.path()` can still begin
+                    // with `//`.
                     referer
                         .parse::<url::Url>()
                         .ok()
                         .map(|url| {
-                            let path = url.path();
-                            url.query().map_or_else(
-                                || Redirect::to(path),
-                                |q| Redirect::to(&format!("{path}?{q}")),
-                            )
+                            let target = match url.query() {
+                                Some(query) => format!("{}?{query}", url.path()),
+                                None => url.path().to_owned(),
+                            };
+                            safe_local_redirect(&target)
                         })
                         .unwrap_or_else(|| Redirect::to("/"))
                 }

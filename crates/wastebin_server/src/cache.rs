@@ -11,6 +11,11 @@ use crate::errors::Error;
 use wastebin_core::id::Id;
 use wastebin_highlight::Html;
 
+/// Renders larger than this are not cached. A paste whose highlighted HTML
+/// exceeds the 1 MiB default request-body limit is unusual enough to re-render
+/// on each view rather than let one entry dominate — or blow up — the cache.
+const MAX_CACHED_HTML_BYTES: usize = 1024 * 1024;
+
 /// Cache based on identifier and format.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Key {
@@ -60,6 +65,15 @@ impl Cache {
     }
 
     pub fn put(&self, key: &Key, mode: Mode, value: Html) {
+        // Highlighting wraps every line and token in markup, so a pathological
+        // paste can render to tens of megabytes. Refuse to cache such renders so
+        // that worst-case cache memory stays bounded by roughly
+        // `WASTEBIN_CACHE_SIZE` * `MAX_CACHED_HTML_BYTES`; oversized pastes are
+        // simply re-rendered on each view.
+        if value.len() > MAX_CACHED_HTML_BYTES {
+            return;
+        }
+
         self.inner
             .lock()
             .expect("getting lock")
@@ -123,5 +137,28 @@ mod tests {
 
         assert!(Key::from_str("foo").is_err());
         assert!(Key::from_str("bar.rs").is_err());
+    }
+
+    #[test]
+    fn oversized_renders_are_not_cached() {
+        let cache = Cache::new(NonZeroUsize::new(8).unwrap()).unwrap();
+
+        let small = Key::from_str("bJZCna").unwrap();
+        cache.put(&small, Mode::Source, Html::new(String::from("small")));
+        assert!(
+            cache.get(&small, Mode::Source).is_some(),
+            "a small render should be cached"
+        );
+
+        let big = Key::from_str("sIiFec").unwrap();
+        cache.put(
+            &big,
+            Mode::Source,
+            Html::new("x".repeat(MAX_CACHED_HTML_BYTES + 1)),
+        );
+        assert!(
+            cache.get(&big, Mode::Source).is_none(),
+            "an oversized render must not be cached"
+        );
     }
 }

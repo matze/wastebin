@@ -322,6 +322,18 @@ impl Html {
     pub fn into_inner(self) -> String {
         self.0
     }
+
+    /// Length in bytes of the wrapped HTML.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    /// Return `true` if the wrapped HTML is empty.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
 }
 
 #[cfg(test)]

@@ -3,6 +3,7 @@ use std::sync::LazyLock;
 use chacha20poly1305::aead::{Aead, KeyInit};
 use chacha20poly1305::{Key, XChaCha20Poly1305, XNonce};
 use rand::RngExt;
+use tokio::sync::Semaphore;
 use tokio::task::spawn_blocking;
 
 use crate::env;
@@ -21,6 +22,18 @@ static CONFIG: LazyLock<argon2::Config> = LazyLock::new(|| argon2::Config {
 
 static SALT: LazyLock<String> = LazyLock::new(env::password_hash_salt);
 
+/// Bounds how many Argon2 hashes run concurrently. Each hash reserves `mem_cost`
+/// (64 MiB) and keeps several cores busy, and every password attempt triggers
+/// one. Without a cap, a burst of attempts would be limited only by the tokio
+/// blocking pool (up to 512 threads), enough to pin the machine's memory and
+/// CPU. Cap concurrency at the core count instead, independent of that pool.
+static ARGON2_PERMITS: LazyLock<Semaphore> = LazyLock::new(|| {
+    let permits = std::thread::available_parallelism()
+        .map(std::num::NonZeroUsize::get)
+        .unwrap_or(1);
+    Semaphore::new(permits)
+});
+
 /// Encryption or decryption errors.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -30,6 +43,8 @@ pub enum Error {
     ChaCha20Poly1305Encrypt,
     #[error("failed to decrypt")]
     ChaCha20Poly1305Decrypt,
+    #[error("failed to acquire argon2 permit")]
+    Semaphore,
     #[error("join error: {0}")]
     Join(#[from] tokio::task::JoinError),
 }
@@ -68,7 +83,12 @@ fn cipher_from(password: &[u8]) -> Result<XChaCha20Poly1305, Error> {
 impl Plaintext {
     /// Consume and encrypt plaintext into [`Encrypted`] using `password`.
     pub async fn encrypt(self, password: Password) -> Result<Encrypted, Error> {
-        spawn_blocking(move || {
+        let permit = ARGON2_PERMITS
+            .acquire()
+            .await
+            .map_err(|_| Error::Semaphore)?;
+
+        let result = spawn_blocking(move || {
             let cipher = cipher_from(&password.0)?;
             let nonce = XNonce::from(rand::rng().random::<[u8; 24]>());
             let ciphertext = cipher
@@ -77,7 +97,10 @@ impl Plaintext {
 
             Ok(Encrypted::new(ciphertext, nonce))
         })
-        .await?
+        .await;
+
+        drop(permit);
+        result?
     }
 }
 
@@ -89,7 +112,12 @@ impl Encrypted {
 
     /// Decrypt into bytes using `password`.
     pub async fn decrypt(self, password: Password) -> Result<Vec<u8>, Error> {
-        spawn_blocking(move || {
+        let permit = ARGON2_PERMITS
+            .acquire()
+            .await
+            .map_err(|_| Error::Semaphore)?;
+
+        let result = spawn_blocking(move || {
             let cipher = cipher_from(&password.0)?;
             let nonce = XNonce::try_from(self.nonce.as_slice())
                 .map_err(|_| Error::ChaCha20Poly1305Decrypt)?;
@@ -98,7 +126,10 @@ impl Encrypted {
                 .map_err(|_| Error::ChaCha20Poly1305Decrypt)?;
             Ok(plaintext)
         })
-        .await?
+        .await;
+
+        drop(permit);
+        result?
     }
 }
 
@@ -119,5 +150,32 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(decrypted, plaintext.as_bytes());
+    }
+
+    /// The permit is released after each operation, so more concurrent
+    /// round-trips than there are permits still all complete (rather than
+    /// deadlocking on a leaked permit).
+    #[tokio::test(flavor = "multi_thread")]
+    async fn concurrent_roundtrips_all_complete() {
+        let handles = (0..8u8)
+            .map(|i| {
+                tokio::spawn(async move {
+                    let plaintext = format!("secret-{i}").into_bytes();
+                    let encrypted = Plaintext::from(plaintext.clone())
+                        .encrypt(Password::from(b"pw".to_vec()))
+                        .await
+                        .unwrap();
+                    let decrypted = encrypted
+                        .decrypt(Password::from(b"pw".to_vec()))
+                        .await
+                        .unwrap();
+                    assert_eq!(decrypted, plaintext);
+                })
+            })
+            .collect::<Vec<_>>();
+
+        for handle in handles {
+            handle.await.unwrap();
+        }
     }
 }

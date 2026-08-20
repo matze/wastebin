@@ -40,7 +40,7 @@ pub async fn get(
 
 /// Burn page shown if "burn-after-reading" was selected during insertion.
 #[derive(Template, WebTemplate)]
-#[template(path = "burn.html", escape = "none")]
+#[template(path = "burn.html")]
 pub(crate) struct Burn {
     page: Page,
     key: Key,
@@ -60,6 +60,26 @@ mod tests {
     use crate::test_helpers::Client;
     use crate::{handlers::insert::form::Entry, test_helpers::StoreCookies};
     use reqwest::{StatusCode, header};
+
+    #[tokio::test]
+    async fn extension_is_escaped() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+
+        // The id need not exist: the page renders before touching the database.
+        let res = client
+            .get("/burn/aaaaaa.\"><img src=x onerror=alert(1)>")
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let body = res.text().await?;
+        assert!(!body.contains("<img src=x"), "extension rendered unescaped");
+        assert!(body.contains("&lt;img src=x onerror=alert(1)&gt;"));
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn burn() -> Result<(), Box<dyn std::error::Error>> {

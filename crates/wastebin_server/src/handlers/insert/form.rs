@@ -57,6 +57,19 @@ pub async fn post<E: std::fmt::Debug>(
         return Err(make_error(crate::Error::MalformedForm, page, theme, lang));
     };
 
+    let entry: write::Entry = entry.into();
+
+    // Enforce the configured expiration set (0 == no expiration).
+    let requested = entry.expires.map_or(0, |secs| u64::from(secs.get()));
+    if !page.allows_expiration(requested) {
+        return Err(make_error(
+            crate::Error::IllegalExpiration,
+            page,
+            theme,
+            lang,
+        ));
+    }
+
     async {
         // Pick the existing primary uid (first in the cookie list) or mint a new one.
         // Re-set the cookie with the full list unchanged so claimed uids survive.
@@ -70,7 +83,7 @@ pub async fn post<E: std::fmt::Debug>(
             }
         };
 
-        let mut entry: write::Entry = entry.into();
+        let mut entry = entry;
         entry.uid = Some(primary);
 
         let (id, entry) = db.insert(entry).await?;
@@ -171,6 +184,25 @@ mod tests {
         assert!(cookie.expires().is_none());
         assert!(cookie.max_age().is_none());
         assert!(cookie.secure());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn insert_rejects_disallowed_expiration() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+
+        // The test server offers only "never" (0); a positive expiry is rejected.
+        let res = client
+            .post_form()
+            .form(&Entry {
+                text: String::from("x"),
+                expires: Some(String::from("9999")),
+                ..Default::default()
+            })
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 
         Ok(())
     }

@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum_extra::extract::cookie::Key;
 use serde::{Deserialize, Serialize};
 
+use crate::Page;
 use crate::errors::{Error, JsonErrorResponse};
 use crate::handlers::extract::{sign_owner_token, verify_owner_token};
 use wastebin_core::db::{Database, write};
@@ -49,8 +50,16 @@ impl From<Entry> for write::Entry {
 pub async fn post(
     State(db): State<Database>,
     State(key): State<Key>,
+    State(page): State<Page>,
     Json(entry): Json<Entry>,
 ) -> Result<Json<RedirectResponse>, JsonErrorResponse> {
+    // Enforce the configured expiration set: `0` means "no expiration", any
+    // other value must be one of the offered durations.
+    let requested = entry.expires.map_or(0, |secs| u64::from(secs.get()));
+    if !page.allows_expiration(requested) {
+        return Err(Error::IllegalExpiration.into());
+    }
+
     // Reuse the uid encoded in a valid `owner` token so a client can group its
     // pastes under one identity; otherwise mint a fresh uid. A raw uid is never
     // trusted — only a server-signed token is accepted, and an invalid one falls
@@ -297,6 +306,36 @@ mod tests {
 
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(res.text().await?, "FooBarBaz");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn insert_rejects_disallowed_expiration() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+
+        // The test server offers only "never" (0); any positive expiry is out of policy.
+        let res = client
+            .post_json()
+            .json(&super::Entry {
+                text: "x".to_string(),
+                expires: std::num::NonZeroU32::new(9999),
+                ..Default::default()
+            })
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+        // Omitting expiry (i.e. "never") is offered, so it still succeeds.
+        let res = client
+            .post_json()
+            .json(&super::Entry {
+                text: "x".to_string(),
+                ..Default::default()
+            })
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::OK);
 
         Ok(())
     }

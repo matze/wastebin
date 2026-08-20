@@ -45,6 +45,16 @@ impl Page {
             max_body_size,
         }
     }
+
+    /// Whether `seconds` (with `0` meaning "no expiration") is one of the
+    /// configured expiration options. Inserts requesting any other value are
+    /// rejected, so the configured set is a policy rather than only UI defaults.
+    #[must_use]
+    pub fn allows_expiration(&self, seconds: u64) -> bool {
+        self.expirations
+            .iter()
+            .any(|expiration| expiration.duration.as_secs() == seconds)
+    }
 }
 
 impl Assets {

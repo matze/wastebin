@@ -38,4 +38,55 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn delete_without_owner_is_forbidden() -> Result<(), Box<dyn std::error::Error>> {
+        // The client never stores the uid cookie, so its own DELETE carries no
+        // ownership proof.
+        let client = Client::new(StoreCookies(false)).await;
+
+        let res = client.post_form().form(&Entry::default()).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+        let id = res
+            .headers()
+            .get("location")
+            .unwrap()
+            .to_str()?
+            .replace('/', "");
+
+        let res = client.delete(&format!("/{id}")).send().await?;
+        assert_eq!(res.status(), StatusCode::FORBIDDEN);
+
+        // The paste must survive an unauthorized delete.
+        let res = client.get(&format!("/{id}")).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn delete_with_forged_cookie_is_forbidden() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+
+        let res = client.post_form().form(&Entry::default()).send().await?;
+        let id = res
+            .headers()
+            .get("location")
+            .unwrap()
+            .to_str()?
+            .replace('/', "");
+
+        // An unsigned `uid` cookie fails HMAC verification and is dropped.
+        let res = client
+            .delete(&format!("/{id}"))
+            .header(reqwest::header::COOKIE, "uid=99")
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::FORBIDDEN);
+
+        let res = client.get(&format!("/{id}")).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        Ok(())
+    }
 }

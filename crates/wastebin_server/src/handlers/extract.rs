@@ -138,17 +138,22 @@ where
     S: Send + Sync,
     Key: FromRef<S>,
 {
-    type Rejection = ();
+    // A missing or tampered `uid` cookie yields an empty list, never a
+    // rejection. The delete handlers turn an empty list into a 403 via
+    // `Database::delete_for`, rendered in each route's own format; failing the
+    // extractor here would instead surface as an empty `200 OK`, telling the
+    // caller a delete succeeded when nothing was actually removed.
+    type Rejection = Infallible;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let jar = SignedCookieJar::<crate::Key>::from_request_parts(parts, state)
+        let uids = SignedCookieJar::<crate::Key>::from_request_parts(parts, state)
             .await
-            .map_err(|_| ())?;
-
-        let uids = jar
-            .get("uid")
-            .map(|cookie| parse_uids(cookie.value_trimmed()))
-            .ok_or(())?;
+            .ok()
+            .and_then(|jar| {
+                jar.get("uid")
+                    .map(|cookie| parse_uids(cookie.value_trimmed()))
+            })
+            .unwrap_or_default();
 
         Ok(Uids(uids))
     }

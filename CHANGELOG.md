@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Rosé Pine theme, selectable with `WASTEBIN_THEME=rosepine`.
+
 ### Changed
 
 - Top-align Markdown-rendered table cells.

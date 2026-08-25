@@ -30,7 +30,7 @@ to released versions here:
 * compresses pastes using [zstd](https://github.com/facebook/zstd)
 * syntax highlighting for > 170 languages with [syntect](https://github.com/trishume/syntect)
 * renders Markdown pastes to HTML, including GitHub-flavored tables, task lists and admonitions
-* comes with [eight color themes](https://matze.github.io/wastebin/) in light and dark mode
+* comes with [nine color themes](https://matze.github.io/wastebin/) in light and dark mode
 * encrypts entries using ChaCha20Poly1305 and argon2 hashed passwords
 * allows deletion after expiration, after reading or by anonymous owners
 * shows QR code to browse a paste's URL on mobile devices
@@ -197,7 +197,7 @@ run-time behavior:
 | `WASTEBIN_PASSWORD_SALT`          | Salt used to hash user passwords used for encrypting pastes.  | `somesalt`            |
 | `WASTEBIN_PASTE_EXPIRATIONS`      | Possible paste expirations as a comma-separated list of seconds or values with duration magnitudes (`s`, `m`, `h`, `d`, `M`, `y` for seconds, minutes, hours, days, months and years respectively). Appending `=d` to one of the value makes it the default selection. | see [here](https://github.com/matze/wastebin/blob/eb61c78506a165605f145e8374ed64822405eda0/crates/wastebin_server/src/env.rs#L166) |
 | `WASTEBIN_SIGNING_KEY`            | Key to sign cookies. Must be at least 64 bytes long.          | Random key generated at startup, i.e. cookies will become invalid after restarts and paste creators will not be able to delete their pastes. |
-| `WASTEBIN_THEME`                  | Theme colors, one of `ayu`, `base16ocean`, `catppuccin`, `coldark`, `gruvbox`, `monokai`, `onehalf`, `solarized`. See [this page](https://matze.github.io/wastebin/) for a preview. | `ayu` |
+| `WASTEBIN_THEME`                  | Theme colors, one of `ayu`, `base16ocean`, `catppuccin`, `coldark`, `gruvbox`, `monokai`, `onehalf`, `rosepine`, `solarized`. See [this page](https://matze.github.io/wastebin/) for a preview. | `ayu` |
 | `WASTEBIN_TITLE`                  | HTML page title.                                              | `wastebin`            |
 | `WASTEBIN_UNIX_SOCKET_PATH`       | Path to a Unix socket to accept connections from.             |                       |
 | `RUST_LOG`                        | Log level. Besides the typical `trace`, `debug`, `info` etc. keys, you can also set the `tower_http` key to a log level to get additional request and response logs. |  |

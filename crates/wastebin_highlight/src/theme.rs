@@ -15,6 +15,7 @@ pub enum Theme {
     Gruvbox,
     Monokai,
     Onehalf,
+    RosePine,
     Solarized,
 }
 
@@ -35,6 +36,7 @@ impl FromStr for Theme {
             "gruvbox" => Ok(Theme::Gruvbox),
             "monokai" => Ok(Theme::Monokai),
             "onehalf" => Ok(Theme::Onehalf),
+            "rosepine" => Ok(Theme::RosePine),
             "solarized" => Ok(Theme::Solarized),
             _ => Err(ParseThemeNameError),
         }
@@ -64,6 +66,10 @@ impl Theme {
                 .get(EmbeddedThemeName::MonokaiExtendedLight)
                 .clone(),
             Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfLight).clone(),
+            Theme::RosePine => {
+                let theme = include_str!("../themes/rose-pine-dawn.tmTheme");
+                ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
+            }
             Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedLight).clone(),
         }
     }
@@ -88,6 +94,10 @@ impl Theme {
             Theme::Gruvbox => theme_set.get(EmbeddedThemeName::GruvboxDark).clone(),
             Theme::Monokai => theme_set.get(EmbeddedThemeName::MonokaiExtended).clone(),
             Theme::Onehalf => theme_set.get(EmbeddedThemeName::OneHalfDark).clone(),
+            Theme::RosePine => {
+                let theme = include_str!("../themes/rose-pine.tmTheme");
+                ThemeSet::load_from_reader(&mut Cursor::new(theme)).expect("loading theme")
+            }
             Theme::Solarized => theme_set.get(EmbeddedThemeName::SolarizedDark).clone(),
         }
     }
@@ -103,6 +113,7 @@ impl Theme {
             Theme::Gruvbox => "gruvbox",
             Theme::Monokai => "monokai",
             Theme::Onehalf => "onehalf",
+            Theme::RosePine => "rosepine",
             Theme::Solarized => "solarized",
         }
     }
@@ -127,4 +138,31 @@ fn combined_css(color_scheme: &str, theme: &highlighting::Theme) -> Vec<u8> {
         css_for_theme_with_class_style(theme, ClassStyle::Spaced).expect("generating CSS")
     )
     .into_bytes()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rose_pine_round_trips() -> Result<(), Box<dyn std::error::Error>> {
+        let theme: Theme = "rosepine".parse()?;
+        assert_eq!(theme.name(), "rosepine");
+        Ok(())
+    }
+
+    #[test]
+    fn rose_pine_bundled_files_load() -> Result<(), Box<dyn std::error::Error>> {
+        let theme: Theme = "rosepine".parse()?;
+
+        // The bundled Dawn and main variants carry these background colors, so seeing them in the
+        // generated CSS proves the right file ended up on each side.
+        let light = String::from_utf8(theme.light_css())?;
+        assert!(light.contains("rgb(250, 244, 237"));
+
+        let dark = String::from_utf8(theme.dark_css())?;
+        assert!(dark.contains("rgb(25, 23, 36"));
+
+        Ok(())
+    }
 }

@@ -37,6 +37,7 @@ fn main() {
         Theme::Gruvbox,
         Theme::Monokai,
         Theme::Onehalf,
+        Theme::RosePine,
         Theme::Solarized,
     ]
     .into_iter()

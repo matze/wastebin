@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
 {% block head %}
-<script defer src="{{ page.assets.password_toggle_js.route() }}"></script>
+<script defer src="{{path_prefix}}{{ page.assets.password_toggle_js.route() }}"></script>
 {% endblock %}
 
 {% block content %}
 <div class="flex-center">
   <div class="dialog">
     <div class="dialog-header">{{ lang.t("encrypted.title") }}</div>
-    <form action="/{{ id }}" method="post">
-      <input type="hidden" name="confirm_burn" value="1">
+    <form action="{{ path_prefix }}/{{ id }}" method="post">
+      <input type="hidden" name="``confirm_burn" value="1">
       <div class="dialog-section">
         <div class="password-input-wrap">
           <input type="password" id="password" name="password" placeholder="{{ lang.t("encrypted.placeholder") }}" autofocus>
@@ -20,7 +20,7 @@
         </div>
       </div>
       <div class="dialog-section dialog-actions">
-        <a class="button button-secondary" href="/">{{ lang.t("encrypted.cancel") }}</a>
+        <a class="button button-secondary" href="{{ path_prefix }}/">{{ lang.t("encrypted.cancel") }}</a>
         <button class="button" type="submit">{{ lang.t("encrypted.decrypt") }}</button>
       </div>
     </form>

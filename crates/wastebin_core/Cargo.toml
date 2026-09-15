@@ -17,7 +17,7 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["io-util", "macros", "rt-multi-thread", "sync", "time"] }
 tracing = { workspace = true }
-zstd = "0.13"
+zstd = "0.14"
 
 [lints]
 workspace = true

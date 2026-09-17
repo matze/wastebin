@@ -47,4 +47,29 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn delete_without_owner_is_forbidden() -> Result<(), Box<dyn std::error::Error>> {
+        // The client never stores the uid cookie, so its own delete carries no
+        // ownership proof.
+        let client = Client::new(StoreCookies(false)).await;
+
+        let res = client.post_form().form(&Entry::default()).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+        let id = res
+            .headers()
+            .get("location")
+            .unwrap()
+            .to_str()?
+            .replace('/', "");
+
+        let res = client.post(&format!("/delete/{id}")).send().await?;
+        assert_eq!(res.status(), StatusCode::FORBIDDEN);
+
+        // The paste must survive an unauthorized delete.
+        let res = client.get(&format!("/{id}")).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        Ok(())
+    }
 }

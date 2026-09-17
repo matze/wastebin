@@ -85,4 +85,43 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn absolute_referer_with_scheme_relative_path_falls_back()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // The URL parses, but its PATH is itself scheme-relative (`//host/...`).
+        let client = Client::new(StoreCookies(true)).await;
+
+        let response = client
+            .get("/theme")
+            .header(REFERER, "https://evil.example.com//attacker.example.com/x")
+            .query(&[("pref", "dark")])
+            .send()
+            .await?;
+
+        assert!(response.status().is_redirection());
+        let location = response.headers().get("location").unwrap().to_str()?;
+        assert_eq!(location, "/");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn backslash_relative_referer_falls_back() -> Result<(), Box<dyn std::error::Error>> {
+        // `/\host` starts with a slash but a browser treats it as `//host`.
+        let client = Client::new(StoreCookies(true)).await;
+
+        let response = client
+            .get("/theme")
+            .header(REFERER, "/\\evil.example.com")
+            .query(&[("pref", "dark")])
+            .send()
+            .await?;
+
+        assert!(response.status().is_redirection());
+        let location = response.headers().get("location").unwrap().to_str()?;
+        assert_eq!(location, "/");
+
+        Ok(())
+    }
 }

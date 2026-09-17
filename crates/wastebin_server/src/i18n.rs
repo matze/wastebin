@@ -35,9 +35,31 @@ impl Lang {
 
     /// Look up `key` and substitute the `{0}` placeholder with `arg`'s
     /// `Display` representation.
+    ///
+    /// Some translations carry markup and are therefore rendered with the
+    /// `safe` filter, so `arg` is HTML-escaped here: the literal is trusted,
+    /// the substituted value is not.
     pub(crate) fn t_with(self, key: &'static str, arg: impl std::fmt::Display) -> String {
-        self.t(key).replace("{0}", &arg.to_string())
+        self.t(key).replace("{0}", &escape_html(&arg.to_string()))
     }
+}
+
+/// Escape HTML metacharacters in `value`.
+fn escape_html(value: &str) -> String {
+    let mut escaped = String::with_capacity(value.len());
+
+    for c in value.chars() {
+        match c {
+            '&' => escaped.push_str("&amp;"),
+            '<' => escaped.push_str("&lt;"),
+            '>' => escaped.push_str("&gt;"),
+            '"' => escaped.push_str("&quot;"),
+            '\'' => escaped.push_str("&#x27;"),
+            _ => escaped.push(c),
+        }
+    }
+
+    escaped
 }
 
 static EN: phf::Map<&'static str, &'static str> = phf_map! {
@@ -279,6 +301,13 @@ mod tests {
     fn t_with_substitutes_placeholder() {
         let s = Lang::En.t_with("burn.body", "abc123");
         assert!(s.contains("href=\"/abc123\""));
+    }
+
+    #[test]
+    fn t_with_escapes_its_argument() {
+        let s = Lang::En.t_with("burn.body", "abc\"><img src=x onerror=alert(1)>");
+        assert!(!s.contains("<img"));
+        assert!(s.contains("abc&quot;&gt;&lt;img src=x onerror=alert(1)&gt;"));
     }
 
     #[test]

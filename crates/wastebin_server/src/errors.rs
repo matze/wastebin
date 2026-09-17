@@ -26,6 +26,8 @@ pub(crate) enum Error {
     Id(#[from] id::Error),
     #[error("payload too large")]
     MalformedForm,
+    #[error("expiration is not one of the configured options")]
+    IllegalExpiration,
 }
 
 #[derive(Serialize)]
@@ -43,9 +45,10 @@ impl From<Error> for StatusCode {
             Error::Database(
                 db::Error::Delete | db::Error::Crypto(crypto::Error::ChaCha20Poly1305Decrypt),
             ) => StatusCode::FORBIDDEN,
-            Error::Database(db::Error::NoPassword) | Error::Id(_) | Error::UrlParsing(_) => {
-                StatusCode::BAD_REQUEST
-            }
+            Error::Database(db::Error::NoPassword)
+            | Error::Id(_)
+            | Error::UrlParsing(_)
+            | Error::IllegalExpiration => StatusCode::BAD_REQUEST,
             Error::MalformedForm => StatusCode::UNPROCESSABLE_ENTITY,
             Error::Join(_)
             | Error::QrCode(_)

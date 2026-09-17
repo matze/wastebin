@@ -67,7 +67,7 @@ pub async fn get(
 
 /// Paste view showing the formatted paste as well as a bunch of links.
 #[derive(Template, WebTemplate)]
-#[template(path = "qr.html", escape = "none")]
+#[template(path = "qr.html")]
 pub(crate) struct Qr {
     page: Page,
     theme: Option<Theme>,
@@ -101,4 +101,76 @@ pub fn dark_modules(code: &QrCode) -> Vec<(i32, i32)> {
         .flat_map(|x| (0..size).map(move |y| (x, y)))
         .filter(|(x, y)| code.get_module(*x, *y))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::handlers::insert::form::Entry;
+    use crate::test_helpers::{Client, StoreCookies};
+    use reqwest::{StatusCode, header};
+
+    #[tokio::test]
+    async fn title_is_escaped() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+        let payload = "</title><img src=x onerror=alert(1)>";
+
+        let res = client
+            .post_form()
+            .form(&Entry {
+                text: String::from("hello"),
+                title: String::from(payload),
+                ..Default::default()
+            })
+            .send()
+            .await?;
+
+        let location = res.headers().get("location").unwrap().to_str()?.to_owned();
+        let id = location.trim_start_matches('/');
+
+        let res = client
+            .get(&format!("/qr/{id}"))
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let body = res.text().await?;
+        assert!(!body.contains(payload), "title rendered unescaped");
+        assert!(!body.contains("<img"), "title produced a live element");
+        assert!(
+            body.contains("img src=x onerror=alert(1)"),
+            "title should still be displayed, just inertly"
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn extension_is_escaped() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+
+        let res = client
+            .post_form()
+            .form(&Entry {
+                text: String::from("hello"),
+                ..Default::default()
+            })
+            .send()
+            .await?;
+
+        let location = res.headers().get("location").unwrap().to_str()?.to_owned();
+        let id = location.trim_start_matches('/');
+
+        let res = client
+            .get(&format!("/qr/{id}.\"><img src=x onerror=alert(1)>"))
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+
+        let body = res.text().await?;
+        assert!(!body.contains("<img src=x"), "extension rendered unescaped");
+
+        Ok(())
+    }
 }

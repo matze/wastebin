@@ -9,6 +9,7 @@
 ### Changed
 
 - Top-align Markdown-rendered table cells.
+- Set Secure on owner token cookies.
 
 
 ## 3.7.2

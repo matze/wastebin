@@ -7,9 +7,10 @@ use axum_extra::extract::cookie::Key as CookieKey;
 use serde::Deserialize;
 
 use crate::cache::{Key, Mode};
-use crate::handlers::cookie;
-use crate::handlers::extract::{Theme, Uids, serialize_uids, verify_owner_token};
+use crate::handlers::extract::{Theme, Uids};
 use crate::handlers::html::{BurnConfirmation, ErrorResponse, PasswordInput, make_error};
+use crate::handlers::owner::verify_owner_token;
+use crate::handlers::uid_cookie;
 use crate::i18n::Lang;
 use crate::{Cache, Database, Highlighter, Page};
 use wastebin_core::crypto::Password;
@@ -88,8 +89,7 @@ pub async fn get<E>(
         if !new_uids.contains(&claimed_uid) {
             new_uids.push(claimed_uid);
         }
-        let mut cookie = cookie("uid", serialize_uids(&new_uids));
-        cookie.set_secure(true);
+        let cookie = uid_cookie(&new_uids);
         return Ok((jar.add(cookie), Redirect::to(&format!("/{id}"))).into_response());
     }
 

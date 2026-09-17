@@ -26,6 +26,7 @@ pub(crate) fn cookie(name: &str, value: String) -> Cookie<'static> {
 /// Build the `uid` cookie which authorizes deletion of pastes.
 pub(crate) fn uid_cookie(uids: &[i64]) -> Cookie<'static> {
     let mut cookie = cookie("uid", serialize_uids(uids));
+    cookie.set_same_site(SameSite::Lax);
     cookie.set_secure(true);
     cookie
 }

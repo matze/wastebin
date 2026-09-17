@@ -165,7 +165,7 @@ mod tests {
         assert!(cookie.value().len() > 40);
         assert_eq!(cookie.path().unwrap(), "/");
         assert!(cookie.http_only());
-        assert!(cookie.same_site_strict());
+        assert!(cookie.same_site_lax());
         assert!(cookie.domain().is_none());
         assert!(cookie.expires().is_none());
         assert!(cookie.max_age().is_none());

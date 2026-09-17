@@ -11,6 +11,12 @@
 - Top-align Markdown-rendered table cells.
 - Set Secure on owner token cookies.
 
+ ### Fixed
+
+- Relax the `uid` cookie's `SameSite` attribute from `Strict` to `Lax` so that
+  opening a magic link from another site keeps the existing claim. Deletion is
+  only possible via `POST` and `DELETE`, which `Lax` still excludes from
+  cross-site requests.
 
 ## 3.7.2
 

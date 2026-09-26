@@ -128,6 +128,7 @@ pub async fn get<E>(
                     theme: theme.clone(),
                     lang,
                     id,
+                    is_rendered: false,
                 }
                 .into_response());
             }

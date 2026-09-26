@@ -30,6 +30,8 @@ pub(crate) struct PasswordInput {
     pub theme: Option<Theme>,
     pub lang: Lang,
     pub id: String,
+    /// Whether the form is shown from the rendered Markdown view (`/md/{id}`).
+    pub is_rendered: bool,
 }
 
 /// Interstitial page shown before a burn-after-reading paste is revealed.

@@ -8,7 +8,7 @@
 <div class="flex-center">
   <div class="dialog">
     <div class="dialog-header">{{ lang.t("encrypted.title") }}</div>
-    <form action="/{{ id }}" method="post">
+    <form action="{% if is_rendered %}/md/{{ id }}{% else %}/{{ id }}{% endif %}" method="post">
       <input type="hidden" name="confirm_burn" value="1">
       <div class="dialog-section">
         <div class="password-input-wrap">

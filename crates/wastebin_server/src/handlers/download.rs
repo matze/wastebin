@@ -35,6 +35,7 @@ pub async fn get(
                 theme: theme.clone(),
                 lang,
                 id: key.id.to_string(),
+                is_rendered: false,
             }
             .into_response()),
             Err(err) => Err(err.into()),

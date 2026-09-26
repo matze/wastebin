@@ -10,6 +10,8 @@
 
 - Top-align Markdown-rendered table cells.
 - Set Secure on owner token cookies.
+- After submitting the password on rendered Markdown view, route back instead of
+  to the regular paste view.
 
  ### Fixed
 

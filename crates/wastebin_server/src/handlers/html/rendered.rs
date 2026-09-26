@@ -60,6 +60,7 @@ pub async fn get<E>(
                     theme: theme.clone(),
                     lang,
                     id,
+                    is_rendered: true,
                 }
                 .into_response());
             }

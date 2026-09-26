@@ -47,7 +47,9 @@ pub async fn get<E>(
     async {
         let password = form
             .ok()
-            .map(|form| Password::from(form.password.as_bytes().to_vec()));
+            .map(|Form(form)| form.password)
+            .filter(|password| !password.is_empty())
+            .map(|password| Password::from(password.into_bytes()));
         let no_password = password.is_none();
         let key: Key = id.parse()?;
 

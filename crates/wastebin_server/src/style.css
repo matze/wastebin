@@ -681,6 +681,7 @@ table {
 
 .source-view .src-code [id^="LC"] {
   padding: 0 16px;
+  min-height: 1.54em;
 }
 
 /* line number links in paste view */

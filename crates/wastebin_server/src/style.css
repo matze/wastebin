@@ -167,8 +167,6 @@ header {
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--fg-muted);
   margin-bottom: 10px;
 }
@@ -515,8 +513,6 @@ header {
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   color: var(--fg-muted);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .stat-value {
@@ -747,8 +743,6 @@ table {
 .centered-label {
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--fg-muted);
 }
 
@@ -1102,8 +1096,6 @@ textarea:focus-visible {
   margin: 0 0 0.4em;
   font-weight: 600;
   font-size: var(--fs-sm);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 
 .markdown-body .markdown-alert-title + * { margin-top: 0; }

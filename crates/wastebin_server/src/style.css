@@ -7,6 +7,7 @@
   --fs-md: 0.875rem;
   --fs-base: 1rem;
   --fs-xl: 3rem;
+  --lh-code: 1.54;
 
   --page-bg: light-dark(#fafaf8, #0f1115);
   --panel-bg: light-dark(#ffffff, #14171c);
@@ -192,7 +193,7 @@ header {
   display: flex;
   font-family: var(--font-mono);
   font-size: var(--fs-md);
-  line-height: 1.54;
+  line-height: var(--lh-code);
   background: var(--main-bg-color, var(--page-bg));
   color: var(--main-fg-color, var(--fg));
 }
@@ -221,8 +222,8 @@ header {
 }
 
 #line-numbers div {
-  height: 1.54em;
-  line-height: 1.54em;
+  height: 1lh;
+  line-height: var(--lh-code);
   padding: 0 12px 0 16px;
 }
 
@@ -236,7 +237,7 @@ header {
   color: inherit;
   font-family: inherit;
   font-size: inherit;
-  line-height: 1.54;
+  line-height: var(--lh-code);
   padding: 14px 16px;
   caret-color: var(--accent);
   tab-size: 2;
@@ -681,7 +682,7 @@ table {
 
 .source-view .src-code [id^="LC"] {
   padding: 0 16px;
-  min-height: 1.54em;
+  min-height: 1lh;
 }
 
 /* line number links in paste view */

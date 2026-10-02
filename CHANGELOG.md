@@ -15,6 +15,8 @@
 
  ### Fixed
 
+- Render blank lines in the paste view so that the code stays aligned with the
+  line numbers.
 - Relax the `uid` cookie's `SameSite` attribute from `Strict` to `Lax` so that
   opening a magic link from another site keeps the existing claim. Deletion is
   only possible via `POST` and `DELETE`, which `Lax` still excludes from

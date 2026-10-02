@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 3.8.0
+
+**2026-10-02**
+
 ### Added
 
 - Rosé Pine theme, selectable with `WASTEBIN_THEME=rosepine`.

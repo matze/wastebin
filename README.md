@@ -1,4 +1,5 @@
 # <img width="24px" height="24px" style="position: relative; top: 2px;" src="assets/favicon.png"/> wastebin
+
 [![Rust](https://github.com/matze/wastebin/actions/workflows/rust.yml/badge.svg)](https://github.com/matze/wastebin/actions/workflows/rust.yml)
 
 ## <strong><a href="https://war.ukraine.ua/support-ukraine/">support 🇺🇦</a> • <a href="https://commission.europa.eu/strategy-and-policy/state-union/state-union-2022/defending-eu-values">defend 🇪🇺</a></strong>
@@ -13,24 +14,38 @@ A minimal pastebin with a design shamelessly copied from
 You are reading the documentation for an **unreleased version**. You can refer
 to released versions here:
 
-**[3.7.0](https://github.com/matze/wastebin/tree/ef77e45f3ae7f3d8ec1385f9f22527d10e1ec9aa)** •
-[3.6.2](https://github.com/matze/wastebin/tree/f9cb25a4d5b19fa938eef0af42f68f2835f17b98) •
-[3.5.0](https://github.com/matze/wastebin/tree/d379a6e3e73e6f1fcf23f93c9b0cc857f46acbce) •
-[3.4.1](https://github.com/matze/wastebin/tree/c9d717329a6e357e8a13a324bfa9a53d41ae9b35) •
-[3.3.0](https://github.com/matze/wastebin/tree/a297749b932ed9ff32569f3af7ee8e4a5b499834) •
-[3.2.0](https://github.com/matze/wastebin/tree/3fdec3abde4f32b92323864ffea51577ce1e625e) •
-[3.1.0](https://github.com/matze/wastebin/tree/e404ecec61eaafa1187b8d6b45282d72b076563d) •
-[3.0.0](https://github.com/matze/wastebin/tree/14a30bb540110e76da6a6045cd0e83fd2218cdd7) •
+**[3.8.0](https://github.com/matze/wastebin/tree/3e2f1425aa4aa8072da79b2a8c0c6af75074efa6)**
+•
+[3.7.2](https://github.com/matze/wastebin/tree/dfca1dc82b78394d8e2dfe209d9ef3fb539da605)
+•
+[3.6.2](https://github.com/matze/wastebin/tree/f9cb25a4d5b19fa938eef0af42f68f2835f17b98)
+•
+[3.5.0](https://github.com/matze/wastebin/tree/d379a6e3e73e6f1fcf23f93c9b0cc857f46acbce)
+•
+[3.4.1](https://github.com/matze/wastebin/tree/c9d717329a6e357e8a13a324bfa9a53d41ae9b35)
+•
+[3.3.0](https://github.com/matze/wastebin/tree/a297749b932ed9ff32569f3af7ee8e4a5b499834)
+•
+[3.2.0](https://github.com/matze/wastebin/tree/3fdec3abde4f32b92323864ffea51577ce1e625e)
+•
+[3.1.0](https://github.com/matze/wastebin/tree/e404ecec61eaafa1187b8d6b45282d72b076563d)
+•
+[3.0.0](https://github.com/matze/wastebin/tree/14a30bb540110e76da6a6045cd0e83fd2218cdd7)
+•
 [2.7.1](https://github.com/matze/wastebin/tree/85a519ef9079c4618f851cce575b5a84334a6f42)
 
 ## Features
 
-* [axum](https://github.com/tokio-rs/axum) and [sqlite3](https://www.sqlite.org) backend
+* [axum](https://github.com/tokio-rs/axum) and [sqlite3](https://www.sqlite.org)
+  backend
 * comes as a single binary with low memory footprint
 * compresses pastes using [zstd](https://github.com/facebook/zstd)
-* syntax highlighting for > 170 languages with [syntect](https://github.com/trishume/syntect)
-* renders Markdown pastes to HTML, including GitHub-flavored tables, task lists and admonitions
-* comes with [nine color themes](https://matze.github.io/wastebin/) in light and dark mode
+* syntax highlighting for > 170 languages with
+  [syntect](https://github.com/trishume/syntect)
+* renders Markdown pastes to HTML, including GitHub-flavored tables, task lists
+  and admonitions
+* comes with [nine color themes](https://matze.github.io/wastebin/) in light and
+  dark mode
 * encrypts entries using ChaCha20Poly1305 and argon2 hashed passwords
 * allows deletion after expiration, after reading or by anonymous owners
 * shows QR code to browse a paste's URL on mobile devices
@@ -44,10 +59,9 @@ to released versions here:
 
 > [!CAUTION]
 > Due to lack of authentication and further DoS mitigations, it is not advised
-> to run wastebin facing the internet _as is_. If you plan to do so, you are
+> to run wastebin facing the internet *as is*. If you plan to do so, you are
 > strongly advised to rate limit inbound requests via iptables rules or a
 > properly configured reverse proxy of your choice.
-
 
 ## Installation
 
@@ -77,7 +91,6 @@ docker run \
 > with `TMPDIR` being set. If database migrations fail with an extended sqlite
 > error code 6410, pass `TMPDIR` pointing to a location sqlite can write to.
 
-
 ### Run with docker-compose
 
 ```yaml
@@ -95,7 +108,6 @@ services:
 
 Make sure the `./data` folder is writable by the user 10001.
 
-
 ### Run with Nix
 
 For Nix users, a `flake.nix` is also provided. Build and execute it directly
@@ -107,7 +119,6 @@ nix run 'github:matze/wastebin#wastebin'
 
 Or install the provided `wastebin` package like you normally would.
 
-
 ### Build from source
 
 Install a Rust 2024 toolchain containing Rust 1.85 with
@@ -116,7 +127,6 @@ Install a Rust 2024 toolchain containing Rust 1.85 with
 ```bash
 cargo run --release
 ```
-
 
 ### Build a container image
 
@@ -162,7 +172,6 @@ When viewing a paste, you can use
 To paste some text you can also use the <kbd>ctrl</kbd>+<kbd>s</kbd> key
 combination.
 
-
 ### Markdown rendering
 
 Pastes created with an `md` or `markdown` extension can be viewed as rendered
@@ -179,7 +188,6 @@ event handlers and `javascript:` URLs are stripped. To permit external images
 embedded via `![alt](https://…)`, the Content Security Policy is relaxed to
 `img-src *` for `/md/*` responses only; all other routes keep the strict
 default.
-
 
 ### Configuration
 
@@ -207,12 +215,11 @@ run-time behavior:
 > exclusive, which means that setting both will lead to an error. Setting
 > neither will implicitly bind via TCP on `0.0.0.0:8088`.
 
-
 ### API endpoints
 
 POST a new paste to the `/` endpoint with the following JSON payload:
 
-```
+```text
 {
   "text": "<paste content>",
   "extension": "<file extension, optional>",
@@ -247,7 +254,6 @@ appends the uid to the signed `uid` cookie and redirects to the clean paste URL.
 The form-based UI sets the same cookie in the `Set-Cookie` header of the
 redirect response after creation.
 
-
 ### wastebin-ctl command line tool
 
 `wastebin-ctl` is a command line tool to interact directly with the wastebin
@@ -256,12 +262,10 @@ expired or `delete` specific entries. To specify the database either use the
 `--database` option or set the `WASTEBIN_DATABASE_PATH` environment variable as
 usual.
 
-
 ### Paste from neovim
 
 Use the [wastebin.nvim](https://github.com/matze/wastebin.nvim) plugin and paste
 the current buffer or selection with `:WastePaste`.
-
 
 ### Paste from clipboard
 
@@ -281,7 +285,8 @@ function paste_from_clipboard() {
 }
 ```
 
-For wayland users, consider replace the `xclip ...` with `wl-paste` from `wl-clipboard`.
+For wayland users, consider replace the `xclip ...` with `wl-paste` from
+`wl-clipboard`.
 
 ### Paste from stdin
 
@@ -298,7 +303,6 @@ function paste_from_stdin() {
 
 It can be handy for creating pastes from logs or the output of commands, e.g.
 `cat file.log | paste_from_stdin`.
-
 
 ## License
 

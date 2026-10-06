@@ -9,6 +9,7 @@
 - Use a paste's title as the HTML page title on its own instead of prefixing
   the configured page title from `WASTEBIN_TITLE`. Pages without a title keep
   showing the configured title.
+- Top-align the burn-after-reading and encrypt toggles with their labels.
 
 ### Fixed
 

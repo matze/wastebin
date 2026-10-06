@@ -363,7 +363,7 @@ header {
 .toggle-row {
   display: grid;
   grid-template-columns: 1fr auto;
-  align-items: center;
+  align-items: start;
   gap: 10px;
   padding: 4px 0;
   cursor: pointer;

@@ -11,6 +11,7 @@ on:
       - '.github/workflows/theme-showcase.yml'
       - 'crates/wastebin_theme_showcase/**'
       - 'crates/wastebin_highlight/**'
+      - 'crates/wastebin_server/src/style.css'
 
 jobs:
   build:

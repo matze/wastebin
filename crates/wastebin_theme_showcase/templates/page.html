@@ -5,83 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>wastebin themes</title>
     <style>
+      * { box-sizing: border-box; }
+
       body {
         margin: 0;
-        padding: 20px;
-        background-color: #333;
-        color: #39bae6;
+        padding: 32px clamp(16px, 4vw, 48px) 64px;
+        background: #14161a;
+        color: #e6e8ec;
+        font-family: system-ui, -apple-system, sans-serif;
+        line-height: 1.5;
       }
 
-      h1 {
-        margin-bottom: 30px;
+      h1 { font-size: 1.5rem; margin: 0 0 4px; }
+
+      section { margin: 0 0 40px; }
+
+      h2 {
+        margin: 0 0 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: #cfd5de;
       }
 
-      .theme-variants-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
-          gap: 20px;
+      .panes {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      @media (max-width: 900px) {
-        .theme-variants-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .variant-col {
-          width: 100%;
-          min-width: 0;
-        }
-
-        .variant-col:first-child {
-          margin-bottom: 20px;
-        }
-
-        .code-preview {
-          width: 100%;
-          min-width: 0;
-          box-sizing: border-box;
-        }
+      @media (max-width: 1560px) {
+        .panes { grid-template-columns: minmax(0, 1fr); }
       }
 
-      .code-preview {
-        padding: 0;
-        margin: 0;
-        font-family: monospace;
-        line-height: 1.4;
-        font-size: 11pt;
-      }
-
-      .code-preview > pre {
-        padding: 1em;
-        border-radius: 8px;
-        overflow-x: auto;
+      iframe {
+        display: block;
+        width: 100%;
+        height: 780px;
+        border: 1px solid #2a2f37;
+        border-radius: 10px;
+        background: #ffffff;
       }
     </style>
   </head>
-<body>
-  <header>
+  <body>
     <h1>wastebin themes</h1>
-  </header>
-
-  <div>
-    {% for example in examples %}
-    <h2 class="theme-name">{{ example.name }}</h2>
-
-    <section class="theme-pair">
-      <div class="theme-variants-grid">
-        <div class="variant-col">
-          <div class="code-preview">
-          {{ example.light_html | safe }}
-          </div>
+    {% for group in groups %}
+      <section>
+        <h2>{{ group.name }}</h2>
+        <div class="panes">
+          {% for pane in group.panes %}
+            <iframe title="{{ group.name }} {{ pane.scheme }} {{ pane.view.name() }}" loading="lazy" srcdoc="{{ pane.document }}"></iframe>
+          {% endfor %}
         </div>
-
-        <div class="variant-col">
-          <div class="code-preview">
-          {{ example.dark_html | safe }}
-          </div>
-        </div>
-      </div>
-    </section>
+      </section>
     {% endfor %}
-  </div>
-</body>
+  </body>
+</html>

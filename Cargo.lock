@@ -2615,8 +2615,6 @@ name = "wastebin-theme-showcase"
 version = "3.8.0"
 dependencies = [
  "askama",
- "syntect",
- "two-face",
  "wastebin_highlight",
 ]
 

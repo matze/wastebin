@@ -7,8 +7,6 @@ publish = false
 
 [dependencies]
 askama = { workspace = true }
-syntect = { workspace = true }
-two-face = { workspace = true }
 wastebin_highlight = { path = "../wastebin_highlight/" }
 
 [lints]

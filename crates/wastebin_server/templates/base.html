@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="generator" content="wastebin {{ page.version }}">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{{ page.title }}{% block title_content %}{% endblock %}</title>
+    <title>{% block title_content %}{{ page.title }}{% endblock %}</title>
     {% match theme %}
       {% when Some with (Theme::Dark) %}
         <link rel="stylesheet" href="{{ page.assets.css.dark.route() }}">

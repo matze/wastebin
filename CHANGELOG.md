@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+
+- Use a paste's title as the HTML page title on its own instead of prefixing
+  the configured page title from `WASTEBIN_TITLE`. Pages without a title keep
+  showing the configured title.
+
 ## 3.8.0
 
 **2026-10-02**

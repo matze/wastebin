@@ -9,7 +9,7 @@
   {% endif %}
 {% endblock %}
 
-{% block title_content %}{% if let Some(title) = title %}: {{ title }}{% endif %}{% endblock %}
+{% block title_content %}{% if let Some(title) = title %}{{ title }}{% else %}{{ page.title }}{% endif %}{% endblock %}
 
 {% block head %}
 <script defer src="{{ page.assets.paste_js.route() }}"></script>

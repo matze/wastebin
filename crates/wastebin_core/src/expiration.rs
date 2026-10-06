@@ -27,6 +27,50 @@ pub struct Expiration {
     pub default: bool,
 }
 
+/// Coarse unit of an [`Expiration`] duration component.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Unit {
+    Year,
+    Month,
+    Week,
+    Day,
+    Hour,
+    Minute,
+    Second,
+}
+
+impl Expiration {
+    /// Break the duration into whole `(value, unit)` components, largest unit first.
+    #[must_use]
+    pub fn components(&self) -> Vec<(u64, Unit)> {
+        /// Computes `dividend` / `divisor` and returns `Some((quotient, remainder))` if quotient > 0.
+        fn div(dividend: u64, divisor: u64) -> Option<(u64, u64)> {
+            let r = dividend / divisor;
+            (r > 0).then_some((r, dividend % divisor))
+        }
+
+        let mut secs = self.duration.as_secs();
+        let mut parts = Vec::new();
+
+        for (unit, unit_secs) in [
+            (Unit::Year, YEAR_SECS),
+            (Unit::Month, MONTH_SECS),
+            (Unit::Week, 60 * 60 * 24 * 7),
+            (Unit::Day, 60 * 60 * 24),
+            (Unit::Hour, 60 * 60),
+            (Unit::Minute, 60),
+            (Unit::Second, 1),
+        ] {
+            if let Some((value, rem)) = div(secs, unit_secs) {
+                parts.push((value, unit));
+                secs = rem;
+            }
+        }
+
+        parts
+    }
+}
+
 /// Multiple expiration values in ordered fashion.
 pub struct ExpirationSet(Vec<Expiration>);
 
@@ -89,79 +133,35 @@ impl FromStr for Expiration {
 }
 
 /// Print human-readable duration in a very rough approximation.
+///
+/// Localized renderings live in the server's i18n layer; this English form is the fallback used
+/// outside of the web UI.
 impl Display for Expiration {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        /// Computes `dividend` / `divisor` and returns `Some(fraction)` if > 0.
-        fn div(dividend: u64, divisor: u64) -> Option<(u64, u64)> {
-            let r = dividend / divisor;
-            (r > 0).then_some((r, dividend % divisor))
+        if self.duration.is_zero() {
+            return f.write_str("never");
         }
 
-        let mut secs = self.duration.as_secs();
-
-        if secs == 0 {
-            return write!(f, "never");
-        }
-
-        let mut parts = Vec::new();
-
-        if let Some((years, rem)) = div(secs, YEAR_SECS) {
-            if years > 1 {
-                parts.push(format!("{years} years"));
-            } else {
-                parts.push(String::from("1 year"));
-            }
-            secs = rem;
-        }
-
-        if let Some((months, rem)) = div(secs, MONTH_SECS) {
-            if months > 1 {
-                parts.push(format!("{months} months"));
-            } else {
-                parts.push(String::from("1 month"));
-            }
-            secs = rem;
-        }
-
-        if let Some((weeks, rem)) = div(secs, 60 * 60 * 24 * 7) {
-            if weeks > 1 {
-                parts.push(format!("{weeks} weeks"));
-            } else {
-                parts.push(String::from("1 week"));
-            }
-            secs = rem;
-        }
-
-        if let Some((days, rem)) = div(secs, 60 * 60 * 24) {
-            if days > 1 {
-                parts.push(format!("{days} days"));
-            } else {
-                parts.push(String::from("1 day"));
-            }
-            secs = rem;
-        }
-
-        if let Some((hours, rem)) = div(secs, 60 * 60) {
-            if hours > 1 {
-                parts.push(format!("{hours} hours"));
-            } else {
-                parts.push(String::from("1 hour"));
-            }
-            secs = rem;
-        }
-
-        if let Some((minutes, rem)) = div(secs, 60) {
-            if minutes > 1 {
-                parts.push(format!("{minutes} mins"));
-            } else {
-                parts.push(String::from("1 minute"));
-            }
-            secs = rem;
-        }
-
-        if secs > 0 {
-            parts.push(format!("{secs} secs"));
-        }
+        let parts: Vec<String> = self
+            .components()
+            .into_iter()
+            .map(|(value, unit)| match (unit, value) {
+                (Unit::Year, 1) => String::from("1 year"),
+                (Unit::Year, n) => format!("{n} years"),
+                (Unit::Month, 1) => String::from("1 month"),
+                (Unit::Month, n) => format!("{n} months"),
+                (Unit::Week, 1) => String::from("1 week"),
+                (Unit::Week, n) => format!("{n} weeks"),
+                (Unit::Day, 1) => String::from("1 day"),
+                (Unit::Day, n) => format!("{n} days"),
+                (Unit::Hour, 1) => String::from("1 hour"),
+                (Unit::Hour, n) => format!("{n} hours"),
+                (Unit::Minute, 1) => String::from("1 minute"),
+                (Unit::Minute, n) => format!("{n} mins"),
+                (Unit::Second, 1) => String::from("1 second"),
+                (Unit::Second, n) => format!("{n} secs"),
+            })
+            .collect();
 
         f.write_str(&parts.join(", "))
     }
@@ -448,5 +448,27 @@ mod tests {
             "12 months"
         );
         assert_eq!(format!("{}", "1y".parse::<Expiration>().unwrap()), "1 year");
+        assert_eq!(format!("{}", Expiration::from_secs(0)), "never");
+    }
+
+    #[test]
+    fn components() {
+        assert_eq!(Expiration::from_secs(0).components(), vec![]);
+
+        assert_eq!(
+            Expiration::from_secs(60 * 60 * 24 * 7 * 4 * 24).components(),
+            vec![(1, Unit::Year), (10, Unit::Month), (1, Unit::Week)]
+        );
+
+        assert_eq!(
+            Expiration::from_secs(60 * 60 * 24 * 7 * 8 + 60 * 60 * 24 * 2 + 23 * 60 * 60 + 42)
+                .components(),
+            vec![
+                (1, Unit::Month),
+                (4, Unit::Week),
+                (23, Unit::Hour),
+                (42, Unit::Second)
+            ]
+        );
     }
 }

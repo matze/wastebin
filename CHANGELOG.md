@@ -10,6 +10,10 @@
   the configured page title from `WASTEBIN_TITLE`. Pages without a title keep
   showing the configured title.
 
+### Fixed
+
+- Localize expiration durations.
+
 ## [3.8.0] - 2026-10-02
 
 ### Added

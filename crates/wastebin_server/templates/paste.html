@@ -5,7 +5,7 @@
     <span class="nav-title">{{ title }}</span>
   {% endif %}
   {% if let Some(expiration) = expiration %}
-    <span class="nav-title nav-title-dim">{{ lang.t("paste.expires_in") }} {{ expiration }}</span>
+    <span class="nav-title nav-title-dim">{{ lang.t("paste.expires_in") }} {{ lang.duration(expiration) }}</span>
   {% endif %}
 {% endblock %}
 

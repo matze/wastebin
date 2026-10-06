@@ -1,5 +1,7 @@
 use phf::phf_map;
 
+use wastebin_core::expiration::{Expiration, Unit};
+
 /// Languages the UI is translated into. English is the default and the
 /// fallback for any key missing from a non-English table.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -37,6 +39,33 @@ impl Lang {
     /// `Display` representation.
     pub(crate) fn t_with(self, key: &'static str, arg: impl std::fmt::Display) -> String {
         self.t(key).replace("{0}", &arg.to_string())
+    }
+
+    /// Render an [`Expiration`]'s duration in the current language.
+    pub(crate) fn duration(self, expiration: &Expiration) -> String {
+        if expiration.duration.is_zero() {
+            return self.t("duration.never").to_string();
+        }
+
+        expiration
+            .components()
+            .into_iter()
+            .map(|(value, unit)| {
+                let (singular, plural) = match unit {
+                    Unit::Year => ("duration.year", "duration.years"),
+                    Unit::Month => ("duration.month", "duration.months"),
+                    Unit::Week => ("duration.week", "duration.weeks"),
+                    Unit::Day => ("duration.day", "duration.days"),
+                    Unit::Hour => ("duration.hour", "duration.hours"),
+                    Unit::Minute => ("duration.minute", "duration.minutes"),
+                    Unit::Second => ("duration.second", "duration.seconds"),
+                };
+
+                let key = if value == 1 { singular } else { plural };
+                self.t_with(key, value)
+            })
+            .collect::<Vec<_>>()
+            .join(", ")
     }
 }
 
@@ -95,6 +124,22 @@ static EN: phf::Map<&'static str, &'static str> = phf_map! {
     "stats.unit.kb" => "kb",
     "stats.unit.mb" => "mb",
     "stats.label.limit" => "limit",
+
+    "duration.never" => "never",
+    "duration.year" => "{0} year",
+    "duration.years" => "{0} years",
+    "duration.month" => "{0} month",
+    "duration.months" => "{0} months",
+    "duration.week" => "{0} week",
+    "duration.weeks" => "{0} weeks",
+    "duration.day" => "{0} day",
+    "duration.days" => "{0} days",
+    "duration.hour" => "{0} hour",
+    "duration.hours" => "{0} hours",
+    "duration.minute" => "{0} minute",
+    "duration.minutes" => "{0} mins",
+    "duration.second" => "{0} second",
+    "duration.seconds" => "{0} secs",
 
     "burn.title" => "Burn after reading",
     "burn.body" => "Copy and send <a class=\"text-link\" href=\"/{0}\">this link</a>. The recipient will be shown a confirmation prompt. The paste is deleted the moment they confirm.",
@@ -170,6 +215,22 @@ static DE: phf::Map<&'static str, &'static str> = phf_map! {
     "stats.unit.mb" => "MB",
     "stats.label.limit" => "Limit",
 
+    "duration.never" => "nie",
+    "duration.year" => "{0} Jahr",
+    "duration.years" => "{0} Jahre",
+    "duration.month" => "{0} Monat",
+    "duration.months" => "{0} Monate",
+    "duration.week" => "{0} Woche",
+    "duration.weeks" => "{0} Wochen",
+    "duration.day" => "{0} Tag",
+    "duration.days" => "{0} Tage",
+    "duration.hour" => "{0} Stunde",
+    "duration.hours" => "{0} Stunden",
+    "duration.minute" => "{0} Minute",
+    "duration.minutes" => "{0} Minuten",
+    "duration.second" => "{0} Sekunde",
+    "duration.seconds" => "{0} Sekunden",
+
     "burn.title" => "Nach Lesen vernichten",
     "burn.body" => "Kopiere und schicke <a class=\"text-link\" href=\"/{0}\">diesen Link</a>. Dem Empfänger wird eine Bestätigungsaufforderung angezeigt und der Paste nach Bestätigung gelöscht.",
 
@@ -244,6 +305,22 @@ static ZH: phf::Map<&'static str, &'static str> = phf_map! {
     "stats.unit.mb" => "mb",
     "stats.label.limit" => "限制",
 
+    "duration.never" => "永不",
+    "duration.year" => "{0} 年",
+    "duration.years" => "{0} 年",
+    "duration.month" => "{0} 个月",
+    "duration.months" => "{0} 个月",
+    "duration.week" => "{0} 周",
+    "duration.weeks" => "{0} 周",
+    "duration.day" => "{0} 天",
+    "duration.days" => "{0} 天",
+    "duration.hour" => "{0} 小时",
+    "duration.hours" => "{0} 小时",
+    "duration.minute" => "{0} 分钟",
+    "duration.minutes" => "{0} 分钟",
+    "duration.second" => "{0} 秒",
+    "duration.seconds" => "{0} 秒",
+
     "burn.title" => "阅后即焚",
     "burn.body" => "复制并发送 <a class=\"text-link\" href=\"/{0}\">此链接</a>。收件人将看到确认提示。在他们确认的那一刻，剪贴将被删除。",
 
@@ -279,6 +356,24 @@ mod tests {
     fn t_with_substitutes_placeholder() {
         let s = Lang::En.t_with("burn.body", "abc123");
         assert!(s.contains("href=\"/abc123\""));
+    }
+
+    #[test]
+    fn duration_is_localized() {
+        let expiration: Expiration = "9000".parse().unwrap();
+        assert_eq!(Lang::En.duration(&expiration), "2 hours, 30 mins");
+        assert_eq!(Lang::De.duration(&expiration), "2 Stunden, 30 Minuten");
+        assert_eq!(Lang::Zh.duration(&expiration), "2 小时, 30 分钟");
+
+        let singular: Expiration = "1d".parse().unwrap();
+        assert_eq!(Lang::En.duration(&singular), "1 day");
+        assert_eq!(Lang::De.duration(&singular), "1 Tag");
+        assert_eq!(Lang::Zh.duration(&singular), "1 天");
+
+        let never: Expiration = "0=d".parse().unwrap();
+        assert_eq!(Lang::En.duration(&never), "never");
+        assert_eq!(Lang::De.duration(&never), "nie");
+        assert_eq!(Lang::Zh.duration(&never), "永不");
     }
 
     #[test]

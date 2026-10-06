@@ -5,6 +5,8 @@ use syntect::highlighting::{self, ThemeSet};
 use syntect::html::{ClassStyle, css_for_theme_with_class_style};
 use two_face::theme::EmbeddedThemeName;
 
+use crate::palette;
+
 /// Supported themes.
 #[derive(Copy, Clone)]
 pub enum Theme {
@@ -46,7 +48,7 @@ impl FromStr for Theme {
 impl Theme {
     /// Generate combined light CSS for the given Theme.
     pub fn light_css(&self) -> Vec<u8> {
-        combined_css("light", &self.light_theme())
+        combined_css(palette::Scheme::Light, &self.light_theme())
     }
 
     /// Return light syntect highlighting theme.
@@ -76,7 +78,7 @@ impl Theme {
 
     /// Generate combined dark CSS for the given Theme.
     pub fn dark_css(&self) -> Vec<u8> {
-        combined_css("dark", &self.dark_theme())
+        combined_css(palette::Scheme::Dark, &self.dark_theme())
     }
 
     /// Return dark syntect highlighting theme.
@@ -119,22 +121,11 @@ impl Theme {
     }
 }
 
-/// Generate the highlighting colors for `theme` and add main foreground and background colors
-/// based on the theme.
-fn combined_css(color_scheme: &str, theme: &highlighting::Theme) -> Vec<u8> {
-    let fg = theme.settings.foreground.expect("existing color");
-    let bg = theme.settings.background.expect("existing color");
-
+/// Generate the UI chrome palette for `theme` followed by the syntax highlighting colors.
+fn combined_css(scheme: palette::Scheme, theme: &highlighting::Theme) -> Vec<u8> {
     format!(
-        "{} {}",
-        format_args!(
-            ":root {{
-      color-scheme: {color_scheme};
-      --main-bg-color: rgb({}, {}, {}, {});
-      --main-fg-color: rgb({}, {}, {}, {});
-    }}",
-            bg.r, bg.g, bg.b, bg.a, fg.r, fg.g, fg.b, fg.a
-        ),
+        "{}{}",
+        palette::Palette::new(theme, scheme).css(),
         css_for_theme_with_class_style(theme, ClassStyle::Spaced).expect("generating CSS")
     )
     .into_bytes()
@@ -158,10 +149,22 @@ mod tests {
         // The bundled Dawn and main variants carry these background colors, so seeing them in the
         // generated CSS proves the right file ended up on each side.
         let light = String::from_utf8(theme.light_css())?;
-        assert!(light.contains("rgb(250, 244, 237"));
+        assert!(light.contains("--page-bg: #faf4ed;"));
 
         let dark = String::from_utf8(theme.dark_css())?;
-        assert!(dark.contains("rgb(25, 23, 36"));
+        assert!(dark.contains("--page-bg: #191724;"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn foreground_alpha_is_ignored() -> Result<(), Box<dyn std::error::Error>> {
+        let theme: Theme = "gruvbox".parse()?;
+
+        // Gruvbox stores its foreground with a non-opaque alpha. The syntax highlighting CSS
+        // ignores the alpha, so the chrome palette does too.
+        let dark = String::from_utf8(theme.dark_css())?;
+        assert!(dark.contains("--fg: #ebdbb2;"), "{dark}");
 
         Ok(())
     }

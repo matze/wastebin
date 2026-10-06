@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Derive header, panel, gutter, accent, selection and Markdown admonition colors
+  from the selected theme with `WASTEBIN_THEME` now recoloring the whole UI.
 - Use a paste's title as the HTML page title on its own instead of prefixing
   the configured page title from `WASTEBIN_TITLE`. Pages without a title keep
   showing the configured title.

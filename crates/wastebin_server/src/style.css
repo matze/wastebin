@@ -1,3 +1,7 @@
+/*
+ * Color tokens are generated per theme and scheme by `wastebin_highlight::palette` and linked
+ * from `base.html` before this stylesheet. Everything below only consumes them.
+ */
 :root {
   --font-ui: system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
@@ -8,28 +12,6 @@
   --fs-base: 1rem;
   --fs-xl: 3rem;
   --lh-code: 1.54;
-
-  --page-bg: light-dark(#fafaf8, #0f1115);
-  --panel-bg: light-dark(#ffffff, #14171c);
-  --panel-bg2: light-dark(#f4f4f1, #181c23);
-  --fg: light-dark(#1a1d22, #d6d9df);
-  --fg-dim: light-dark(#4a5059, #a8aeb8);
-  --fg-muted: light-dark(#6b717b, #8e95a0);
-  --gutter-bg: light-dark(#f4f4f1, #0f1115);
-  --gutter-fg: light-dark(#8a919c, #5a616b);
-  --border: light-dark(#d8d7d1, #2a3038);
-  --border-soft: light-dark(#ecebe6, #1b1f26);
-  --accent: light-dark(oklch(0.52 0.14 220), oklch(0.72 0.14 220));
-  --accent-bg: light-dark(oklch(0.52 0.14 220 / 0.10), oklch(0.72 0.14 220 / 0.14));
-  --accent-bg-gutter: light-dark(oklch(0.52 0.14 220 / 0.15), oklch(0.72 0.14 220 / 0.20));
-  --accent-fg: light-dark(oklch(0.38 0.14 220), oklch(0.88 0.09 220));
-  --danger: light-dark(oklch(0.52 0.18 25), oklch(0.70 0.16 25));
-  --danger-bg: light-dark(oklch(0.52 0.18 25 / 0.08), oklch(0.70 0.16 25 / 0.12));
-
-  /* keep for syntax highlighting compat */
-  --main-accent-color: var(--accent);
-  --main-highlight-color: var(--accent);
-  --main-line-number-color: var(--gutter-fg);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -52,7 +34,7 @@ input, textarea, select { font-family: inherit; }
 textarea { resize: none; }
 a, a:visited, a:hover { text-decoration: none; color: inherit; }
 svg { display: block; }
-::selection { background: rgba(120, 160, 200, 0.25); }
+::selection { background: var(--selection-bg); }
 
 #form {
   height: 100%;
@@ -75,8 +57,8 @@ main {
   order: 1;
   min-width: 0;
   overflow: auto;
-  background: var(--main-bg-color, var(--page-bg));
-  color: var(--main-fg-color, var(--fg));
+  background: var(--page-bg);
+  color: var(--fg);
 }
 
 header {
@@ -192,8 +174,8 @@ header {
   font-family: var(--font-mono);
   font-size: var(--fs-md);
   line-height: var(--lh-code);
-  background: var(--main-bg-color, var(--page-bg));
-  color: var(--main-fg-color, var(--fg));
+  background: var(--page-bg);
+  color: var(--code-fg);
 }
 
 .editor {
@@ -1074,6 +1056,7 @@ textarea:focus-visible {
   border: none;
   border-radius: 0;
   white-space: pre;
+  color: var(--code-fg);
 }
 
 .markdown-body blockquote {
@@ -1101,35 +1084,35 @@ textarea:focus-visible {
 .markdown-body .markdown-alert-title + * { margin-top: 0; }
 
 .markdown-body .markdown-alert-note {
-  border-left-color: light-dark(oklch(0.52 0.14 250), oklch(0.72 0.14 250));
-  background: light-dark(oklch(0.52 0.14 250 / 0.08), oklch(0.72 0.14 250 / 0.12));
+  border-left-color: var(--note);
+  background: var(--note-bg);
 }
 .markdown-body .markdown-alert-note .markdown-alert-title {
-  color: light-dark(oklch(0.42 0.14 250), oklch(0.82 0.12 250));
+  color: var(--note-fg);
 }
 
 .markdown-body .markdown-alert-tip {
-  border-left-color: light-dark(oklch(0.52 0.15 150), oklch(0.72 0.15 150));
-  background: light-dark(oklch(0.52 0.15 150 / 0.08), oklch(0.72 0.15 150 / 0.12));
+  border-left-color: var(--tip);
+  background: var(--tip-bg);
 }
 .markdown-body .markdown-alert-tip .markdown-alert-title {
-  color: light-dark(oklch(0.42 0.15 150), oklch(0.82 0.13 150));
+  color: var(--tip-fg);
 }
 
 .markdown-body .markdown-alert-important {
-  border-left-color: light-dark(oklch(0.52 0.17 300), oklch(0.72 0.16 300));
-  background: light-dark(oklch(0.52 0.17 300 / 0.08), oklch(0.72 0.16 300 / 0.12));
+  border-left-color: var(--important);
+  background: var(--important-bg);
 }
 .markdown-body .markdown-alert-important .markdown-alert-title {
-  color: light-dark(oklch(0.42 0.17 300), oklch(0.82 0.14 300));
+  color: var(--important-fg);
 }
 
 .markdown-body .markdown-alert-warning {
-  border-left-color: light-dark(oklch(0.58 0.15 75), oklch(0.78 0.15 75));
-  background: light-dark(oklch(0.58 0.15 75 / 0.08), oklch(0.78 0.15 75 / 0.12));
+  border-left-color: var(--warning);
+  background: var(--warning-bg);
 }
 .markdown-body .markdown-alert-warning .markdown-alert-title {
-  color: light-dark(oklch(0.48 0.15 75), oklch(0.85 0.14 75));
+  color: var(--warning-fg);
 }
 
 .markdown-body .markdown-alert-caution {

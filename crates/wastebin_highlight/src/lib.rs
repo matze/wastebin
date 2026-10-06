@@ -1,3 +1,5 @@
+mod palette;
+
 pub mod highlight;
 pub mod markdown;
 pub mod theme;

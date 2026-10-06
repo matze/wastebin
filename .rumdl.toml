@@ -1,0 +1,12 @@
+# Inline HTML is intentional because of the README sugar.
+[MD033]
+allowed-elements = ["a", "img", "kbd", "p", "strong"]
+
+[MD013]
+headings = false
+code-blocks = false
+
+# The README and the CHANGELOG link to rendered examples as "here".
+[per-file-ignores]
+"CHANGELOG.md" = ["MD059"]
+"README.md" = ["MD059"]

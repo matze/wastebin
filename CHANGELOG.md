@@ -14,6 +14,7 @@
 ### Fixed
 
 - Localize expiration durations.
+- Do not exit database handler and thus server on client timeout.
 
 ## [3.8.0] - 2026-10-02
 

@@ -394,52 +394,38 @@ impl Handler {
                 Err(kanal::ReceiveError::Closed | kanal::ReceiveError::SendClosed) => return Ok(()), // sender closed, application is shutting down..
             };
 
-            match command {
-                Command::Insert { entry, result } => {
-                    result
-                        .send(self.insert(entry))
-                        .map_err(|_| Error::ResultSendError)?;
-                }
-                Command::Get { id, result } => {
-                    result
-                        .send(self.get(id))
-                        .map_err(|_| Error::ResultSendError)?;
-                }
-                Command::GetMetadata { id, result } => {
-                    result
-                        .send(self.get_metadata(id))
-                        .map_err(|_| Error::ResultSendError)?;
-                }
-                Command::Delete { id, result } => {
-                    result
-                        .send(self.delete(id))
-                        .map_err(|_| Error::ResultSendError)?;
-                }
-                Command::DeleteMany { ids, result } => {
-                    result
-                        .send(self.delete_many(ids))
-                        .map_err(|_| Error::ResultSendError)?;
-                }
-                Command::DeleteFor { id, uids, result } => {
-                    result
-                        .send(self.delete_for(id, &uids))
-                        .map_err(|_| Error::ResultSendError)?;
-                }
-                Command::NextUid { result } => {
-                    result
-                        .send(self.next_uid())
-                        .map_err(|_| Error::ResultSendError)?;
-                }
+            let result = match command {
+                Command::Insert { entry, result } => result
+                    .send(self.insert(entry))
+                    .map_err(|_| Error::ResultSendError),
+                Command::Get { id, result } => result
+                    .send(self.get(id))
+                    .map_err(|_| Error::ResultSendError),
+                Command::GetMetadata { id, result } => result
+                    .send(self.get_metadata(id))
+                    .map_err(|_| Error::ResultSendError),
+                Command::Delete { id, result } => result
+                    .send(self.delete(id))
+                    .map_err(|_| Error::ResultSendError),
+                Command::DeleteMany { ids, result } => result
+                    .send(self.delete_many(ids))
+                    .map_err(|_| Error::ResultSendError),
+                Command::DeleteFor { id, uids, result } => result
+                    .send(self.delete_for(id, &uids))
+                    .map_err(|_| Error::ResultSendError),
+                Command::NextUid { result } => result
+                    .send(self.next_uid())
+                    .map_err(|_| Error::ResultSendError),
                 Command::List { result } => {
-                    result
-                        .send(self.list())
-                        .map_err(|_| Error::ResultSendError)?;
+                    result.send(self.list()).map_err(|_| Error::ResultSendError)
                 }
-                Command::Purge { result } => {
-                    result
-                        .send(self.purge())
-                        .map_err(|_| Error::ResultSendError)?;
-                }
+                Command::Purge { result } => result
+                    .send(self.purge())
+                    .map_err(|_| Error::ResultSendError),
+            };
+
+            if let Err(err) = result {
+                tracing::error!(?err, "failed to send result");
             }
         }
     }

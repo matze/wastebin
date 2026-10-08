@@ -15,6 +15,8 @@ pub enum Error {
     SyntaxHighlighting(#[from] syntect::Error),
     #[error("syntax parsing error: {0}")]
     SyntaxParsing(#[from] syntect::parsing::ParsingError),
+    #[error("failed to escaped")]
+    Escape,
 }
 
 const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;
@@ -209,7 +211,10 @@ impl Highlighter {
 
         for (mut line_number, line) in LinesWithEndings::from(&text).enumerate() {
             let (formatted, delta) = if line.len() > HIGHLIGHT_LINE_LENGTH_CUTOFF {
-                (line.to_string(), 0)
+                let mut escaped = String::with_capacity(line.len());
+                escape(&line, &mut escaped).map_err(|_| Error::Escape)?;
+                println!("{escaped}");
+                (escaped, 0)
             } else {
                 let parsed = parse_state.parse_line(line, &self.syntax_set)?;
 
@@ -394,6 +399,17 @@ mod tests {
             !html.contains("</span></a>"),
             "anchor must close before its enclosing span: {html}"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn long_lines_are_escaped() -> Result<(), Box<dyn std::error::Error>> {
+        let mut text = "x".repeat(HIGHLIGHT_LINE_LENGTH_CUTOFF);
+        text.push_str("<img src=x>");
+        let html = Highlighter::default()
+            .highlight(text, Some("md".into()))?
+            .into_inner();
+        assert!(html.contains("&lt;img src=x&gt;"));
         Ok(())
     }
 }

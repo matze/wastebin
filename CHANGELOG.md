@@ -15,6 +15,7 @@
 
 - Localize expiration durations.
 - Do not exit database handler and thus server on client timeout.
+- Escape unhighlighted overly long lines.
 
 ## [3.8.0] - 2026-10-02
 

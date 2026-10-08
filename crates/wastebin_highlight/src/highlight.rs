@@ -331,9 +331,7 @@ mod tests {
 
     #[test]
     fn markdown_links() -> Result<(), Box<dyn std::error::Error>> {
-        let highlighter = Highlighter::default();
-
-        let html = highlighter.highlight(
+        let html = Highlighter::default().highlight(
             "[hello](https://github.com/matze/wastebin)".into(),
             Some("md".into()),
         )?;
@@ -371,11 +369,10 @@ mod tests {
 
     #[test]
     fn rows_are_self_balanced_for_markdown_lists() -> Result<(), Box<dyn std::error::Error>> {
-        let highlighter = Highlighter::default();
         let text = "## Features\n\n\
             * [axum](https://github.com/tokio-rs/axum) and [sqlite3](https://www.sqlite.org) backend\n\
             * comes as a single binary with low memory footprint\n";
-        let html = highlighter
+        let html = Highlighter::default()
             .highlight(text.into(), Some("md".into()))?
             .into_inner();
 
@@ -390,8 +387,7 @@ mod tests {
 
     #[test]
     fn markdown_link_is_well_nested() -> Result<(), Box<dyn std::error::Error>> {
-        let highlighter = Highlighter::default();
-        let html = highlighter
+        let html = Highlighter::default()
             .highlight("[hi](https://example.com)".into(), Some("md".into()))?
             .into_inner();
 

@@ -9,6 +9,7 @@ use axum::response::Redirect;
 use axum_extra::extract::cookie::Key;
 use axum_extra::extract::{CookieJar, SignedCookieJar};
 use cookie::Cookie;
+use http::StatusCode;
 use serde::Deserialize;
 
 use wastebin_core::crypto;
@@ -138,17 +139,17 @@ where
     S: Send + Sync,
     Key: FromRef<S>,
 {
-    type Rejection = ();
+    type Rejection = StatusCode;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let jar = SignedCookieJar::<crate::Key>::from_request_parts(parts, state)
             .await
-            .map_err(|_| ())?;
+            .map_err(|_| StatusCode::FORBIDDEN)?;
 
         let uids = jar
             .get("uid")
             .map(|cookie| parse_uids(cookie.value_trimmed()))
-            .ok_or(())?;
+            .ok_or(StatusCode::FORBIDDEN)?;
 
         Ok(Uids(uids))
     }

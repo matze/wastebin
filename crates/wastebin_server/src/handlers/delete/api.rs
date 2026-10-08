@@ -38,4 +38,27 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn delete_without_cookie() -> Result<(), Box<dyn std::error::Error>> {
+        let owner = Client::new(StoreCookies(true)).await;
+
+        let res = owner.post_form().form(&Entry::default()).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+
+        let location = res.headers().get("location").unwrap().to_str()?;
+        let id = location.replace('/', "");
+
+        // A fresh client sends no `uid` cookie, so the `Uids` extractor rejects the request before
+        // it can reach the database.
+        let anonymous = Client::new(StoreCookies(false)).await;
+        let res = anonymous.delete(&format!("/{id}")).send().await?;
+        assert_eq!(res.status(), StatusCode::FORBIDDEN);
+
+        // The paste is untouched and still readable by its owner.
+        let res = owner.get(&format!("/{id}")).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        Ok(())
+    }
 }

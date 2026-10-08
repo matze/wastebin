@@ -7,9 +7,29 @@ pub mod raw;
 pub mod robots;
 pub mod theme;
 
+use axum::http::{HeaderValue, header};
+use axum::response::Response;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 
 use crate::handlers::extract::serialize_uids;
+
+/// Marks a response as uncacheable by browsers and intermediaries.
+///
+/// Used for password-protected pastes so that decrypted content is never stored.
+pub(crate) trait NoStore {
+    /// Set `Cache-Control: no-store`.
+    #[must_use]
+    fn no_store(self) -> Self;
+}
+
+impl NoStore for Response {
+    fn no_store(mut self) -> Self {
+        self.headers_mut()
+            .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+
+        self
+    }
+}
 
 /// Build a cookie with `HttpOnly`, `SameSite=Strict` and `Path=/`.
 ///

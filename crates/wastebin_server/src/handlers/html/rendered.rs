@@ -4,6 +4,7 @@ use axum::extract::{Form, Path, State};
 use axum::response::{IntoResponse, Response};
 
 use crate::cache::{Key, Mode};
+use crate::handlers::NoStore;
 use crate::handlers::extract::{Theme, Uids};
 use crate::handlers::html::paste::PasswordForm;
 use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
@@ -53,9 +54,13 @@ pub async fn get<E>(
         let no_password = password.is_none();
         let key: Key = id.parse()?;
 
-        let (data, is_available) = match db.get(key.id, password).await {
-            Ok(Entry::Regular(data)) => (data, true),
-            Ok(Entry::Burned(data)) => (data, false),
+        let (data, is_available, encrypted) = match db.get(key.id, password).await {
+            Ok(Entry::Regular(data)) => (data, true, false),
+            Ok(Entry::Burned(data)) => (data, false, false),
+            Ok(Entry::Encrypted(data)) => {
+                let is_available = !data.metadata.must_be_deleted;
+                (data, is_available, true)
+            }
             Err(db::Error::NoPassword) => {
                 return Ok(PasswordInput {
                     page: page.clone(),
@@ -64,7 +69,8 @@ pub async fn get<E>(
                     id,
                     is_rendered: true,
                 }
-                .into_response());
+                .into_response()
+                .no_store());
             }
             Err(err) => return Err(err.into()),
         };
@@ -112,7 +118,12 @@ pub async fn get<E>(
             title,
         };
 
-        Ok(rendered.into_response())
+        let response = rendered.into_response();
+        Ok(if encrypted {
+            response.no_store()
+        } else {
+            response
+        })
     }
     .await
     .map_err(|err| make_error(err, page, theme, lang))
@@ -191,6 +202,45 @@ mod tests {
             .unwrap()
             .to_str()?;
         assert!(csp.contains("img-src 'self' data:"), "csp: {csp}");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn encrypted_rendered_is_not_stored() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+        let password = "hunter2";
+        let data = Entry {
+            text: String::from("# secret\n"),
+            extension: Some(String::from("md")),
+            password: password.to_string(),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+        let location = res.headers().get("location").unwrap().to_str()?.to_owned();
+
+        // The password prompt is not cacheable.
+        let res = client.get(&format!("/md{location}")).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(
+            res.headers().get(header::CACHE_CONTROL).unwrap(),
+            "no-store"
+        );
+
+        // The decrypted Markdown is not cacheable either.
+        let res = client
+            .post(&format!("/md{location}"))
+            .form(&[("password", password)])
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::OK);
+        let cache_control = res.headers().get(header::CACHE_CONTROL).cloned();
+        let body = res.text().await?;
+        assert!(body.contains("<h1>secret</h1>"), "body: {body}");
+        assert_eq!(cache_control.unwrap(), "no-store");
 
         Ok(())
     }

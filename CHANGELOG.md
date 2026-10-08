@@ -15,6 +15,8 @@
 
 ### Fixed
 
+- Send `Cache-Control: no-store` for password-protected pastes so that
+  decrypted content and the password prompt are never cached.
 - Localize expiration durations.
 - Do not exit database handler and thus server on client timeout.
 - Escape unhighlighted overly long lines.

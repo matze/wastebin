@@ -7,6 +7,7 @@ use axum_extra::headers::HeaderValue;
 
 use crate::Page;
 use crate::cache::Key;
+use crate::handlers::NoStore;
 use crate::handlers::extract::{Password, Theme};
 use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
 use crate::i18n::Lang;
@@ -30,6 +31,7 @@ pub async fn get(
             Ok(Entry::Regular(data) | Entry::Burned(data)) => {
                 Ok(get_download(&key, data).into_response())
             }
+            Ok(Entry::Encrypted(data)) => Ok(get_download(&key, data).into_response().no_store()),
             Err(db::Error::NoPassword) => Ok(PasswordInput {
                 page: page.clone(),
                 theme: theme.clone(),
@@ -37,7 +39,8 @@ pub async fn get(
                 id: key.id.to_string(),
                 is_rendered: false,
             }
-            .into_response()),
+            .into_response()
+            .no_store()),
             Err(err) => Err(err.into()),
         }
     }
@@ -158,6 +161,33 @@ mod tests {
             content_disposition.to_str()?,
             "attachment; filename*=UTF-8''caf%C3%A9.txt",
         );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn encrypted_download_is_not_stored() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+        let password = "hunter2";
+        let data = Entry {
+            text: String::from("secret-body-xyz"),
+            password: password.to_string(),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+        let location = res.headers().get("location").unwrap().to_str()?.to_owned();
+
+        let res = client
+            .get(&format!("/dl{location}"))
+            .header(crate::handlers::extract::PASSWORD_HEADER_NAME, password)
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::OK);
+        let cache_control = res.headers().get(header::CACHE_CONTROL).cloned();
+        assert_eq!(res.text().await?, "secret-body-xyz");
+        assert_eq!(cache_control.unwrap(), "no-store");
 
         Ok(())
     }

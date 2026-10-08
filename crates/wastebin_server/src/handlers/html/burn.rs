@@ -176,7 +176,9 @@ mod tests {
             .await?;
 
         assert_eq!(res.status(), StatusCode::OK);
+        let cache_control = res.headers().get(header::CACHE_CONTROL).cloned();
         assert!(res.text().await?.contains("secret-body-xyz"));
+        assert_eq!(cache_control.unwrap(), "no-store");
 
         let res = client
             .get(&location)

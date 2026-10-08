@@ -264,6 +264,8 @@ pub mod read {
         Regular(Data),
         /// Entry burned.
         Burned(Data),
+        /// Entry decrypted with the supplied password. Takes precedence over [`Entry::Burned`]. Whether the paste was also burned is recorded in [`Metadata::must_be_deleted`].
+        Encrypted(Data),
     }
 
     /// A simple entry as read from the database for listing purposes.
@@ -657,6 +659,8 @@ impl Database {
             return Err(Error::NotFound);
         }
 
+        let is_encrypted = entry.nonce.is_some();
+
         let read::UncompressedEntry {
             text,
             metadata,
@@ -665,15 +669,24 @@ impl Database {
 
         let data = read::Data { text, metadata };
 
-        if must_be_deleted {
+        // Whether this fetch burned the paste.
+        let burned = if must_be_deleted {
             if !self.delete(id).await? {
                 return Err(Error::NotFound);
             }
 
-            return Ok(read::Entry::Burned(data));
-        }
+            true
+        } else {
+            false
+        };
 
-        Ok(read::Entry::Regular(data))
+        // Password-protected pastes take precedence over burned ones so that callers
+        // can tell that the content must not be cached.
+        Ok(match (is_encrypted, burned) {
+            (true, _) => read::Entry::Encrypted(data),
+            (false, true) => read::Entry::Burned(data),
+            (false, false) => read::Entry::Regular(data),
+        })
     }
 
     /// Get metadata of a paste.
@@ -762,7 +775,9 @@ mod tests {
         #[must_use]
         pub fn unwrap_inner(self) -> read::Data {
             match self {
-                read::Entry::Regular(data) | read::Entry::Burned(data) => data,
+                read::Entry::Regular(data)
+                | read::Entry::Burned(data)
+                | read::Entry::Encrypted(data) => data,
             }
         }
     }
@@ -885,7 +900,9 @@ mod tests {
             |(burned, not_found, regular, other), result| match result {
                 Ok(read::Entry::Burned(_)) => (burned + 1, not_found, regular, other),
                 Err(Error::NotFound) => (burned, not_found + 1, regular, other),
-                Ok(read::Entry::Regular(_)) => (burned, not_found, regular + 1, other),
+                Ok(read::Entry::Regular(_) | read::Entry::Encrypted(_)) => {
+                    (burned, not_found, regular + 1, other)
+                }
                 Err(_) => (burned, not_found, regular, other + 1),
             },
         );
@@ -991,6 +1008,32 @@ mod tests {
         assert!(expiration <= 3600);
         // We have a problem if the test takes more than 10 seconds.
         assert!(expiration >= 3590);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn read_encrypted() -> Result<(), Box<dyn std::error::Error>> {
+        let db = new_db()?;
+
+        let entry = write::Entry {
+            text: "secret".to_string(),
+            password: Some("pw".to_string()),
+            burn_after_reading: Some(true),
+            ..Default::default()
+        };
+
+        let (id, _entry) = db.insert(entry).await?;
+
+        // Without a password the content stays locked.
+        assert!(matches!(db.get(id, None).await, Err(Error::NoPassword)));
+
+        // Encrypted takes precedence over burned, but the burn is still reported.
+        let entry = db
+            .get(id, Some(Password::from("pw".as_bytes().to_vec())))
+            .await?;
+        assert!(matches!(entry, read::Entry::Encrypted(_)));
+        assert!(entry.unwrap_inner().metadata.must_be_deleted);
 
         Ok(())
     }

@@ -212,7 +212,7 @@ impl Highlighter {
         for (mut line_number, line) in LinesWithEndings::from(&text).enumerate() {
             let (formatted, delta) = if line.len() > HIGHLIGHT_LINE_LENGTH_CUTOFF {
                 let mut escaped = String::with_capacity(line.len());
-                escape(&line, &mut escaped).map_err(|_| Error::Escape)?;
+                escape(line, &mut escaped).map_err(|_| Error::Escape)?;
                 println!("{escaped}");
                 (escaped, 0)
             } else {

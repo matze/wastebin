@@ -10,6 +10,8 @@
   the configured page title from `WASTEBIN_TITLE`. Pages without a title keep
   showing the configured title.
 - Top-align the burn-after-reading and encrypt toggles with their labels.
+- An empty password string in a JSON API payload now is interpreted as no
+  password rather than an empty string.
 
 ### Fixed
 

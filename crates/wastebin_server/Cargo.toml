@@ -33,6 +33,7 @@ wastebin_highlight = { path = "../wastebin_highlight/" }
 [dev-dependencies]
 itertools = "0.15.0"
 reqwest = { version = "0.13", default-features = false, features = ["cookies", "form", "json", "query"] }
+serde_json = "1.0.151"
 tower = { version = "0.5", default-features = false, features = ["util", "make"] }
 
 [lints]

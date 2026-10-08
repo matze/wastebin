@@ -34,13 +34,16 @@ pub(crate) struct RedirectResponse {
 
 impl From<Entry> for write::Entry {
     fn from(entry: Entry) -> Self {
+        // Turn Some("") into None.
+        let password = entry.password.and_then(|s| (!s.is_empty()).then_some(s));
+
         Self {
             text: entry.text,
             extension: entry.extension,
             expires: entry.expires,
             burn_after_reading: entry.burn_after_reading,
             uid: None,
-            password: entry.password,
+            password,
             title: entry.title,
         }
     }
@@ -80,6 +83,16 @@ mod tests {
     use crate::test_helpers::{Client, StoreCookies};
     use reqwest::StatusCode;
     use wastebin_core::db::write::Entry;
+
+    #[test]
+    fn empty_password_is_none() -> Result<(), Box<dyn std::error::Error>> {
+        let data = r#"{"text": "foo", "password": ""}"#;
+        let entry: super::Entry = serde_json::from_str(data)?;
+        let entry = Entry::from(entry);
+        assert!(entry.password.is_none());
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn insert() -> Result<(), Box<dyn std::error::Error>> {

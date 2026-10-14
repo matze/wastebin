@@ -43,6 +43,8 @@ pub(crate) struct BurnConfirmation {
     pub lang: Lang,
     pub id: String,
     pub title: Option<String>,
+    /// Whether the confirmation was reached from the rendered Markdown view (`/md/{id}`).
+    pub is_rendered: bool,
 }
 
 /// Error response carrying a status code and the page itself.

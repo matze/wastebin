@@ -22,6 +22,8 @@
 - Escape unhighlighted overly long lines.
 - Deleting without a uid cookie now returns 403 instead of 200.
 - Add security headers to service error responses.
+- Show the burn-after-reading confirmation interstitial for the rendered Markdown
+  view (`/md/{id}`) too, instead of revealing and burning the paste right away.
 
 ## [3.8.0] - 2026-10-02
 

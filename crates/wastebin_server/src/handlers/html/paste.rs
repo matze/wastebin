@@ -27,11 +27,6 @@ pub(crate) struct OwnerHandoff {
 }
 
 #[derive(Deserialize, Debug)]
-pub(crate) struct PasswordForm {
-    pub(crate) password: String,
-}
-
-#[derive(Deserialize, Debug)]
 pub(crate) struct PasteForm {
     #[serde(default)]
     pub(crate) password: Option<String>,
@@ -114,6 +109,7 @@ pub async fn get<E>(
                 lang,
                 id,
                 title: metadata.title.clone(),
+                is_rendered: false,
             }
             .into_response());
         }

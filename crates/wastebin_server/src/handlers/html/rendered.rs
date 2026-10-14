@@ -6,8 +6,8 @@ use axum::response::{IntoResponse, Response};
 use crate::cache::{Key, Mode};
 use crate::handlers::NoStore;
 use crate::handlers::extract::{Theme, Uids};
-use crate::handlers::html::paste::PasswordForm;
-use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
+use crate::handlers::html::paste::PasteForm;
+use crate::handlers::html::{BurnConfirmation, ErrorResponse, PasswordInput, make_error};
 use crate::i18n::Lang;
 use crate::{Cache, Database, Highlighter, Page};
 use wastebin_core::crypto::Password;
@@ -43,16 +43,31 @@ pub async fn get<E>(
     uids: Option<Uids>,
     theme: Option<Theme>,
     lang: Lang,
-    form: Result<Form<PasswordForm>, E>,
+    form: Result<Form<PasteForm>, E>,
 ) -> Result<Response, ErrorResponse> {
     async {
+        let form = form.ok().map(|Form(form)| form);
         let password = form
-            .ok()
-            .map(|Form(form)| form.password)
+            .as_ref()
+            .and_then(|form| form.password.as_ref())
             .filter(|password| !password.is_empty())
-            .map(|password| Password::from(password.into_bytes()));
+            .map(|password| Password::from(password.as_bytes().to_vec()));
+        let confirmed = form.as_ref().and_then(|form| form.confirm_burn.as_deref()) == Some("1");
         let no_password = password.is_none();
         let key: Key = id.parse()?;
+        let metadata = db.get_metadata(key.id).await?;
+
+        if metadata.must_be_deleted && !confirmed {
+            return Ok(BurnConfirmation {
+                page: page.clone(),
+                theme: theme.clone(),
+                lang,
+                id,
+                title: metadata.title.clone(),
+                is_rendered: true,
+            }
+            .into_response());
+        }
 
         let (data, is_available, encrypted) = match db.get(key.id, password).await {
             Ok(Entry::Regular(data)) => (data, true, false),
@@ -160,6 +175,74 @@ mod tests {
         assert!(body.contains("markdown-body"), "body: {body}");
         assert!(body.contains("<h1>Hello</h1>"), "body: {body}");
         assert!(body.contains("<th>a</th>"), "body: {body}");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn burn_requires_confirmation() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+        let data = Entry {
+            text: String::from("# secret\n"),
+            extension: Some(String::from("md")),
+            burn_after_reading: Some(String::from("on")),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+
+        // Location is the `/burn/foo` page not the paste itself, so remove the prefix.
+        let location = res
+            .headers()
+            .get("location")
+            .unwrap()
+            .to_str()?
+            .replace("burn/", "");
+        let rendered = format!("/md{location}");
+
+        // First GET of the rendered view shows the confirmation interstitial without revealing
+        // content, and confirms against the rendered route.
+        let res = client
+            .get(&rendered)
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::OK);
+        let body = res.text().await?;
+        assert!(body.contains("confirm_burn"), "body: {body}");
+        assert!(
+            body.contains(&format!("action=\"{rendered}\"")),
+            "body: {body}"
+        );
+        assert!(!body.contains("<h1>secret</h1>"), "body: {body}");
+
+        // Second GET must still show the confirmation — the paste is not yet burned.
+        let res = client
+            .get(&rendered)
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::OK);
+        assert!(res.text().await?.contains(">reveal<"));
+
+        // Confirming reveals the rendered paste and burns it.
+        let res = client
+            .post(&rendered)
+            .form(&[("confirm_burn", "1")])
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::OK);
+        assert!(res.text().await?.contains("<h1>secret</h1>"));
+
+        // Subsequent GETs 404 — the paste was burned.
+        let res = client
+            .get(&rendered)
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
         Ok(())
     }

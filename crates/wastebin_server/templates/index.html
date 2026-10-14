@@ -5,12 +5,6 @@
 <script defer src="{{ page.assets.password_toggle_js.route() }}"></script>
 {% endblock %}
 
-{% block nav_actions %}
-  <button type="button" id="open" class="nav-button" title="{{ lang.t("nav.upload") }}" aria-label="{{ lang.t("nav.upload") }}">
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
-  </button>
-{% endblock %}
-
 {% block body %}
 <form id="form" action="/new" method="post">
   <div id="main-container">

@@ -24,6 +24,8 @@
 - Add security headers to service error responses.
 - Show the burn-after-reading confirmation interstitial for the rendered Markdown
   view (`/md/{id}`) too, instead of revealing and burning the paste right away.
+- Keep a paste's extension after submitting the password raw and download
+  views.
 
 ## [3.8.0] - 2026-10-02
 

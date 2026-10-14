@@ -9,7 +9,7 @@ use crate::Page;
 use crate::cache::Key;
 use crate::handlers::NoStore;
 use crate::handlers::extract::{Password, Theme};
-use crate::handlers::html::{ErrorResponse, PasswordInput, make_error};
+use crate::handlers::html::{ErrorResponse, FormAction, PasswordInput, make_error};
 use crate::i18n::Lang;
 use wastebin_core::db::read::{Data, Entry};
 use wastebin_core::db::{self, Database};
@@ -36,8 +36,7 @@ pub async fn get(
                 page: page.clone(),
                 theme: theme.clone(),
                 lang,
-                id: key.id.to_string(),
-                is_rendered: false,
+                action: FormAction::source(&key),
             }
             .into_response()
             .no_store()),

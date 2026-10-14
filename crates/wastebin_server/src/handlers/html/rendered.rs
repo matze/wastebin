@@ -7,7 +7,9 @@ use crate::cache::{Key, Mode};
 use crate::handlers::NoStore;
 use crate::handlers::extract::{Theme, Uids};
 use crate::handlers::html::paste::PasteForm;
-use crate::handlers::html::{BurnConfirmation, ErrorResponse, PasswordInput, make_error};
+use crate::handlers::html::{
+    BurnConfirmation, ErrorResponse, FormAction, PasswordInput, make_error,
+};
 use crate::i18n::Lang;
 use crate::{Cache, Database, Highlighter, Page};
 use wastebin_core::crypto::Password;
@@ -62,9 +64,8 @@ pub async fn get<E>(
                 page: page.clone(),
                 theme: theme.clone(),
                 lang,
-                id,
                 title: metadata.title.clone(),
-                is_rendered: true,
+                action: FormAction::rendered(&key),
             }
             .into_response());
         }
@@ -81,8 +82,7 @@ pub async fn get<E>(
                     page: page.clone(),
                     theme: theme.clone(),
                     lang,
-                    id,
-                    is_rendered: true,
+                    action: FormAction::rendered(&key),
                 }
                 .into_response()
                 .no_store());

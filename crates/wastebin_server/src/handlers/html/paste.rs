@@ -8,7 +8,9 @@ use serde::Deserialize;
 
 use crate::cache::{Key, Mode};
 use crate::handlers::extract::{Theme, Uids, verify_owner_token};
-use crate::handlers::html::{BurnConfirmation, ErrorResponse, PasswordInput, make_error};
+use crate::handlers::html::{
+    BurnConfirmation, ErrorResponse, FormAction, PasswordInput, make_error,
+};
 use crate::handlers::{NoStore, uid_cookie};
 use crate::i18n::Lang;
 use crate::{Cache, Database, Highlighter, Page};
@@ -97,19 +99,15 @@ pub async fn get<E>(
         let confirmed = form.as_ref().and_then(|form| form.confirm_burn.as_deref()) == Some("1");
         let no_password = password.is_none();
         let key: Key = id.parse()?;
+        let metadata = db.get_metadata(key.id).await?;
 
-        let metadata = match db.get_metadata(key.id).await {
-            Ok(metadata) => metadata,
-            Err(err) => return Err(err.into()),
-        };
         if metadata.must_be_deleted && !confirmed {
             return Ok(BurnConfirmation {
                 page: page.clone(),
                 theme: theme.clone(),
                 lang,
-                id,
                 title: metadata.title.clone(),
-                is_rendered: false,
+                action: FormAction::source(&key),
             }
             .into_response());
         }
@@ -126,8 +124,7 @@ pub async fn get<E>(
                     page: page.clone(),
                     theme: theme.clone(),
                     lang,
-                    id,
-                    is_rendered: false,
+                    action: FormAction::source(&key),
                 }
                 .into_response()
                 .no_store());
@@ -201,6 +198,31 @@ mod tests {
 
         let res = client.get("/000000").send().await?;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn password_prompt_keeps_extension() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+        let data = crate::handlers::insert::form::Entry {
+            text: String::from("fn main() {}"),
+            extension: Some(String::from("rs")),
+            password: String::from("hunter2"),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+        let location = res.headers().get("location").unwrap().to_str()?.to_owned();
+        assert!(location.ends_with(".rs"), "location: {location}");
+
+        // The prompt submits back to the very same paste, extension included.
+        let body = client.get(&location).send().await?.text().await?;
+        assert!(
+            body.contains(&format!("action=\"{location}\"")),
+            "body: {body}"
+        );
 
         Ok(())
     }

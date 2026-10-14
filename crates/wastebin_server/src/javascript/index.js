@@ -5,22 +5,126 @@ function $(id) {
 const lineNumbers = $("line-numbers");
 const textarea = $("text");
 
+const mirror = document.createElement("div");
+mirror.id = "line-mirror";
+mirror.setAttribute("aria-hidden", "true");
+document.body.appendChild(mirror);
+
+// Properties that influence where the text wraps, copied from the textarea.
+const MIRROR_STYLE = [
+  "font",
+  "fontFeatureSettings",
+  "fontKerning",
+  "letterSpacing",
+  "wordBreak",
+  "wordSpacing",
+  "tabSize",
+  "whiteSpace",
+  "overflowWrap",
+];
+
+const advanceContext = document.createElement("canvas").getContext("2d");
+
+// Upper bound of the width a single code unit adds to a line.
+function unitAdvance(font) {
+  advanceContext.font = font;
+  // Wide characters such as CJK, emoji and tab stops advance by at most twice
+  // the step of the font, which covers them with a single bound per code unit.
+  return 2 * advanceContext.measureText("M").width;
+}
+
+// Number of visual rows each of `lines` occupies when wrapped as in the textarea.
+function measureRows(lines) {
+  const style = getComputedStyle(textarea);
+
+  const scrollbar =
+    textarea.offsetWidth - textarea.clientWidth -
+    parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth);
+  const width = Math.max(0,
+    textarea.getBoundingClientRect().width -
+    parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth) -
+    parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - scrollbar);
+
+  const rows = new Array(lines.length).fill(1);
+
+  // A line that cannot be wider than the text area cannot wrap either. Only
+  // lay out the remaining ones, so that typing in a long text stays cheap.
+  const advance = unitAdvance(style.font);
+  const candidateLines = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].length * advance > width) {
+      candidateLines.push(i);
+    }
+  }
+  if (candidateLines.length === 0) {
+    return rows;
+  }
+
+  for (const property of MIRROR_STYLE) {
+    mirror.style[property] = style[property];
+  }
+  mirror.style.width = width + "px";
+
+  // The lines are laid out together, so a single layout pass suffices.
+  const spans = [];
+  const fragment = document.createDocumentFragment();
+  candidateLines.forEach(function(index, i) {
+    if (i > 0) fragment.appendChild(document.createTextNode("\n"));
+    const span = document.createElement("span");
+    span.textContent = lines[index];
+    fragment.appendChild(span);
+    spans.push(span);
+  });
+  mirror.replaceChildren(fragment);
+
+  spans.forEach(function(span, i) {
+    // A space hanging at the end of a wrapped row forms a box of its own, so
+    // count the distinct line boxes rather than the client rects.
+    const boxes = new Set();
+    for (const rect of span.getClientRects()) {
+      boxes.add(Math.round(rect.top));
+    }
+    rows[candidateLines[i]] = Math.max(1, boxes.size);
+  });
+
+  return rows;
+}
+
 function updateLineNumbers() {
-  const count = Math.max(1, textarea.value.split("\n").length);
+  const rows = measureRows(textarea.value.split("\n"));
   let html = "";
-  for (let i = 1; i <= count; i++) {
-    html += "<div>" + i + "</div>";
+  for (let i = 0; i < rows.length; i++) {
+    html += "<div>" + (i + 1) + "</div>";
   }
   lineNumbers.innerHTML = html;
+
+  // Set through the CSSOM: the page's CSP (`style-src 'self' data:`) rejects
+  // `style` attributes coming from markup, which would drop `--rows` again.
+  const cells = lineNumbers.children;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i] > 1) cells[i].style.setProperty("--rows", rows[i]);
+  }
+
+  syncScroll();
 }
 
 function syncScroll() {
-  lineNumbers.scrollTop = textarea.scrollTop;
+  if (lineNumbers.scrollTop !== textarea.scrollTop) {
+    lineNumbers.scrollTop = textarea.scrollTop;
+  }
 }
 
 textarea.addEventListener("input", updateLineNumbers);
 textarea.addEventListener("scroll", syncScroll);
 updateLineNumbers();
+
+// Wrapping changes with the available width and with the font metrics.
+if (window.ResizeObserver) {
+  new ResizeObserver(updateLineNumbers).observe(textarea);
+}
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(updateLineNumbers);
+}
 
 const stats = $("stats");
 const MAX_BYTES = parseInt(stats.dataset.maxBytes, 10) || 1024 * 1024;

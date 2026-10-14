@@ -202,9 +202,18 @@ header {
 }
 
 #line-numbers div {
-  height: 1lh;
+  height: calc(1lh * var(--rows, 1));
   line-height: var(--lh-code);
   padding: 0 12px 0 16px;
+}
+
+#line-mirror {
+  position: fixed;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 
 .editor textarea {

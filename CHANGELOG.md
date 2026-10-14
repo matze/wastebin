@@ -15,6 +15,7 @@
 
 ### Fixed
 
+- Copy a paste's content with LF line breaks intact.
 - Send `Cache-Control: no-store` for password-protected pastes so that
   decrypted content and the password prompt are never cached.
 - Localize expiration durations.

@@ -69,7 +69,12 @@ function showToast(text, timeout) {
 function copy() {
   const code = document.querySelector('.src-code code');
   if (!code) return;
-  const content = code.textContent.trim();
+  // Every row is a block element holding one line without its terminator.
+  // `textContent` drops the breaks between block elements along with it, so
+  // join the rows by hand.
+  const content = Array.from(code.querySelectorAll('[id^="LC"]'), row => row.textContent)
+    .join('\n')
+    .trim();
 
   navigator.clipboard.writeText(content)
     .then(() => {

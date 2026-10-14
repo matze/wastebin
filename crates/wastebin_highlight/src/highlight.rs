@@ -194,6 +194,15 @@ impl Highlighter {
     /// Highlight `text` with the given file extension which is used to
     /// determine the right syntax. If not given or does not exist, plain text will be generated.
     pub fn highlight(&self, text: String, ext: Option<String>) -> Result<Html, Error> {
+        // Rows are emitted one per line with the terminating `\n` stripped, so the `\r` of a CRLF
+        // ending would end up inside the row's text, where the HTML parser turns it back into a
+        // line break. Normalize it so a row's text stays one line.
+        let text = if text.contains('\r') {
+            text.replace("\r\n", "\n")
+        } else {
+            text
+        };
+
         let syntax_ref = self
             .syntax_set
             .find_syntax_by_extension(ext.as_deref().unwrap_or("txt"))
@@ -394,6 +403,34 @@ mod tests {
             !html.contains("</span></a>"),
             "anchor must close before its enclosing span: {html}"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn crlf_line_endings_do_not_leak_into_rows() -> Result<(), Box<dyn std::error::Error>> {
+        let html = Highlighter::default()
+            .highlight("let a = 1;\r\nlet b = 2;\r\n".into(), Some("rs".into()))?
+            .into_inner();
+
+        assert!(
+            !html.contains('\r'),
+            "carriage return leaked into the rendered HTML: {html}"
+        );
+
+        let rows: Vec<_> = html
+            .split("</div>")
+            .filter(|row| row.contains("id=\"LC"))
+            .collect();
+        assert_eq!(rows.len(), 2, "expected one row per line: {html}");
+
+        // A row's text must be exactly its line's content, so that consumers joining the rows
+        // with `\n` (see the copy button in `paste.js`) reproduce the paste.
+        for row in rows {
+            assert!(
+                !row.contains('\n'),
+                "line terminator leaked into a row: {row}"
+            );
+        }
         Ok(())
     }
 

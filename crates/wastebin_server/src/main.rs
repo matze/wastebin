@@ -237,8 +237,8 @@ fn make_app(state: AppState, timeout: Duration, max_body_size: usize) -> Router 
                     StatusCode::REQUEST_TIMEOUT,
                     timeout,
                 ))
-                .layer(from_fn_with_state(state.clone(), handle_service_errors))
-                .layer(from_fn(security_headers_layer)),
+                .layer(from_fn(security_headers_layer))
+                .layer(from_fn_with_state(state.clone(), handle_service_errors)),
         )
         .with_state(state)
 }

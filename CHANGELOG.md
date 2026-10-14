@@ -21,6 +21,7 @@
 - Do not exit database handler and thus server on client timeout.
 - Escape unhighlighted overly long lines.
 - Deleting without a uid cookie now returns 403 instead of 200.
+- Add security headers to service error responses.
 
 ## [3.8.0] - 2026-10-02
 

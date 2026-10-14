@@ -13,10 +13,10 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::extract::{DefaultBodyLimit, FromRef, Request, State};
-use axum::http::{HeaderName, HeaderValue, StatusCode};
+use axum::http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use axum::middleware::{Next, from_fn, from_fn_with_state};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{Router, get, post};
+use axum::routing::{MethodRouter, Router, get, post};
 use axum_extra::extract::cookie::Key;
 use http::header::{
     CONTENT_SECURITY_POLICY, REFERRER_POLICY, SERVER, X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
@@ -25,9 +25,11 @@ use http::header::{
 use tokio::net::{TcpListener, UnixListener};
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
+use tower_http::compression::predicate::{DefaultPredicate, Predicate, SizeAbove};
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
+use crate::assets::Asset;
 use crate::cache::Cache;
 use crate::errors::Error;
 use crate::handlers::extract::Theme;
@@ -171,45 +173,32 @@ async fn shutdown_signal() {
     tracing::info!("received signal, exiting ...");
 }
 
+/// Route serving `asset` in the content coding accepted by the request.
+fn asset_route(asset: &Asset) -> MethodRouter<AppState> {
+    let asset = asset.clone();
+    get(move |headers: HeaderMap| async move { asset.to_response(&headers) })
+}
+
 fn make_app(state: AppState, timeout: Duration, max_body_size: usize) -> Router {
-    Router::new()
-        .route(
-            state.page.assets.favicon.route(),
-            get(async |State(page): State<Page>| page.assets.favicon.clone()),
-        )
-        .route(
-            state.page.assets.css.style.route(),
-            get(async |State(page): State<Page>| page.assets.css.style.clone()),
-        )
-        .route(
-            state.page.assets.css.dark.route(),
-            get(async |State(page): State<Page>| page.assets.css.dark.clone()),
-        )
-        .route(
-            state.page.assets.css.light.route(),
-            get(async |State(page): State<Page>| page.assets.css.light.clone()),
-        )
-        .route(
-            state.page.assets.css.no_js.route(),
-            get(async |State(page): State<Page>| page.assets.css.no_js.clone()),
-        )
-        .route(
-            state.page.assets.index_js.route(),
-            get(async |State(page): State<Page>| page.assets.index_js.clone()),
-        )
-        .route(
-            state.page.assets.paste_js.route(),
-            get(async |State(page): State<Page>| page.assets.paste_js.clone()),
-        )
-        .route(
-            state.page.assets.burn_js.route(),
-            get(async |State(page): State<Page>| page.assets.burn_js.clone()),
-        )
-        .route(
-            state.page.assets.password_toggle_js.route(),
-            get(async |State(page): State<Page>| page.assets.password_toggle_js.clone()),
-        )
-        .route("/", get(html::index::get).post(insert::api::post))
+    let assets = [
+        &state.page.assets.favicon,
+        &state.page.assets.css.style,
+        &state.page.assets.css.dark,
+        &state.page.assets.css.light,
+        &state.page.assets.css.no_js,
+        &state.page.assets.index_js,
+        &state.page.assets.paste_js,
+        &state.page.assets.burn_js,
+        &state.page.assets.password_toggle_js,
+    ];
+
+    let mut app = Router::new();
+
+    for asset in assets {
+        app = app.route(asset.route(), asset_route(asset));
+    }
+
+    app.route("/", get(html::index::get).post(insert::api::post))
         .route("/robots.txt", get(robots::get))
         .route("/theme", get(theme::get))
         .route("/new", post(insert::form::post))
@@ -231,7 +220,10 @@ fn make_app(state: AppState, timeout: Duration, max_body_size: usize) -> Router 
         .layer(
             ServiceBuilder::new()
                 .layer(DefaultBodyLimit::max(max_body_size))
-                .layer(CompressionLayer::new())
+                .layer(
+                    CompressionLayer::new()
+                        .compress_when(DefaultPredicate::new().and(SizeAbove::new(256))),
+                )
                 .layer(TraceLayer::new_for_http())
                 .layer(TimeoutLayer::with_status_code(
                     StatusCode::REQUEST_TIMEOUT,

@@ -10,8 +10,10 @@ askama = { workspace = true }
 askama_web = { version = "0.16.0", features = ["axum-0.8"] }
 axum = { version = "0.8", features = ["json", "query", "macros"] }
 axum-extra = { version = "0.12", features = ["cookie-signed", "typed-header"] }
+brotli = "9"
 cached = { version = "4.0.0", default-features = false }
 cookie = { version = "0.18", features = ["signed"] }
+flate2 = "1"
 hex = "0.4"
 hostname = "0.4.0"
 http = "1.3"
@@ -23,7 +25,7 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "signal"] }
 tower = { version = "0.5", default-features = false }
-tower-http = { version = "0.7", features = ["compression-full", "limit", "timeout", "trace"] }
+tower-http = { version = "0.7", features = ["compression-br", "compression-gzip", "timeout", "trace"] }
 tracing = { workspace = true }
 tracing-subscriber = "0.3"
 url = "2"

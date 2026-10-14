@@ -4,6 +4,11 @@
 
 ### Changed
 
+- Precompress CSS and JavaScript assets once at startup and serve them as `br` or
+  `gzip` depending on the request's `Accept-Encoding` header, instead of
+  compressing them again on every request.
+- Serve the favicon under a content-hashed URL like the other assets so that it
+  may be cached as `immutable`.
 - Derive header, panel, gutter, accent, selection and Markdown admonition colors
   from the selected theme with `WASTEBIN_THEME` now recoloring the whole UI.
 - Use a paste's title as the HTML page title on its own instead of prefixing

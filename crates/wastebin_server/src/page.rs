@@ -52,27 +52,27 @@ impl Assets {
     fn new(theme: Theme) -> Self {
         Self {
             favicon: Asset::new(
-                "favicon.ico",
-                mime::IMAGE_PNG,
+                "favicon",
+                Kind::Png,
                 include_bytes!("../../../assets/favicon.png").to_vec(),
             ),
             css: Css::new(theme),
-            index_js: Asset::new_hashed(
+            index_js: Asset::new(
                 "index",
                 Kind::Js,
                 include_bytes!("javascript/index.js").to_vec(),
             ),
-            paste_js: Asset::new_hashed(
+            paste_js: Asset::new(
                 "paste",
                 Kind::Js,
                 include_bytes!("javascript/paste.js").to_vec(),
             ),
-            burn_js: Asset::new_hashed(
+            burn_js: Asset::new(
                 "burn",
                 Kind::Js,
                 include_bytes!("javascript/burn.js").to_vec(),
             ),
-            password_toggle_js: Asset::new_hashed(
+            password_toggle_js: Asset::new(
                 "password-toggle",
                 Kind::Js,
                 include_bytes!("javascript/password-toggle.js").to_vec(),

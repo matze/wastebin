@@ -14,7 +14,9 @@ A minimal pastebin with a design shamelessly copied from
 You are reading the documentation for an **unreleased version**. You can refer
 to released versions here:
 
-**[3.8.0](https://github.com/matze/wastebin/tree/3e2f1425aa4aa8072da79b2a8c0c6af75074efa6)**
+**[3.9.0](https://github.com/matze/wastebin/tree/c829df9d116368459541b145350ea319d7a04b26)**
+•
+[3.8.0](https://github.com/matze/wastebin/tree/3e2f1425aa4aa8072da79b2a8c0c6af75074efa6)
 •
 [3.7.2](https://github.com/matze/wastebin/tree/dfca1dc82b78394d8e2dfe209d9ef3fb539da605)
 •

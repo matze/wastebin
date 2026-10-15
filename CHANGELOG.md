@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-10-15
+
 ### Changed
 
 - Precompress CSS and JavaScript assets once at startup and serve them as `br` or

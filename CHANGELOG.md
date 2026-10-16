@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Unlink Unix domain socket after shutdown.
+
 ## [3.9.0] - 2026-10-15
 
 ### Changed

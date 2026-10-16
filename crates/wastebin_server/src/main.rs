@@ -284,10 +284,16 @@ async fn start() -> Result<(), Box<dyn std::error::Error>> {
                     .await?;
             }
             env::SocketType::Unix(path) => {
-                let listener = UnixListener::bind(path)?;
-                axum::serve(listener, app)
+                let listener = UnixListener::bind(path.clone())?;
+                let result = axum::serve(listener, app)
                     .with_graceful_shutdown(shutdown_signal())
-                    .await?;
+                    .await;
+
+                if path.exists() {
+                    std::fs::remove_file(path)?;
+                }
+
+                result?;
             }
         }
 

@@ -200,7 +200,7 @@ run-time behavior:
 | --------------------------------- | ------------------------------------------------------------- | --------------------- |
 | `WASTEBIN_ADDRESS_PORT`           | Address and port to bind the server to.                       | `0.0.0.0:8088`        |
 | `WASTEBIN_BASE_URL`               | Base URL for the QR code display.                             |                       |
-| `WASTEBIN_CACHE_SIZE`             | Number of rendered items to cache. Disable with 0.            | `128`                 |
+| `WASTEBIN_CACHE_SIZE`             | Number of rendered items to cache.                            | `128`                 |
 | `WASTEBIN_DATABASE_PATH`          | Path to the sqlite3 database file.                            | `:memory:`            |
 | `WASTEBIN_HTTP_TIMEOUT`           | Maximum number of seconds a request is processed until wastebin responds with 408. | `5` |
 | `WASTEBIN_MAX_BODY_SIZE`          | Number of bytes to accept for POST requests.                  | `1048576`, i.e. 1 MB  |

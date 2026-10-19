@@ -142,7 +142,9 @@ static EN: phf::Map<&'static str, &'static str> = phf_map! {
     "duration.seconds" => "{0} secs",
 
     "burn.title" => "Burn after reading",
-    "burn.body" => "Copy and send <a class=\"text-link\" href=\"/{0}\">this link</a>. The recipient will be shown a confirmation prompt. The paste is deleted the moment they confirm.",
+    "burn.body.before" => "Copy and send ",
+    "burn.body.link" => "this link",
+    "burn.body.after" => ". The recipient will be shown a confirmation prompt. The paste is deleted the moment they confirm.",
 
     "burn_confirm.body" => "This paste will be <strong>permanently deleted</strong> the moment it is revealed. You will not be able to view it again.",
     "burn_confirm.cancel" => "cancel",
@@ -232,7 +234,9 @@ static DE: phf::Map<&'static str, &'static str> = phf_map! {
     "duration.seconds" => "{0} Sekunden",
 
     "burn.title" => "Nach Lesen vernichten",
-    "burn.body" => "Kopiere und schicke <a class=\"text-link\" href=\"/{0}\">diesen Link</a>. Dem Empfänger wird eine Bestätigungsaufforderung angezeigt und der Paste nach Bestätigung gelöscht.",
+    "burn.body.before" => "Kopiere und schicke ",
+    "burn.body.link" => "diesen Link",
+    "burn.body.after" => ". Dem Empfänger wird eine Bestätigungsaufforderung angezeigt und der Paste nach Bestätigung gelöscht.",
 
     "burn_confirm.body" => "Dieser Paste wird <strong>unwiderruflich gelöscht</strong>, sobald er angezeigt wird und kann danach nicht mehr eingesehen werden.",
     "burn_confirm.cancel" => "Abbrechen",
@@ -322,7 +326,9 @@ static ZH: phf::Map<&'static str, &'static str> = phf_map! {
     "duration.seconds" => "{0} 秒",
 
     "burn.title" => "阅后即焚",
-    "burn.body" => "复制并发送 <a class=\"text-link\" href=\"/{0}\">此链接</a>。收件人将看到确认提示。在他们确认的那一刻，剪贴将被删除。",
+    "burn.body.before" => "复制并发送 ",
+    "burn.body.link" => "此链接",
+    "burn.body.after" => "。收件人将看到确认提示。在他们确认的那一刻，剪贴将被删除。",
 
     "burn_confirm.body" => "此剪贴在显示的那一刻将被 <strong>永久删除</strong>。您将无法再次查看它。",
     "burn_confirm.cancel" => "取消",
@@ -354,8 +360,8 @@ mod tests {
 
     #[test]
     fn t_with_substitutes_placeholder() {
-        let s = Lang::En.t_with("burn.body", "abc123");
-        assert!(s.contains("href=\"/abc123\""));
+        assert_eq!(Lang::En.t_with("duration.days", "3"), "3 days");
+        assert_eq!(Lang::De.t_with("duration.days", "3"), "3 Tage");
     }
 
     #[test]

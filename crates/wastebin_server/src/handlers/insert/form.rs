@@ -6,11 +6,13 @@ use axum_extra::extract::cookie::SignedCookieJar;
 use serde::{Deserialize, Serialize};
 
 use crate::Page;
+use crate::cache::valid_extension;
 use crate::handlers::extract::{Theme, Uids};
 use crate::handlers::html::make_error;
 use crate::handlers::uid_cookie;
 use crate::i18n::Lang;
 use wastebin_core::db::{Database, write};
+use wastebin_core::id;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub(crate) struct Entry {
@@ -57,10 +59,23 @@ pub async fn post<E: std::fmt::Debug>(
         return Err(make_error(crate::Error::MalformedForm, page, theme, lang));
     };
 
+    if let Some(extension) = &entry.extension
+        && !valid_extension(extension)
+    {
+        return Err(make_error(
+            crate::Error::Id(id::Error::IllegalCharacters),
+            page,
+            theme,
+            lang,
+        ));
+    }
+
+    let mut entry: write::Entry = entry.into();
+    let mut uids = uids.map(|Uids(uids)| uids).unwrap_or_default();
+
     async {
         // Pick the existing primary uid (first in the cookie list) or mint a new one.
         // Re-set the cookie with the full list unchanged so claimed uids survive.
-        let mut uids = uids.map(|Uids(uids)| uids).unwrap_or_default();
         let primary = match uids.first().copied() {
             Some(uid) => uid,
             None => {
@@ -70,7 +85,6 @@ pub async fn post<E: std::fmt::Debug>(
             }
         };
 
-        let mut entry: write::Entry = entry.into();
         entry.uid = Some(primary);
 
         let (id, entry) = db.insert(entry).await?;
@@ -139,6 +153,46 @@ mod tests {
 
         let content = res.text().await?;
         assert_eq!(content, "FooBarBaz");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn insert_rejects_invalid_extension() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+        let data = Entry {
+            text: String::from("FooBarBaz"),
+            extension: Some(String::from("\"><img src=x>")),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn insert_accepts_dotted_extension() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+        let data = Entry {
+            text: String::from("FooBarBaz"),
+            // One of the picker's dotted extensions.
+            extension: Some(String::from("CMakeLists.txt")),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+        let location = res.headers().get("location").unwrap().to_str()?;
+        assert!(location.ends_with(".CMakeLists.txt"));
+
+        let res = client
+            .get(location)
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::OK);
 
         Ok(())
     }

@@ -29,3 +29,29 @@ pub(crate) struct Index {
     lang: Lang,
     highlighter: Highlighter,
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::cache::valid_extension;
+
+    /// Picker extension coverage.
+    ///
+    /// The template submits `extensions.first()`.
+    #[test]
+    fn picker_extensions_pass_validation() {
+        let highlighter = wastebin_highlight::Highlighter::default();
+
+        for syntax in highlighter.syntaxes() {
+            let Some(extension) = syntax.extensions.first() else {
+                continue;
+            };
+
+            assert!(
+                valid_extension(extension),
+                "syntax {:?} submits invalid extension {:?}",
+                syntax.name,
+                extension
+            );
+        }
+    }
+}

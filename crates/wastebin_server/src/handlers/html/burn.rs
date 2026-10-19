@@ -40,7 +40,7 @@ pub async fn get(
 
 /// Burn page shown if "burn-after-reading" was selected during insertion.
 #[derive(Template, WebTemplate)]
-#[template(path = "burn.html", escape = "none")]
+#[template(path = "burn.html")]
 pub(crate) struct Burn {
     page: Page,
     key: Key,
@@ -120,6 +120,56 @@ mod tests {
             .await?;
 
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn burn_rejects_markup_in_extension() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+        let res = client
+            .get(
+                "/burn/aaaaaaaaaaa.%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert%281%29%3E%3Cx%20y%3D%22",
+            )
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn burn_page_links_to_paste() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+        let data = Entry {
+            text: String::from("secret"),
+            extension: Some(String::from("rs")),
+            burn_after_reading: Some(String::from("on")),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+        let burn_url = res.headers().get("location").unwrap().to_str()?;
+        let paste_url = burn_url.replace("burn/", "");
+        assert!(burn_url.starts_with("/burn/"));
+
+        let res = client
+            .get(burn_url)
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+
+        assert_eq!(res.status(), StatusCode::OK);
+        let body = res.text().await?;
+        assert!(
+            body.contains(&format!(
+                "<a class=\"text-link\" href=\"{paste_url}\">this link</a>"
+            )),
+            "body: {body}"
+        );
 
         Ok(())
     }

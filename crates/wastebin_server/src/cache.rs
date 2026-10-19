@@ -8,7 +8,7 @@ use cached::{Cached, LruCache};
 use crate::env;
 use crate::errors::Error;
 
-use wastebin_core::id::Id;
+use wastebin_core::id::{self, Id};
 use wastebin_highlight::Html;
 
 /// Cache based on identifier and format.
@@ -16,6 +16,20 @@ use wastebin_highlight::Html;
 pub(crate) struct Key {
     pub id: Id,
     pub ext: Option<String>,
+}
+
+const MAX_EXTENSION_LEN: usize = 32;
+
+/// Extension validity check.
+///
+/// Accepts ASCII alphanumerics, `.`, `_` and `-` up to [`MAX_EXTENSION_LEN`]
+/// bytes. Syntect's syntax set contains dotted extensions such as `.env` and
+/// `CMakeLists.txt`.
+pub(crate) fn valid_extension(extension: &str) -> bool {
+    extension.len() <= MAX_EXTENSION_LEN
+        && extension.bytes().all(|byte| {
+            byte.is_ascii_alphanumeric() || byte == b'.' || byte == b'_' || byte == b'-'
+        })
 }
 
 /// Which representation of a paste a cached entry holds.
@@ -98,7 +112,13 @@ impl FromStr for Key {
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let (id, ext) = match value.split_once('.') {
             None => (value.parse()?, None),
-            Some((id, ext)) => (id.parse().map_err(Error::Id)?, Some(ext.to_string())),
+            Some((id, ext)) => {
+                if !valid_extension(ext) {
+                    return Err(Error::Id(id::Error::IllegalCharacters));
+                }
+
+                (id.parse().map_err(Error::Id)?, Some(ext.to_string()))
+            }
         };
 
         Ok(Self { id, ext })
@@ -123,5 +143,30 @@ mod tests {
 
         assert!(Key::from_str("foo").is_err());
         assert!(Key::from_str("bar.rs").is_err());
+
+        assert!(Key::from_str("sIiFec.").is_ok());
+        assert!(Key::from_str("sIiFec.a-b_C9").is_ok());
+        let key = Key::from_str("sIiFec.CMakeLists.txt").unwrap();
+        assert_eq!(key.ext.as_deref(), Some("CMakeLists.txt"));
+        assert!(Key::from_str("sIiFec.rs/js").is_err());
+        assert!(Key::from_str("sIiFec.\"><img src=x>").is_err());
+        assert!(Key::from_str(&format!("sIiFec.{}", "a".repeat(33))).is_err());
+    }
+
+    #[test]
+    fn extension_validation() {
+        assert!(valid_extension(""));
+        assert!(valid_extension("rs"));
+        assert!(valid_extension("a-b_C9"));
+        assert!(valid_extension("rs.js"));
+        assert!(valid_extension(".env.development.local"));
+        assert!(valid_extension("CMakeLists.txt"));
+        assert!(valid_extension(&"a".repeat(MAX_EXTENSION_LEN)));
+
+        assert!(!valid_extension(&"a".repeat(MAX_EXTENSION_LEN + 1)));
+        assert!(!valid_extension("\"><img src=x>"));
+        assert!(!valid_extension("rs/js"));
+        assert!(!valid_extension("r s"));
+        assert!(!valid_extension("ü"));
     }
 }

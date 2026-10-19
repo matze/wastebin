@@ -5,6 +5,8 @@
 ### Fixed
 
 - Unlink Unix domain socket after shutdown.
+- Reject paste extensions outside ASCII alphanumerics, `.`, `_` and `-`. Escape
+  the burn page's paste link in the template.
 
 ## [3.9.0] - 2026-10-15
 

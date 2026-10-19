@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum_extra::extract::cookie::Key;
 use serde::{Deserialize, Serialize};
 
+use crate::cache::valid_extension;
 use crate::errors::{Error, JsonErrorResponse};
 use crate::handlers::extract::{sign_owner_token, verify_owner_token};
 use wastebin_core::db::{Database, write};
@@ -54,6 +55,12 @@ pub async fn post(
     State(key): State<Key>,
     Json(entry): Json<Entry>,
 ) -> Result<Json<RedirectResponse>, JsonErrorResponse> {
+    if let Some(extension) = &entry.extension
+        && !valid_extension(extension)
+    {
+        return Err(Error::Id(wastebin_core::id::Error::IllegalCharacters).into());
+    }
+
     // Reuse the uid encoded in a valid `owner` token so a client can group its
     // pastes under one identity; otherwise mint a fresh uid. A raw uid is never
     // trusted — only a server-signed token is accepted, and an invalid one falls
@@ -111,6 +118,21 @@ mod tests {
         let res = client.get(&format!("/raw{}", payload.path)).send().await?;
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(res.text().await?, "FooBarBaz");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn insert_rejects_invalid_extension() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+        let entry = super::Entry {
+            text: "FooBarBaz".to_string(),
+            extension: Some("\"><img src=x>".to_string()),
+            ..Default::default()
+        };
+
+        let res = client.post_json().json(&entry).send().await?;
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 
         Ok(())
     }

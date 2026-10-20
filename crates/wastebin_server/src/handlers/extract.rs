@@ -18,8 +18,9 @@ use crate::i18n::Lang;
 
 /// A safe redirect back to the referer.
 ///
-/// Extracts the `Referer` header and strips it down to just the path (and query string),
-/// preventing open redirects via external referer values. Falls back to `"/"`.
+/// Extracts the `Referer` header and reduces it to a plain path (and query
+/// string) on the request's own host, preventing open redirects via external or
+/// scheme-relative referer values. Falls back to `"/"`.
 pub(crate) struct SafeReferer(pub Redirect);
 
 /// Theme extractor, extracted from the `pref` cookie.
@@ -181,31 +182,71 @@ where
     type Rejection = Infallible;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let host = parts
+            .headers
+            .get(http::header::HOST)
+            .and_then(|value| value.to_str().ok());
+
         let redirect = parts
             .headers
             .get(http::header::REFERER)
-            .and_then(|referer| referer.to_str().ok())
-            .map(|referer| {
-                if referer.starts_with('/') && !referer.starts_with("//") {
-                    Redirect::to(referer)
-                } else {
-                    referer
-                        .parse::<url::Url>()
-                        .ok()
-                        .map(|url| {
-                            let path = url.path();
-                            url.query().map_or_else(
-                                || Redirect::to(path),
-                                |q| Redirect::to(&format!("{path}?{q}")),
-                            )
-                        })
-                        .unwrap_or_else(|| Redirect::to("/"))
-                }
-            })
-            .unwrap_or_else(|| Redirect::to("/"));
+            .and_then(|value| value.to_str().ok())
+            .map_or_else(|| Redirect::to("/"), |referer| safe_referer(referer, host));
 
         Ok(SafeReferer(redirect))
     }
+}
+
+/// Reduce a `Referer` value to a safe redirect target on the request's own host.
+///
+/// The browser resolves the `Location` header using WHATWG URL rules: for special schemes `\` is
+/// treated as `/`, and a leading `//` denotes a scheme-relative (off-origin) authority. The header
+/// is therefore never emitted verbatim. It is resolved against the request's `Host`; the result is
+/// accepted only if it stays on that host and yields a plain single-slash path. Everything else
+/// falls back to `"/"`.
+fn safe_referer(referer: &str, host: Option<&str>) -> Redirect {
+    // `\`, TAB, CR and LF would either be re-interpreted by the URL parser or
+    // cannot legally appear in a header. Reject outright instead of relying on
+    // normalisation.
+    if referer
+        .chars()
+        .any(|c| matches!(c, '\\' | '\t' | '\r' | '\n'))
+    {
+        return Redirect::to("/");
+    }
+
+    let Some(host) = host else {
+        return Redirect::to("/");
+    };
+
+    let Ok(base) = url::Url::parse(&format!("https://{host}/")) else {
+        return Redirect::to("/");
+    };
+
+    // Resolve exactly as a browser would, against our own origin.
+    let Ok(resolved) = base.join(referer) else {
+        return Redirect::to("/");
+    };
+
+    // Reject absolute or scheme-relative referers pointing at another host.
+    // `/\evil.example.com/x` normalises to `//evil.example.com/x` here, so the
+    // backslash bypass is caught as a host mismatch too.
+    if resolved.host_str() != base.host_str() {
+        return Redirect::to("/");
+    }
+
+    // Emit only a plain path. A `//…` path would be resolved scheme-relative by
+    // the browser and leave the origin.
+    let path = resolved.path();
+
+    if !path.starts_with('/') || path.starts_with("//") {
+        return Redirect::to("/");
+    }
+
+    resolved.query().map_or_else(
+        || Redirect::to(path),
+        |query| Redirect::to(&format!("{path}?{query}")),
+    )
 }
 
 impl<S> OptionalFromRequest<S> for Password
@@ -316,5 +357,81 @@ mod tests {
         // Both implicit q=1.0; first listed should win.
         assert_eq!(lang_from_accept_language("de,en"), Lang::De);
         assert_eq!(lang_from_accept_language("en,de"), Lang::En);
+    }
+
+    fn location(referer: &str, host: Option<&str>) -> String {
+        safe_referer(referer, host).location().into()
+    }
+
+    #[test]
+    fn keeps_plain_same_origin_path() {
+        assert_eq!(
+            location("/foo?bar=1", Some("wastebin.example")),
+            "/foo?bar=1"
+        );
+        assert_eq!(location("/foo", Some("wastebin.example")), "/foo");
+        assert_eq!(location("foo/bar", Some("wastebin.example")), "/foo/bar");
+    }
+
+    #[test]
+    fn reduces_same_origin_url_to_path() {
+        assert_eq!(
+            location(
+                "https://wastebin.example/foo?bar=1",
+                Some("wastebin.example")
+            ),
+            "/foo?bar=1"
+        );
+        // Scheme-relative but same host: safe to reduce to the path.
+        assert_eq!(
+            location("//wastebin.example/foo", Some("wastebin.example")),
+            "/foo"
+        );
+    }
+
+    #[test]
+    fn rejects_off_origin_referers() {
+        for referer in [
+            "https://evil.example.com/phish?bait=1",
+            "//evil.example.com/phish",
+            "///evil.example.com",
+            "/\\evil.example.com/x",
+        ] {
+            assert_eq!(
+                location(referer, Some("wastebin.example")),
+                "/",
+                "referer {referer:?} must fall back to root"
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_same_host_double_slash_path() {
+        // `url::Url::path` can start with `//`; emitting it would let the
+        // browser resolve a scheme-relative off-origin URL.
+        assert_eq!(
+            location(
+                "https://wastebin.example//evil.example.com",
+                Some("wastebin.example")
+            ),
+            "/"
+        );
+        assert_eq!(
+            location(
+                "https://wastebin.example///evil.example.com",
+                Some("wastebin.example")
+            ),
+            "/"
+        );
+    }
+
+    #[test]
+    fn rejects_unusable_referers() {
+        assert_eq!(location("/foo", None), "/");
+        assert_eq!(location("", Some("wastebin.example")), "/");
+        assert_eq!(
+            location("file:///etc/passwd", Some("wastebin.example")),
+            "/"
+        );
     }
 }

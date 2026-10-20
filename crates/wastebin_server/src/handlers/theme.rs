@@ -21,7 +21,7 @@ mod tests {
     use http::header::REFERER;
 
     #[tokio::test]
-    async fn external_referer_redirects_to_path_only() -> Result<(), Box<dyn std::error::Error>> {
+    async fn external_referer_falls_back_to_root() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new(StoreCookies(true)).await;
 
         let response = client
@@ -33,7 +33,7 @@ mod tests {
 
         assert!(response.status().is_redirection());
         let location = response.headers().get("location").unwrap().to_str()?;
-        assert_eq!(location, "/phish?bait=1");
+        assert_eq!(location, "/");
 
         Ok(())
     }

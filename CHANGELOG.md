@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Reject off-origin and scheme-relative `Referer` values when redirecting back
+  after a theme change, closing an open-redirect bypass via `//`-prefixed paths.
 - Unlink Unix domain socket after shutdown.
 - Reject paste extensions outside ASCII alphanumerics, `.`, `_` and `-`. Escape
   the burn page's paste link in the template.

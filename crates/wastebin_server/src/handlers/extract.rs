@@ -271,6 +271,13 @@ where
             return Ok(password);
         }
 
+        // `Form` reads the query string on GET and HEAD, which would put the password in the URL
+        // and from there into browser history and every proxy log on the way. Only accept it from
+        // a request body; the header above is the way to send one with a GET.
+        if matches!(*req.method(), http::Method::GET | http::Method::HEAD) {
+            return Ok(None);
+        }
+
         Ok(Form::<Data>::from_request(req, state)
             .await
             .ok()

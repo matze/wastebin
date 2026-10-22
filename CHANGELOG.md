@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Replace control and bidirectional formatting characters in a download's
+  filename, which let a title disguise the file's real extension.
 - Reject off-origin and scheme-relative `Referer` values when redirecting back
   after a theme change, closing an open-redirect bypass via `//`-prefixed paths.
 - Unlink Unix domain socket after shutdown.

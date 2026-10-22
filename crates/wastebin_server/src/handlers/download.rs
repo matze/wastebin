@@ -47,14 +47,34 @@ pub async fn get(
     .map_err(|err| make_error(err, page, theme, lang))
 }
 
+/// Return `true` if `c` reorders the text around it rather than showing a glyph of its own.
+///
+/// Percent-encoding carries these through `filename*` intact, and the client decodes them back
+/// before showing the name, so `evil<U+202E>gnp.exe` is offered as `evil.exe.png` — the extension
+/// the user reads is not the one the file has.
+fn reorders_text(c: char) -> bool {
+    matches!(c, '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
+}
+
 fn make_content_disposition(filename: &str) -> HeaderValue {
     let mut value = String::from("attachment; filename*=UTF-8''");
+    let mut encoded = [0u8; 4];
 
-    for b in filename.bytes() {
-        if b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_' | b'~' | b'+') {
-            value.push(b as char);
+    // The title is attacker-controlled, so the characters that would misrepresent the name are
+    // replaced before it is encoded.
+    for c in filename.chars() {
+        let c = if c.is_control() || reorders_text(c) {
+            '_'
         } else {
-            write!(value, "%{b:02X}").expect("writing to String");
+            c
+        };
+
+        for &b in c.encode_utf8(&mut encoded).as_bytes() {
+            if b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_' | b'~' | b'+') {
+                value.push(b as char);
+            } else {
+                write!(value, "%{b:02X}").expect("writing to String");
+            }
         }
     }
 
@@ -136,6 +156,32 @@ mod tests {
         assert_eq!(
             content_disposition.to_str()?,
             "attachment; filename*=UTF-8''file%22name.txt",
+        );
+
+        Ok(())
+    }
+
+    /// Percent-encoding is transport, not sanitisation: the client decodes `filename*` back before
+    /// showing the name, so a right-to-left override survived into it and offered
+    /// `evil<U+202E>gnp.exe` as `evil.exe.png`.
+    #[tokio::test]
+    async fn download_title_reordering_the_extension() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+        let data = Entry {
+            text: String::from("content"),
+            title: String::from("evil\u{202e}gnp\u{7}.exe"),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        let location = res.headers().get("location").unwrap().to_str()?;
+        let res = client.get(&format!("/dl{location}")).send().await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let content_disposition = res.headers().get(header::CONTENT_DISPOSITION).unwrap();
+        assert_eq!(
+            content_disposition.to_str()?,
+            "attachment; filename*=UTF-8''evil_gnp_.exe",
         );
 
         Ok(())

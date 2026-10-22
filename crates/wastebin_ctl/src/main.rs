@@ -142,11 +142,26 @@ impl std::fmt::Display for Expired {
     }
 }
 
+/// Replace control characters with U+FFFD.
+///
+/// Titles are attacker-controlled and go straight to the operator's terminal, where escape
+/// sequences would let a paste clear the screen, set the window title or hide rows.
+fn sanitize_for_terminal(value: String) -> String {
+    if value.chars().any(char::is_control) {
+        value
+            .chars()
+            .map(|c| if c.is_control() { '\u{fffd}' } else { c })
+            .collect()
+    } else {
+        value
+    }
+}
+
 impl From<ListEntry> for Entry {
     fn from(entry: ListEntry) -> Self {
         Self {
             id: entry.id,
-            title: entry.title,
+            title: entry.title.map(sanitize_for_terminal),
             encrypted: entry.is_encrypted.into(),
             expiration: entry.expiration,
             expired: entry.is_expired.into(),
@@ -280,4 +295,23 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sanitize_for_terminal;
+
+    #[test]
+    fn strips_escape_sequences() {
+        let sanitized = sanitize_for_terminal("A\x1b[2J\x1b]0;pwned\x07B".to_string());
+        assert!(!sanitized.contains('\x1b'));
+        assert!(!sanitized.contains('\x07'));
+        assert!(sanitized.starts_with('A') && sanitized.ends_with('B'));
+    }
+
+    #[test]
+    fn leaves_ordinary_titles_alone() {
+        let title = "notes für die CI – 2026".to_string();
+        assert_eq!(sanitize_for_terminal(title.clone()), title);
+    }
 }

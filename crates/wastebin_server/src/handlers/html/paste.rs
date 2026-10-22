@@ -106,7 +106,11 @@ pub async fn get<E>(
                 page: page.clone(),
                 theme: theme.clone(),
                 lang,
-                title: metadata.title.clone(),
+                // The interstitial comes before any password is asked for, and the title is not
+                // encrypted along with the content.
+                title: (!metadata.is_encrypted)
+                    .then(|| metadata.title.clone())
+                    .flatten(),
                 action: FormAction::source(&key),
             }
             .into_response());
@@ -261,6 +265,43 @@ mod tests {
         let body = res.text().await?;
         assert!(body.contains("secret-body-xyz"), "body: {body}");
         assert_eq!(cache_control.unwrap(), "no-store");
+
+        Ok(())
+    }
+
+    /// The interstitial is shown before any password is asked for, so an encrypted
+    /// burn-after-reading paste handed its title to whoever opened the link.
+    #[tokio::test]
+    async fn the_burn_interstitial_keeps_an_encrypted_title_back()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+
+        let paste = client
+            .post_json()
+            .json(&crate::handlers::insert::api::Entry {
+                text: "FooBarBaz".to_string(),
+                title: Some("Q1-layoff-list".to_string()),
+                password: Some("hunter2".to_string()),
+                burn_after_reading: Some(true),
+                ..Default::default()
+            })
+            .send()
+            .await?
+            .json::<crate::handlers::insert::api::RedirectResponse>()
+            .await?;
+
+        for view in [paste.path.clone(), format!("/md{}", paste.path)] {
+            let body = client.get(&view).send().await?.text().await?;
+
+            assert!(
+                body.contains("confirm_burn"),
+                "{view}: no interstitial: {body}"
+            );
+            assert!(
+                !body.contains("Q1-layoff-list"),
+                "{view}: title leaked: {body}"
+            );
+        }
 
         Ok(())
     }

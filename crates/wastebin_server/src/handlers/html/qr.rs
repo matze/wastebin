@@ -38,8 +38,14 @@ pub async fn get(
             uid: owner_uid,
             title,
             expiration,
+            is_encrypted,
             ..
         } = db.get_metadata(key.id).await?;
+
+        // Only the content is encrypted; the title is a plain column, and this view never asks for
+        // a password. `/{id}` withholds it, so showing it here handed anyone with the id the one
+        // thing the password was assumed to cover.
+        let title = (!is_encrypted).then_some(title).flatten();
 
         let can_delete = match (uids, owner_uid) {
             (Some(Uids(uids)), Some(owner_uid)) => uids.contains(&owner_uid),
@@ -101,4 +107,62 @@ pub fn dark_modules(code: &QrCode) -> Vec<(i32, i32)> {
         .flat_map(|x| (0..size).map(move |y| (x, y)))
         .filter(|(x, y)| code.get_module(*x, *y))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::handlers::insert::api::{Entry, RedirectResponse};
+    use crate::test_helpers::{Client, StoreCookies};
+
+    async fn qr_page_of(entry: &Entry) -> Result<String, Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+
+        let payload = client
+            .post_json()
+            .json(entry)
+            .send()
+            .await?
+            .json::<RedirectResponse>()
+            .await?;
+
+        Ok(client
+            .get(&format!("/qr{}", payload.path))
+            .send()
+            .await?
+            .text()
+            .await?)
+    }
+
+    /// Only the content is encrypted; the title is a plain column. This view reads metadata and
+    /// never asks for a password, so it handed the title to anyone holding the id — while `/{id}`
+    /// withholds it. People put in titles what they think the password covers.
+    #[tokio::test]
+    async fn an_encrypted_paste_keeps_its_title_back() -> Result<(), Box<dyn std::error::Error>> {
+        let body = qr_page_of(&Entry {
+            text: "FooBarBaz".to_string(),
+            title: Some("Q1-layoff-list".to_string()),
+            password: Some("hunter2".to_string()),
+            ..Default::default()
+        })
+        .await?;
+
+        assert!(!body.contains("Q1-layoff-list"), "title leaked: {body}");
+
+        Ok(())
+    }
+
+    /// An unencrypted paste has nothing to hide, so its title still shows.
+    #[tokio::test]
+    async fn a_plain_paste_still_shows_its_title() -> Result<(), Box<dyn std::error::Error>> {
+        let body = qr_page_of(&Entry {
+            text: "FooBarBaz".to_string(),
+            title: Some("release-notes".to_string()),
+            ..Default::default()
+        })
+        .await?;
+
+        assert!(body.contains("release-notes"), "title missing: {body}");
+
+        Ok(())
+    }
 }

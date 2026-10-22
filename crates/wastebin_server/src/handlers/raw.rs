@@ -23,6 +23,13 @@ pub async fn get(
         let password = password.map(|Password(password)| password);
         let key: Key = id.parse()?;
 
+        // This route is a GET that returns bytes, so there is nowhere to confirm the destruction
+        // and nothing stopping anything that merely follows a URL from triggering it. The content
+        // stays reachable through the paste page, which does ask first.
+        if db.get_metadata(key.id).await?.must_be_deleted {
+            return Err(crate::Error::BurnNotConfirmed);
+        }
+
         match db.get(key.id, password).await {
             Ok(Entry::Regular(data) | Entry::Burned(data)) => Ok(data.text.into_response()),
             Ok(Entry::Encrypted(data)) => Ok(data.text.into_response().no_store()),

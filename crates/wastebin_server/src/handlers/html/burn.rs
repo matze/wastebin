@@ -272,4 +272,47 @@ mod tests {
 
         Ok(())
     }
+
+    /// `/raw` and `/dl` destroyed a burn paste on a plain GET, so anything that merely follows a
+    /// URL consumed it: a link unfurler, a prefetch, or an `<img>` on any page — including a
+    /// rendered Markdown paste, whose CSP permits images, holding `![](/raw/OTHER_ID)`.
+    #[tokio::test]
+    async fn a_get_on_raw_or_download_does_not_burn() -> Result<(), Box<dyn std::error::Error>> {
+        for route in ["raw", "dl"] {
+            let client = Client::new(StoreCookies(false)).await;
+            let data = Entry {
+                text: String::from("secret-body-xyz"),
+                burn_after_reading: Some(String::from("on")),
+                ..Default::default()
+            };
+
+            let res = client.post_form().form(&data).send().await?;
+            assert_eq!(res.status(), StatusCode::SEE_OTHER);
+
+            let location = res
+                .headers()
+                .get("location")
+                .unwrap()
+                .to_str()?
+                .replace("burn/", "");
+
+            let res = client.get(&format!("/{route}{location}")).send().await?;
+            assert_eq!(res.status(), StatusCode::FORBIDDEN, "/{route}");
+            assert!(
+                !res.text().await?.contains("secret-body-xyz"),
+                "/{route} revealed the content"
+            );
+
+            // The paste is still there to be confirmed on its own page.
+            let res = client
+                .get(&location)
+                .header(header::ACCEPT, "text/html; charset=utf-8")
+                .send()
+                .await?;
+            assert_eq!(res.status(), StatusCode::OK, "/{route} burned the paste");
+            assert!(res.text().await?.contains(">reveal<"));
+        }
+
+        Ok(())
+    }
 }

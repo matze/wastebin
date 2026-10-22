@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Refuse a burn-after-reading paste on `/raw` and `/dl` instead of destroying
+  it on a plain GET that any link preview, prefetch or embedded image can send.
 - Reject off-origin and scheme-relative `Referer` values when redirecting back
   after a theme change, closing an open-redirect bypass via `//`-prefixed paths.
 - Unlink Unix domain socket after shutdown.

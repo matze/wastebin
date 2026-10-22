@@ -25,16 +25,27 @@ pub(crate) struct Entry {
     pub burn_after_reading: Option<String>,
 }
 
-impl From<Entry> for write::Entry {
-    fn from(entry: Entry) -> Self {
+impl TryFrom<Entry> for write::Entry {
+    type Error = crate::Error;
+
+    fn try_from(entry: Entry) -> Result<Self, Self::Error> {
         let burn_after_reading = entry.burn_after_reading.map(|s| s == "on");
         let password = (!entry.password.is_empty()).then_some(entry.password);
         let title = (!entry.title.is_empty()).then_some(entry.title);
+        // `0` is how the form spells "never expires". Anything else that is not a number is a
+        // malformed request, not another way to ask for a paste that is kept forever.
         let expires = entry
             .expires
-            .and_then(|expires| expires.parse::<NonZeroU32>().ok());
+            .map(|expires| {
+                expires
+                    .parse::<u32>()
+                    .map(NonZeroU32::new)
+                    .map_err(|_| crate::Error::MalformedForm)
+            })
+            .transpose()?
+            .flatten();
 
-        Self {
+        Ok(Self {
             text: entry.text,
             extension: entry.extension,
             expires,
@@ -42,7 +53,7 @@ impl From<Entry> for write::Entry {
             uid: None,
             password,
             title,
-        }
+        })
     }
 }
 
@@ -70,7 +81,10 @@ pub async fn post<E: std::fmt::Debug>(
         ));
     }
 
-    let mut entry: write::Entry = entry.into();
+    let mut entry: write::Entry = match entry.try_into() {
+        Ok(entry) => entry,
+        Err(err) => return Err(make_error(err, page, theme, lang)),
+    };
     let mut uids = uids.map(|Uids(uids)| uids).unwrap_or_default();
 
     async {
@@ -112,6 +126,38 @@ mod tests {
     use crate::test_helpers::{Client, StoreCookies};
     use reqwest::{StatusCode, header};
     use std::collections::HashMap;
+
+    #[tokio::test]
+    async fn unparsable_expiration_is_rejected() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+
+        let data = Entry {
+            text: String::from("FooBarBaz"),
+            expires: Some(String::from("garbage")),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn zero_expiration_still_means_never() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+
+        let data = Entry {
+            text: String::from("FooBarBaz"),
+            expires: Some(String::from("0")),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn insert() -> Result<(), Box<dyn std::error::Error>> {

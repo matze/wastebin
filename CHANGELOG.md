@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Derive the key of every newly encrypted paste from a random salt of its own,
+  using Argon2id, instead of one salt shared by the whole database. Pastes
+  encrypted earlier keep opening with `WASTEBIN_PASSWORD_SALT`.
 - Reject off-origin and scheme-relative `Referer` values when redirecting back
   after a theme change, closing an open-redirect bypass via `//`-prefixed paths.
 - Unlink Unix domain socket after shutdown.

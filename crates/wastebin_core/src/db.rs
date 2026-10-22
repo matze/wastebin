@@ -105,7 +105,7 @@ pub enum Open {
 
 /// Module with types for insertion.
 pub mod write {
-    use crate::crypto::{Encrypted, Password, Plaintext};
+    use crate::crypto::{self, Derivation, Encrypted, Password, Plaintext};
     use crate::db::Error;
     use async_compression::tokio::bufread::ZstdEncoder;
     use chacha20poly1305::XNonce;
@@ -149,6 +149,8 @@ pub mod write {
         pub data: Vec<u8>,
         /// Nonce for this entry
         pub nonce: Option<XNonce>,
+        /// Salt this entry's key was derived under, if it is encrypted
+        pub salt: Option<Vec<u8>>,
     }
 
     impl Entry {
@@ -167,21 +169,25 @@ pub mod write {
     }
 
     impl CompressedEntry {
-        /// Encrypt if password is set.
+        /// Encrypt if password is set, under a salt minted for this entry alone.
         pub async fn encrypt(self) -> Result<DatabaseEntry, Error> {
-            let (data, nonce) = if let Some(password) = &self.entry.password {
+            let (data, nonce, salt) = if let Some(password) = &self.entry.password {
                 let password = Password::from(password.as_bytes().to_vec());
                 let plaintext = Plaintext::from(self.data);
-                let Encrypted { ciphertext, nonce } = plaintext.encrypt(password).await?;
-                (ciphertext, Some(nonce))
+                let salt = crypto::new_salt();
+                let Encrypted { ciphertext, nonce } = plaintext
+                    .encrypt(password, Derivation::PerEntry(salt.clone()))
+                    .await?;
+                (ciphertext, Some(nonce), Some(salt))
             } else {
-                (self.data, None)
+                (self.data, None, None)
             };
 
             Ok(DatabaseEntry {
                 entry: self.entry,
                 data,
                 nonce,
+                salt,
             })
         }
     }
@@ -189,7 +195,7 @@ pub mod write {
 
 /// Module with types for reading from the database.
 pub mod read {
-    use crate::crypto::{Encrypted, Password};
+    use crate::crypto::{Derivation, Encrypted, Password};
     use crate::db::Error;
     use crate::expiration::Expiration;
     use crate::id::Id;
@@ -211,6 +217,9 @@ pub mod read {
         pub must_be_deleted: bool,
         /// Nonce for this entry
         pub nonce: Option<XNonce>,
+        /// Salt this entry was sealed under. `None` for entries stored before each carried one,
+        /// which are still opened with the process-wide salt they were sealed with.
+        pub salt: Option<Vec<u8>>,
     }
 
     /// Potentially decrypted but still compressed entry
@@ -284,10 +293,13 @@ pub mod read {
     }
 
     impl DatabaseEntry {
+        /// Decrypt with the derivation this entry was sealed under.
         pub async fn decrypt(
             self,
             password: Option<Password>,
         ) -> Result<CompressedReadEntry, Error> {
+            let derivation = self.salt.map_or(Derivation::Legacy, Derivation::PerEntry);
+
             match (self.nonce, password) {
                 (Some(_), None) => Err(Error::NoPassword),
                 (None, None | Some(_)) => Ok(CompressedReadEntry {
@@ -297,7 +309,7 @@ pub mod read {
                 }),
                 (Some(nonce), Some(password)) => {
                     let encrypted = Encrypted::new(self.data, nonce);
-                    let decrypted = encrypted.decrypt(password).await?;
+                    let decrypted = encrypted.decrypt(password, derivation).await?;
                     Ok(CompressedReadEntry {
                         data: decrypted,
                         metadata: self.metadata,
@@ -381,6 +393,7 @@ impl Handler {
             M::up(include_str!("migrations/0005-drop-text-column.sql")),
             M::up(include_str!("migrations/0006-add-nonce-column.sql")),
             M::up(include_str!("migrations/0007-add-title-column.sql")),
+            M::up(include_str!("migrations/0008-add-salt-column.sql")),
         ]);
 
         migrations.to_latest(&mut conn)?;
@@ -434,7 +447,12 @@ impl Handler {
 
     fn insert(
         &self,
-        write::DatabaseEntry { entry, data, nonce }: write::DatabaseEntry,
+        write::DatabaseEntry {
+            entry,
+            data,
+            nonce,
+            salt,
+        }: write::DatabaseEntry,
     ) -> Result<(Id, write::Entry), Error> {
         let mut counter = 0;
         let title = entry.title.clone();
@@ -445,11 +463,11 @@ impl Handler {
 
             let result = match entry.expires {
                 None => self.conn.execute(
-                    "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, title) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                    params![id.to_i64(), entry.uid, data, entry.burn_after_reading, nonce, title],
+                    "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, title, salt) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                    params![id.to_i64(), entry.uid, data, entry.burn_after_reading, nonce, title, salt],
                 ),
                 Some(expires) => self.conn.execute(
-                    "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, expires, title) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now', ?6), ?7)",
+                    "INSERT INTO entries (id, uid, data, burn_after_reading, nonce, expires, title, salt) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now', ?6), ?7, ?8)",
                     params![
                         id.to_i64(),
                         entry.uid,
@@ -458,6 +476,7 @@ impl Handler {
                         nonce,
                         format!("{expires} seconds"),
                         title,
+                        salt,
                     ],
                 ),
             };
@@ -511,7 +530,7 @@ impl Handler {
     fn get(&self, id: Id) -> Result<DatabaseEntry, Error> {
         let metadata = self.get_metadata(id)?;
         let entry = self.conn.query_row(
-            "SELECT data, burn_after_reading, nonce, expires < datetime('now') FROM entries WHERE id=?1",
+            "SELECT data, burn_after_reading, nonce, expires < datetime('now'), salt FROM entries WHERE id=?1",
             params![id.to_i64()],
             |row| {
                 let nonce = row
@@ -532,6 +551,7 @@ impl Handler {
                     must_be_deleted: row.get::<_, Option<bool>>(1)?.unwrap_or(false),
                     nonce,
                     expired: row.get::<_, Option<bool>>(3)?.unwrap_or(false),
+                    salt: row.get(4)?,
                 })
             },
         )?;
@@ -786,6 +806,47 @@ mod tests {
         let (db, handler) = Database::new(Open::Memory)?;
         tokio::spawn(handler);
         Ok(db)
+    }
+
+    /// Every encrypted entry is sealed under a salt of its own; without one stored beside it, the
+    /// entry silently falls back to the process-wide salt shared by the whole database.
+    #[tokio::test]
+    async fn encrypted_entries_carry_their_own_salt() -> Result<(), Box<dyn std::error::Error>> {
+        let (_sender, receiver) = kanal::bounded(1);
+        let handler = Handler::new(Open::Memory, receiver)?;
+
+        let mut salts = Vec::new();
+
+        for _ in 0..2 {
+            let entry = write::Entry {
+                text: "secret".to_string(),
+                password: Some("same password".to_string()),
+                ..Default::default()
+            };
+            let (id, _) = handler.insert(entry.compress().await?.encrypt().await?)?;
+            let salt = handler
+                .get(id)?
+                .salt
+                .expect("encrypted entry without a salt");
+            assert_eq!(salt.len(), 16);
+            salts.push(salt);
+        }
+
+        assert_ne!(salts[0], salts[1]);
+
+        let (id, _) = handler.insert(
+            write::Entry {
+                text: "plain".to_string(),
+                ..Default::default()
+            }
+            .compress()
+            .await?
+            .encrypt()
+            .await?,
+        )?;
+        assert!(handler.get(id)?.salt.is_none());
+
+        Ok(())
     }
 
     #[tokio::test]

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt::Write;
 
 use syntect::html::{ClassStyle, ClassedHTMLGenerator, line_tokens_to_classed_spans};
@@ -104,6 +105,49 @@ fn is_markdown_link(scope: Scope) -> bool {
     })
 }
 
+/// Return `true` if `target` may be handed to an `href`.
+///
+/// Unlike rendered Markdown, this output never passes through ammonia — the escaping in this file
+/// is all that stands between a paste and the page, and escaping a `javascript:` URL still leaves
+/// a working one. Only the schemes that navigate somewhere are allowed; anything else is shown as
+/// text, which is what it reads as anyway.
+fn is_navigable_target(target: &str) -> bool {
+    fn dropped_by_browsers(c: char) -> bool {
+        c.is_whitespace() || c.is_control()
+    }
+
+    // Browsers drop tabs, newlines and other control characters before resolving a URL, so
+    // `java&#9;script:alert(1)` navigates exactly like `javascript:alert(1)`. Compare with them
+    // taken out rather than trusting the literal spelling — but only build a copy when there is
+    // something to take out, which for an ordinary link there is not.
+    let cleaned: Cow<'_, str> = if target.contains(dropped_by_browsers) {
+        Cow::Owned(
+            target
+                .chars()
+                .filter(|c| !dropped_by_browsers(*c))
+                .collect(),
+        )
+    } else {
+        Cow::Borrowed(target)
+    };
+
+    let Some(colon) = cleaned.find(':') else {
+        // No scheme at all, so the target is relative and resolves against this origin.
+        return true;
+    };
+
+    let scheme = &cleaned[..colon];
+
+    // A colon that follows a path separator never delimited a scheme: `notes/todo:2` is relative.
+    if scheme.contains(['/', '?', '#']) {
+        return true;
+    }
+
+    ["http", "https", "mailto"]
+        .iter()
+        .any(|allowed| scheme.eq_ignore_ascii_case(allowed))
+}
+
 /// Number of unmatched `</span>` closes encountered before the running balance recovers.
 fn open_span_prefix(formatted: &str) -> usize {
     if !formatted.contains("<span") && !formatted.contains("</span>") {
@@ -141,19 +185,30 @@ fn line_tokens_to_classed_spans_md(
 
     let mut span_empty = false;
     let mut span_start = 0;
-    let mut handling_link = false;
+    // Set when a link scope opens. The target is the scope's own text, so it is not known until
+    // that text arrives — which is where the anchor is emitted, if it is emitted at all.
+    let mut pending_link = false;
+    // Whether an `<a>` was actually opened and so still needs closing.
+    let mut link_open = false;
 
     for &(i, ref op) in ops {
         if i > cur_index {
             span_empty = false;
+            let text = &line[cur_index..i];
 
-            if handling_link {
-                // Insert href and close attribute ...
-                escape(&line[cur_index..i], &mut s)?;
-                s.push_str(r#"">"#);
+            if pending_link {
+                pending_link = false;
+
+                if is_navigable_target(text) {
+                    // Insert href and close attribute ...
+                    s.push_str(r#"<a href=""#);
+                    escape(text, &mut s)?;
+                    s.push_str(r#"">"#);
+                    link_open = true;
+                }
             }
 
-            escape(&line[cur_index..i], &mut s)?;
+            escape(text, &mut s)?;
 
             cur_index = i;
         }
@@ -167,15 +222,15 @@ fn line_tokens_to_classed_spans_md(
                 span_delta += 1;
 
                 if is_markdown_link(scope) {
-                    s.push_str(r#"<a href=""#);
-                    handling_link = true;
+                    pending_link = true;
                 }
             }
             BasicScopeStackOp::Pop => {
-                if handling_link {
+                if link_open {
                     s.push_str("</a>");
-                    handling_link = false;
+                    link_open = false;
                 }
+                pending_link = false;
                 if span_empty {
                     s.truncate(span_start);
                 } else {
@@ -345,6 +400,85 @@ mod tests {
         )?;
 
         assert!(html.into_inner().contains("<span class=\"markup underline link markdown\"><a href=\"https://github.com/matze/wastebin\">https://github.com/matze/wastebin</a></span>"));
+
+        Ok(())
+    }
+
+    /// The source view builds anchors itself and never passes them through ammonia, so the
+    /// scheme check here is the only thing stopping a paste from shipping a working
+    /// `javascript:` URL. Escaping does not help: it keeps the attribute intact, which is
+    /// exactly what makes the URL work.
+    #[test]
+    fn a_link_target_that_is_not_navigable_gets_no_anchor() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let highlighter = Highlighter::default();
+
+        for target in [
+            "javascript:alert(document.domain)",
+            "JaVaScRiPt:alert(1)",
+            "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+            "vbscript:msgbox(1)",
+        ] {
+            let html = highlighter
+                .highlight(format!("[click]({target})"), Some("md".into()))?
+                .into_inner();
+
+            // The gutter is full of its own `#L1` anchors, so only the code rows are the subject.
+            let (_, code) = html
+                .split_once(r#"<div class="src-code">"#)
+                .expect("rendered rows");
+
+            assert!(
+                !code.contains("<a href"),
+                "{target} was turned into an anchor: {code}"
+            );
+            // The target is still readable, just not clickable.
+            assert!(code.contains("click"), "{target} lost its text: {code}");
+        }
+
+        Ok(())
+    }
+
+    /// Browsers drop tabs and newlines before resolving a URL, so a scheme may be spelled with
+    /// them in between. The markdown syntax happens to tokenise those spellings apart before they
+    /// reach the emitter, so the predicate is checked on its own rather than through a paste.
+    #[test]
+    fn a_scheme_spelled_with_control_characters_is_not_navigable() {
+        for target in [
+            "java\tscript:alert(1)",
+            "java\nscript:alert(1)",
+            "java\rscript:alert(1)",
+            "  javascript:alert(1)",
+            "jav\u{0}ascript:alert(1)",
+        ] {
+            assert!(
+                !is_navigable_target(target),
+                "{target:?} was accepted as navigable"
+            );
+        }
+    }
+
+    /// The ordinary case must keep working, including a relative target.
+    #[test]
+    fn a_navigable_link_target_still_gets_one() -> Result<(), Box<dyn std::error::Error>> {
+        let highlighter = Highlighter::default();
+
+        for target in [
+            "https://example.com/a",
+            "http://example.com",
+            "mailto:someone@example.com",
+            "./relative/path",
+            "notes/todo:2",
+        ] {
+            let html = highlighter
+                .highlight(format!("[click]({target})"), Some("md".into()))?
+                .into_inner();
+
+            assert!(
+                html.contains(&format!(r#"<a href="{target}">"#)),
+                "{target} lost its anchor: {html}"
+            );
+        }
 
         Ok(())
     }

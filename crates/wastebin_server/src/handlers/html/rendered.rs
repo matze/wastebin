@@ -45,10 +45,15 @@ pub async fn get<E>(
     uids: Option<Uids>,
     theme: Option<Theme>,
     lang: Lang,
+    method: http::Method,
     form: Result<Form<PasteForm>, E>,
 ) -> Result<Response, ErrorResponse> {
     async {
-        let form = form.ok().map(|Form(form)| form);
+        // Only a posted form counts; see `paste::get`.
+        let form = form
+            .ok()
+            .filter(|_| method == http::Method::POST)
+            .map(|Form(form)| form);
         let password = form
             .as_ref()
             .and_then(|form| form.password.as_ref())
@@ -324,6 +329,89 @@ mod tests {
         let body = res.text().await?;
         assert!(body.contains("<h1>secret</h1>"), "body: {body}");
         assert_eq!(cache_control.unwrap(), "no-store");
+
+        Ok(())
+    }
+
+    /// `Form` reads the query string on GET, so a link carrying `?confirm_burn=1` skipped the
+    /// interstitial and burnt the paste for anything that merely follows a URL: an `<img>`, a
+    /// prefetch, a link unfurler.
+    #[tokio::test]
+    async fn burn_is_not_confirmed_from_the_query_string() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let client = Client::new(StoreCookies(false)).await;
+        let data = Entry {
+            text: String::from("secret-body-xyz"),
+            extension: Some(String::from("md")),
+            burn_after_reading: Some(String::from("on")),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+        let location = res
+            .headers()
+            .get("location")
+            .unwrap()
+            .to_str()?
+            .replace("burn/", "");
+        let rendered = format!("/md{location}");
+
+        for _ in 0..2 {
+            let res = client
+                .get(&rendered)
+                .query(&[("confirm_burn", "1")])
+                .header(header::ACCEPT, "text/html; charset=utf-8")
+                .send()
+                .await?;
+            assert_eq!(res.status(), StatusCode::OK);
+            let body = res.text().await?;
+            assert!(!body.contains("secret-body-xyz"), "body: {body}");
+            assert!(body.contains(">reveal<"), "body: {body}");
+        }
+
+        Ok(())
+    }
+
+    /// `Form` reads the query string on GET, so `?password=` unlocked the paste, putting the
+    /// password into browser history, bookmarks, the `Referer` and every proxy log on the way.
+    /// The prompt posts, so only a request body may carry one.
+    #[tokio::test]
+    async fn password_is_not_taken_from_the_query_string() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let client = Client::new(StoreCookies(false)).await;
+        let data = Entry {
+            text: String::from("secret-body-xyz"),
+            extension: Some(String::from("md")),
+            password: String::from("hunter2"),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+        let location = res.headers().get("location").unwrap().to_str()?;
+        let rendered = format!("/md{location}");
+
+        let body = client
+            .get(&rendered)
+            .query(&[("password", "hunter2")])
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?
+            .text()
+            .await?;
+        assert!(!body.contains("secret-body-xyz"), "body: {body}");
+
+        // The prompt's own POST is unaffected.
+        let body = client
+            .post(&rendered)
+            .form(&[("password", "hunter2")])
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?
+            .text()
+            .await?;
+        assert!(body.contains("secret-body-xyz"), "body: {body}");
 
         Ok(())
     }

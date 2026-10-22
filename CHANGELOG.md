@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Ignore `password` and `confirm_burn` in the query string, so a link can no
+  longer confirm a burn on the reader's behalf or carry a paste's password.
 - Reject off-origin and scheme-relative `Referer` values when redirecting back
   after a theme change, closing an open-redirect bypass via `//`-prefixed paths.
 - Unlink Unix domain socket after shutdown.

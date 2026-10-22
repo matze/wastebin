@@ -97,4 +97,45 @@ mod tests {
 
         Ok(())
     }
+
+    /// `Form` reads the query string on GET, so `?password=` unlocked the raw view and the
+    /// download, putting the password into browser history and proxy logs.
+    #[tokio::test]
+    async fn password_is_not_taken_from_the_query_string() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let client = Client::new(StoreCookies(false)).await;
+        let password = "hunter2";
+        let data = Entry {
+            text: String::from("secret-body-xyz"),
+            password: password.to_string(),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+        let location = res.headers().get("location").unwrap().to_str()?.to_owned();
+
+        for route in ["raw", "dl"] {
+            let body = client
+                .get(&format!("/{route}{location}"))
+                .query(&[("password", password)])
+                .send()
+                .await?
+                .text()
+                .await?;
+            assert!(!body.contains("secret-body-xyz"), "/{route}: {body}");
+
+            // The documented way to send one with a GET still works.
+            let body = client
+                .get(&format!("/{route}{location}"))
+                .header(PASSWORD_HEADER_NAME, password)
+                .send()
+                .await?
+                .text()
+                .await?;
+            assert_eq!(body, "secret-body-xyz", "/{route}");
+        }
+
+        Ok(())
+    }
 }

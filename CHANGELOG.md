@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Keep a claimed `?owner=` uid out of the visitor's primary identity, and accept
+  the handoff only on GET, so following someone's link cannot file the visitor's
+  later pastes under that person or replace the visitor's cookie.
 - Reject off-origin and scheme-relative `Referer` values when redirecting back
   after a theme change, closing an open-redirect bypass via `//`-prefixed paths.
 - Unlink Unix domain socket after shutdown.

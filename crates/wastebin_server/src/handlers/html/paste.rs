@@ -73,15 +73,32 @@ pub async fn get<E>(
     uids: Option<Uids>,
     theme: Option<Theme>,
     lang: Lang,
+    method: http::Method,
     form: Result<Form<PasteForm>, E>,
 ) -> Result<Response, ErrorResponse> {
-    if let Some(token) = handoff.owner.as_deref()
+    // A handoff is a link someone opens, so it only ever arrives as a navigation. Honouring it on
+    // a POST as well let an attacker page auto-submit a hidden form, which does not carry the
+    // `SameSite=Lax` uid cookie, so the response set a new list over the visitor's real one.
+    if method == http::Method::GET
+        && let Some(token) = handoff.owner.as_deref()
         && let Some(claimed_uid) = verify_owner_token(&cookie_key, token)
     {
         let mut new_uids = uids
             .as_ref()
             .map(|Uids(list)| list.clone())
             .unwrap_or_default();
+
+        // The first entry is the identity this browser files its own pastes under. A claimed uid
+        // must never take that slot: a visitor who follows someone else's handoff link would
+        // otherwise create every later paste under that person's identity, handing them the right
+        // to delete it. Mint an own uid first so the claim can only ever be appended.
+        if new_uids.is_empty() {
+            match db.next_uid().await {
+                Ok(own_uid) => new_uids.push(own_uid),
+                Err(err) => return Err(make_error(err.into(), page, theme, lang)),
+            }
+        }
+
         if !new_uids.contains(&claimed_uid) {
             new_uids.push(claimed_uid);
         }
@@ -261,6 +278,111 @@ mod tests {
         let body = res.text().await?;
         assert!(body.contains("secret-body-xyz"), "body: {body}");
         assert_eq!(cache_control.unwrap(), "no-store");
+
+        Ok(())
+    }
+
+    /// A visitor with no cookie who opened someone else's `?owner=` link took that uid as the
+    /// first entry of their list, which is the one the form insert files new pastes under — so
+    /// whoever handed out the link could delete everything the visitor created afterwards.
+    #[tokio::test]
+    async fn owner_handoff_does_not_capture_later_pastes() -> Result<(), Box<dyn std::error::Error>>
+    {
+        // No cookie store: both identities are driven through explicit `Cookie` headers so one
+        // server serves the attacker and the victim.
+        let client = Client::new(StoreCookies(false)).await;
+
+        // The attacker creates a paste and gets a signed token for their own uid. For a
+        // single-entry list that token is also a valid `uid` cookie value.
+        let attacker = client
+            .post_json()
+            .json(&crate::handlers::insert::api::Entry {
+                text: "attacker paste".to_string(),
+                ..Default::default()
+            })
+            .send()
+            .await?
+            .json::<crate::handlers::insert::api::RedirectResponse>()
+            .await?;
+
+        // A fresh visitor follows the handoff link and is given a uid cookie.
+        let res = client
+            .get(&attacker.path)
+            .query(&[("owner", &attacker.owner)])
+            .send()
+            .await?;
+        let victim_cookie = res
+            .headers()
+            .get("set-cookie")
+            .expect("handoff sets a uid cookie")
+            .to_str()?
+            .split(';')
+            .next()
+            .unwrap()
+            .to_owned();
+
+        // The visitor now creates their own paste while carrying that cookie.
+        let res = client
+            .post_form()
+            .header("cookie", &victim_cookie)
+            .form(&crate::handlers::insert::form::Entry {
+                text: String::from("victim confidential"),
+                ..Default::default()
+            })
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+        let location = res.headers().get("location").unwrap().to_str()?.to_owned();
+
+        // The attacker, holding only their own identity, must not be able to delete it.
+        let res = client
+            .delete(&location)
+            .header("cookie", format!("uid={}", attacker.owner))
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::FORBIDDEN);
+
+        let res = client.get(&location).send().await?;
+        assert_eq!(res.status(), StatusCode::OK, "victim's paste was destroyed");
+
+        Ok(())
+    }
+
+    /// A handoff is a link someone opens, which is a GET. A cross-site POST does not carry the
+    /// `SameSite=Lax` uid cookie, so accepting one there let an attacker page auto-submit a hidden
+    /// form and replace the visitor's identity with a list holding only the claim.
+    #[tokio::test]
+    async fn handoff_is_ignored_on_a_post() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+
+        let attacker = client
+            .post_json()
+            .json(&crate::handlers::insert::api::Entry {
+                text: "attacker paste".to_string(),
+                ..Default::default()
+            })
+            .send()
+            .await?
+            .json::<crate::handlers::insert::api::RedirectResponse>()
+            .await?;
+
+        let res = client
+            .post(&attacker.path)
+            .query(&[("owner", &attacker.owner)])
+            .header("origin", "https://evil.example.com")
+            .send()
+            .await?;
+
+        assert_ne!(res.status(), StatusCode::SEE_OTHER);
+        assert!(
+            res.headers()
+                .get_all("set-cookie")
+                .iter()
+                .filter_map(|value| value.to_str().ok())
+                .all(|value| !value.starts_with("uid=")),
+            "a POST claimed an identity: {:?}",
+            res.headers()
+        );
 
         Ok(())
     }

@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Only turn Markdown link targets with an `http`, `https` or `mailto` scheme,
+  or a relative one, into anchors in the source view.
 - Reject off-origin and scheme-relative `Referer` values when redirecting back
   after a theme change, closing an open-redirect bypass via `//`-prefixed paths.
 - Unlink Unix domain socket after shutdown.

@@ -343,8 +343,35 @@ impl Handler {
 
         let mut conn = match method {
             Open::Memory => Connection::open_in_memory()?,
-            Open::Path(path) => Connection::open(path)?,
+            Open::Path(path) => {
+                // sqlite creates the file 0644, so on a shared host every local account could read
+                // every unencrypted paste on the instance. Only a file this process just created
+                // is tightened; an existing one keeps whatever the operator chose for it.
+                let is_new = !path.exists();
+                let conn = Connection::open(&path)?;
+
+                #[cfg(unix)]
+                if is_new {
+                    use std::os::unix::fs::PermissionsExt;
+
+                    if let Err(err) =
+                        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))
+                    {
+                        tracing::warn!("could not restrict database file permissions: {err}");
+                    }
+                }
+
+                #[cfg(not(unix))]
+                let _ = is_new;
+
+                conn
+            }
         };
+
+        // Burn-after-reading promises the content is gone once read, but sqlite only unlinks the
+        // page: the plaintext otherwise stays in the freelist until something reuses it, and comes
+        // back out of the file, a backup or a snapshot long after the paste "burned".
+        conn.pragma_update(None, "secure_delete", "ON")?;
 
         let migrations = Migrations::new(vec![
             M::up(include_str!("migrations/0001-initial.sql")),
@@ -786,6 +813,75 @@ mod tests {
         let (db, handler) = Database::new(Open::Memory)?;
         tokio::spawn(handler);
         Ok(db)
+    }
+
+    /// Build a scratch path for a file-backed database, unique per test.
+    fn scratch_path(name: &str) -> std::path::PathBuf {
+        let mut path = std::env::temp_dir();
+        path.push(format!("wastebin-test-{}-{name}.db", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        path
+    }
+
+    /// Burn-after-reading promises the content is gone once read, but sqlite only unlinks the
+    /// page: without `secure_delete` the plaintext stayed in the freelist, recoverable from the
+    /// file, a backup or a snapshot long after the paste "burned".
+    #[tokio::test]
+    async fn a_burned_entry_leaves_nothing_behind() -> Result<(), Box<dyn std::error::Error>> {
+        let path = scratch_path("burned");
+        let marker = "qZx7Z-BURN-MARKER-nP2wK-not-compressible-2f8a1c";
+
+        {
+            let (db, handler) = Database::new(Open::Path(path.clone()))?;
+            let task = tokio::spawn(handler);
+
+            let entry = write::Entry {
+                text: marker.to_string(),
+                burn_after_reading: Some(true),
+                ..Default::default()
+            };
+            let (id, _) = db.insert(entry).await?;
+
+            assert!(matches!(db.get(id, None).await?, read::Entry::Burned(_)));
+            assert!(matches!(db.get(id, None).await, Err(Error::NotFound)));
+
+            drop(db);
+            let _ = task.await;
+        }
+
+        let bytes = std::fs::read(&path)?;
+        let found = bytes
+            .windows(marker.len())
+            .any(|window| window == marker.as_bytes());
+
+        let _ = std::fs::remove_file(&path);
+        assert!(!found, "burned plaintext is still in the database file");
+
+        Ok(())
+    }
+
+    /// The file holds every unencrypted paste on the instance. sqlite creates it 0644, so on a
+    /// shared host every local account could read the lot.
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn a_new_database_file_is_not_readable_by_others()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use std::os::unix::fs::PermissionsExt;
+
+        let path = scratch_path("perms");
+        let (db, handler) = Database::new(Open::Path(path.clone()))?;
+        let task = tokio::spawn(handler);
+        db.next_uid().await?;
+
+        let mode = std::fs::metadata(&path)?.permissions().mode();
+
+        drop(db);
+        let _ = task.await;
+        let _ = std::fs::remove_file(&path);
+
+        assert_eq!(mode & 0o077, 0, "mode is {:o}", mode & 0o777);
+
+        Ok(())
     }
 
     #[tokio::test]

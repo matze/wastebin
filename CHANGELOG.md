@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Reject a form submission whose expiration is not a number instead of keeping
+  that paste forever.
 - Reject off-origin and scheme-relative `Referer` values when redirecting back
   after a theme change, closing an open-redirect bypass via `//`-prefixed paths.
 - Unlink Unix domain socket after shutdown.

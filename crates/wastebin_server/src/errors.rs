@@ -26,6 +26,9 @@ pub(crate) enum Error {
     Id(#[from] id::Error),
     #[error("payload too large")]
     MalformedForm,
+    /// A burn-after-reading paste was asked for on a route that cannot confirm the destruction.
+    #[error("burn-after-reading paste needs confirmation")]
+    BurnNotConfirmed,
 }
 
 #[derive(Serialize)]
@@ -46,6 +49,7 @@ impl From<Error> for StatusCode {
             Error::Database(db::Error::NoPassword) | Error::Id(_) | Error::UrlParsing(_) => {
                 StatusCode::BAD_REQUEST
             }
+            Error::BurnNotConfirmed => StatusCode::FORBIDDEN,
             Error::MalformedForm => StatusCode::UNPROCESSABLE_ENTITY,
             Error::Join(_)
             | Error::QrCode(_)

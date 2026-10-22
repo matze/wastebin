@@ -27,6 +27,11 @@ pub async fn get(
         let key: Key = id.parse()?;
         let password = password.map(|Password(password)| password);
 
+        // A download is a GET with no way to confirm the destruction; see `raw::get`.
+        if db.get_metadata(key.id).await?.must_be_deleted {
+            return Err(crate::Error::BurnNotConfirmed);
+        }
+
         match db.get(key.id, password).await {
             Ok(Entry::Regular(data) | Entry::Burned(data)) => {
                 Ok(get_download(&key, data).into_response())

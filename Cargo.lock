@@ -2642,6 +2642,7 @@ name = "wastebin_highlight"
 version = "3.9.0"
 dependencies = [
  "ammonia",
+ "html5ever",
  "pulldown-cmark",
  "syntect",
  "thiserror",

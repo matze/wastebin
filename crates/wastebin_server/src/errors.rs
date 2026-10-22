@@ -43,7 +43,10 @@ impl From<Error> for StatusCode {
             Error::Database(
                 db::Error::Delete | db::Error::Crypto(crypto::Error::ChaCha20Poly1305Decrypt),
             ) => StatusCode::FORBIDDEN,
-            Error::Database(db::Error::NoPassword) | Error::Id(_) | Error::UrlParsing(_) => {
+            Error::Database(db::Error::NoPassword)
+            | Error::Id(_)
+            | Error::UrlParsing(_)
+            | Error::SyntaxHighlighting(wastebin_highlight::Error::TooDeeplyNested(_)) => {
                 StatusCode::BAD_REQUEST
             }
             Error::MalformedForm => StatusCode::UNPROCESSABLE_ENTITY,

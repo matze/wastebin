@@ -17,6 +17,8 @@ pub enum Error {
     SyntaxParsing(#[from] syntect::parsing::ParsingError),
     #[error("failed to escaped")]
     Escape,
+    #[error("markup nested deeper than {0} levels")]
+    TooDeeplyNested(usize),
 }
 
 const HIGHLIGHT_LINE_LENGTH_CUTOFF: usize = 2048;

@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Refuse to render Markdown whose markup nests deeper than 256 levels, which
+  cost the sanitizer minutes of CPU per request.
 - Reject off-origin and scheme-relative `Referer` values when redirecting back
   after a theme change, closing an open-redirect bypass via `//`-prefixed paths.
 - Unlink Unix domain socket after shutdown.

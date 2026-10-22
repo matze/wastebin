@@ -327,4 +327,29 @@ mod tests {
 
         Ok(())
     }
+
+    /// Markup nested past the limit is the paste's doing, so the refusal is a bad request rather
+    /// than a server failure.
+    #[tokio::test]
+    async fn too_deeply_nested_markup_is_a_bad_request() -> Result<(), Box<dyn std::error::Error>> {
+        let client = Client::new(StoreCookies(false)).await;
+        let data = Entry {
+            text: "<div>".repeat(1000),
+            extension: Some(String::from("md")),
+            ..Default::default()
+        };
+
+        let res = client.post_form().form(&data).send().await?;
+        assert_eq!(res.status(), StatusCode::SEE_OTHER);
+        let location = res.headers().get("location").unwrap().to_str()?;
+
+        let res = client
+            .get(&format!("/md{location}"))
+            .header(header::ACCEPT, "text/html; charset=utf-8")
+            .send()
+            .await?;
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+        Ok(())
+    }
 }

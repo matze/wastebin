@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Do not show an encrypted paste's title on the QR page or the burn
+  confirmation, which are reachable without the password.
 - Reject off-origin and scheme-relative `Referer` values when redirecting back
   after a theme change, closing an open-redirect bypass via `//`-prefixed paths.
 - Unlink Unix domain socket after shutdown.

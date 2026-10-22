@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Enable sqlite's `secure_delete` so burned and deleted pastes do not linger in
+  the database file, and create a new database file with mode 0600.
 - Reject off-origin and scheme-relative `Referer` values when redirecting back
   after a theme change, closing an open-redirect bypass via `//`-prefixed paths.
 - Unlink Unix domain socket after shutdown.

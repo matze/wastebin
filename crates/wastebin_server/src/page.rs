@@ -21,6 +21,7 @@ pub(crate) struct Page {
     pub base_url: Url,
     pub expirations: Vec<Expiration>,
     pub max_body_size: usize,
+    pub render_html: bool,
 }
 
 impl Page {
@@ -32,6 +33,7 @@ impl Page {
         theme: Theme,
         expirations: ExpirationSet,
         max_body_size: usize,
+        render_html: bool,
     ) -> Self {
         let assets = Assets::new(theme);
         let expirations = expirations.into_inner();
@@ -43,6 +45,7 @@ impl Page {
             base_url,
             expirations,
             max_body_size,
+            render_html,
         }
     }
 }

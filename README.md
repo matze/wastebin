@@ -46,6 +46,7 @@ to released versions here:
   [syntect](https://github.com/trishume/syntect)
 * renders Markdown pastes to HTML, including GitHub-flavored tables, task lists
   and admonitions
+* optionally shows HTML pastes as sandboxed pages
 * comes with [nine color themes](https://matze.github.io/wastebin/) in light and
   dark mode
 * encrypts entries using ChaCha20Poly1305 and argon2 hashed passwords
@@ -168,7 +169,7 @@ When viewing a paste, you can use
 * <kbd>q</kbd> to display the current URL as a QR code,
 * <kbd>p</kbd> to view the formatted paste,
 * <kbd>w</kbd> to toggle line wrapping on and off (off by default),
-* <kbd>m</kbd> to toggle the rendered view on Markdown pastes and
+* <kbd>m</kbd> to toggle the rendered view on Markdown and HTML pastes and
 * <kbd>?</kbd> to view the list of keybindings.
 
 To paste some text you can also use the <kbd>ctrl</kbd>+<kbd>s</kbd> key
@@ -191,6 +192,29 @@ embedded via `![alt](https://…)`, the Content Security Policy is relaxed to
 `img-src *` for `/md/*` responses only; all other routes keep the strict
 default.
 
+### HTML pages
+
+When `WASTEBIN_RENDER_UNTRUSTED_HTML` is set to `true`, pastes
+created with an `html` or `htm` extension can be viewed as a page of their own
+at `/html/{id}`, reached through the same toggle as rendered Markdown. It is
+off by default, and `/html/{id}` then returns 404. The paste is served unmodified,
+without the wastebin interface, so inline styles, SVG and web fonts render
+the way it was written. Burn after reading and password protected pastes
+show the usual confirmation and password pages first.
+
+The page is served with a Content Security Policy `sandbox`, which gives it an
+opaque origin and it cannot read wastebin cookies or act on behalf of the viewer.
+Scripts, form submissions and top-level navigation are blocked. Stylesheets may
+load from Google Fonts and images from anywhere.
+
+The sandbox keeps wastebin and its viewers sessions safe, but it cannot vouch
+for what a page says. Anyone who can paste can publish a full screen page
+under your domain, such as a convincing fake login form that tells visitors to
+send their credentials elsewhere, and loading remote images lets the author
+see who opened it. Turn this on only when you trust the people who can paste.
+Or if you control the proxy sitting in front of this for selectively admitting
+visits to this subdomain.
+
 ### Configuration
 
 The following environment variables can be set to configure the server and
@@ -201,6 +225,7 @@ run-time behavior:
 | `WASTEBIN_ADDRESS_PORT`           | Address and port to bind the server to.                       | `0.0.0.0:8088`        |
 | `WASTEBIN_BASE_URL`               | Base URL for the QR code display.                             |                       |
 | `WASTEBIN_CACHE_SIZE`             | Number of rendered items to cache.                            | `128`                 |
+| `WASTEBIN_RENDER_UNTRUSTED_HTML` | Set to `true` to show `html` and `htm` pastes as sandboxed pages at `/html/{id}`. See [HTML pages](#html-pages) before enabling. | `false` |
 | `WASTEBIN_DATABASE_PATH`          | Path to the sqlite3 database file.                            | `:memory:`            |
 | `WASTEBIN_HTTP_TIMEOUT`           | Maximum number of seconds a request is processed until wastebin responds with 408. | `5` |
 | `WASTEBIN_MAX_BODY_SIZE`          | Number of bytes to accept for POST requests.                  | `1048576`, i.e. 1 MB  |

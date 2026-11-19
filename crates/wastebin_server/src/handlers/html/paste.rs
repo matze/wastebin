@@ -53,11 +53,18 @@ pub(crate) struct Paste {
     title: Option<String>,
     /// Whether the paste's extension identifies it as Markdown, enabling the rendered-view toggle.
     is_markdown: bool,
+    /// Whether the paste's extension identifies it as HTML, enabling the document-view toggle.
+    is_html: bool,
 }
 
 /// Return `true` if `ext` identifies a Markdown paste.
 pub(crate) fn is_markdown_ext(ext: Option<&str>) -> bool {
     ext.is_some_and(|ext| ext.eq_ignore_ascii_case("md") || ext.eq_ignore_ascii_case("markdown"))
+}
+
+/// Return `true` if `ext` identifies an HTML paste.
+pub(crate) fn is_html_ext(ext: Option<&str>) -> bool {
+    ext.is_some_and(|ext| ext.eq_ignore_ascii_case("html") || ext.eq_ignore_ascii_case("htm"))
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -163,6 +170,7 @@ pub async fn get<E>(
         };
 
         let is_markdown = is_markdown_ext(key.ext.as_deref());
+        let is_html = page.render_html && is_html_ext(key.ext.as_deref());
         let paste = Paste {
             page: page.clone(),
             key,
@@ -174,6 +182,7 @@ pub async fn get<E>(
             html,
             title,
             is_markdown,
+            is_html,
         };
 
         let response = paste.into_response();

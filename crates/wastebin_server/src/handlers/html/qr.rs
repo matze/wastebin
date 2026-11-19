@@ -6,7 +6,7 @@ use url::Url;
 
 use crate::cache::Key;
 use crate::handlers::extract::{Theme, Uids};
-use crate::handlers::html::paste::is_markdown_ext;
+use crate::handlers::html::paste::{is_html_ext, is_markdown_ext};
 use crate::handlers::html::{ErrorResponse, make_error};
 use crate::i18n::Lang;
 use crate::{Error, Page};
@@ -47,6 +47,7 @@ pub async fn get(
         };
 
         let is_markdown = is_markdown_ext(key.ext.as_deref());
+        let is_html = page.render_html && is_html_ext(key.ext.as_deref());
 
         Ok(Qr {
             page: page.clone(),
@@ -59,6 +60,7 @@ pub async fn get(
             title,
             expiration,
             is_markdown,
+            is_html,
         })
     }
     .await
@@ -76,6 +78,7 @@ pub(crate) struct Qr {
     can_delete: bool,
     is_available: bool,
     is_markdown: bool,
+    is_html: bool,
     code: qrcodegen::QrCode,
     title: Option<String>,
     expiration: Option<Expiration>,

@@ -16,6 +16,8 @@ pub mod vars {
     pub const PASSWORD_SALT: &str = "WASTEBIN_PASSWORD_SALT";
     /// Expirations list.
     pub const PASTE_EXPIRATIONS: &str = "WASTEBIN_PASTE_EXPIRATIONS";
+    /// Serve `html` and `htm` pastes as sandboxed pages at `/html/{id}`.
+    pub const RENDER_HTML: &str = "WASTEBIN_RENDER_UNTRUSTED_HTML";
     /// Signing key for signed cookie store.
     pub const SIGNING_KEY: &str = "WASTEBIN_SIGNING_KEY";
     /// Theme to use.

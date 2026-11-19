@@ -30,6 +30,8 @@ pub(crate) struct Rendered {
     is_available: bool,
     /// Always `true` for this view; needed by the inherited paste template.
     is_markdown: bool,
+    /// Always `false` for this view; needed by the inherited paste template.
+    is_html: bool,
     expiration: Option<Expiration>,
     html: String,
     title: Option<String>,
@@ -128,6 +130,7 @@ pub async fn get<E>(
             can_delete,
             is_available,
             is_markdown: true,
+            is_html: false,
             expiration,
             html,
             title,

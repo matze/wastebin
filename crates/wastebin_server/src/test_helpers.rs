@@ -22,8 +22,15 @@ pub(crate) struct Client {
 /// Determine if the client should store cookies.
 pub(crate) struct StoreCookies(pub bool);
 
+/// Determine if the server renders HTML pastes as pages.
+pub(crate) struct RenderHtml(pub bool);
+
 impl Client {
     pub(crate) async fn new(store_cookies: StoreCookies) -> Self {
+        Self::with_html(store_cookies, RenderHtml(false)).await
+    }
+
+    pub(crate) async fn with_html(store_cookies: StoreCookies, render_html: RenderHtml) -> Self {
         let (db, handler) = Database::new(db::Open::Memory).expect("open memory database");
         let cache = Cache::new(NonZeroUsize::new(128).unwrap()).unwrap();
         let key = Key::generate();
@@ -34,6 +41,7 @@ impl Client {
             Theme::Ayu,
             expirations,
             1024 * 1024,
+            render_html.0,
         ));
         let state = crate::AppState {
             db,

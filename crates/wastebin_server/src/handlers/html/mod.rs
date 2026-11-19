@@ -1,4 +1,5 @@
 pub mod burn;
+pub mod document;
 pub mod index;
 pub mod paste;
 pub mod qr;
@@ -28,6 +29,11 @@ impl FormAction {
     /// Post back to the rendered Markdown view at `/md/{key}`.
     pub(crate) fn rendered(key: &Key) -> Self {
         Self(format!("/md/{key}"))
+    }
+
+    /// Post back to the HTML document view at `/html/{key}`.
+    pub(crate) fn html(key: &Key) -> Self {
+        Self(format!("/html/{key}"))
     }
 }
 

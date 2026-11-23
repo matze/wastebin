@@ -1,4 +1,5 @@
 pub mod burn;
+pub mod document;
 pub mod index;
 pub mod paste;
 pub mod qr;
@@ -9,11 +10,17 @@ use std::fmt;
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 
-use crate::Page;
 use crate::cache::Key;
+use crate::handlers::NoStore;
 use crate::handlers::extract::Theme;
+use crate::handlers::html::paste::PasteForm;
 use crate::i18n::Lang;
+use crate::{Database, Page};
+use wastebin_core::crypto::Password;
+use wastebin_core::db;
+use wastebin_core::db::read::{Data, Entry};
 
 /// Target of an interstitial's submit form, i.e. the view the paste was requested from.
 #[derive(Clone, Debug)]
@@ -28,6 +35,11 @@ impl FormAction {
     /// Post back to the rendered Markdown view at `/md/{key}`.
     pub(crate) fn rendered(key: &Key) -> Self {
         Self(format!("/md/{key}"))
+    }
+
+    /// Post back to the HTML document view at `/html/{key}`.
+    pub(crate) fn html(key: &Key) -> Self {
+        Self(format!("/html/{key}"))
     }
 }
 
@@ -67,6 +79,84 @@ pub(crate) struct BurnConfirmation {
     pub lang: Lang,
     pub title: Option<String>,
     pub action: FormAction,
+}
+
+/// A paste the viewer has confirmed burning and supplied the password for, where needed.
+pub(crate) struct Unlocked {
+    pub data: Data,
+    /// If the paste is still in the database and can be fetched with another request.
+    pub is_available: bool,
+    pub encrypted: bool,
+    pub no_password: bool,
+}
+
+/// Outcome of [`unlock`]: the paste, or the interstitial page to show before it.
+pub(crate) enum Unlock {
+    Paste(Unlocked),
+    Prompt(Response),
+}
+
+/// Fetch the paste behind `key`, unless it first needs a burn confirmation or a password. Both
+/// prompts post back to `action` with the answer in `form`.
+pub(crate) async fn unlock(
+    db: &Database,
+    page: &Page,
+    theme: Option<&Theme>,
+    lang: Lang,
+    key: &Key,
+    form: Option<PasteForm>,
+    action: FormAction,
+) -> Result<Unlock, crate::Error> {
+    let password = form
+        .as_ref()
+        .and_then(|form| form.password.as_ref())
+        .filter(|password| !password.is_empty())
+        .map(|password| Password::from(password.as_bytes().to_vec()));
+    let confirmed = form.as_ref().and_then(|form| form.confirm_burn.as_deref()) == Some("1");
+    let no_password = password.is_none();
+    let metadata = db.get_metadata(key.id).await?;
+
+    if metadata.must_be_deleted && !confirmed {
+        return Ok(Unlock::Prompt(
+            BurnConfirmation {
+                page: page.clone(),
+                theme: theme.cloned(),
+                lang,
+                title: metadata.title,
+                action,
+            }
+            .into_response(),
+        ));
+    }
+
+    let (data, is_available, encrypted) = match db.get(key.id, password).await {
+        Ok(Entry::Regular(data)) => (data, true, false),
+        Ok(Entry::Burned(data)) => (data, false, false),
+        Ok(Entry::Encrypted(data)) => {
+            let is_available = !data.metadata.must_be_deleted;
+            (data, is_available, true)
+        }
+        Err(db::Error::NoPassword) => {
+            return Ok(Unlock::Prompt(
+                PasswordInput {
+                    page: page.clone(),
+                    theme: theme.cloned(),
+                    lang,
+                    action,
+                }
+                .into_response()
+                .no_store(),
+            ));
+        }
+        Err(err) => return Err(err.into()),
+    };
+
+    Ok(Unlock::Paste(Unlocked {
+        data,
+        is_available,
+        encrypted,
+        no_password,
+    }))
 }
 
 /// Error response carrying a status code and the page itself.

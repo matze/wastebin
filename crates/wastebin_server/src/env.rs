@@ -9,7 +9,7 @@ use axum_extra::extract::cookie::Key;
 
 use wastebin_core::env::vars::{
     self, ADDRESS_PORT, BASE_URL, CACHE_SIZE, DATABASE_PATH, HTTP_TIMEOUT, MAX_BODY_SIZE,
-    PASTE_EXPIRATIONS, SIGNING_KEY,
+    PASTE_EXPIRATIONS, RENDER_HTML, SIGNING_KEY,
 };
 use wastebin_core::{db, expiration};
 use wastebin_highlight::{Theme, theme::ParseThemeNameError};
@@ -22,6 +22,8 @@ pub(crate) enum Error {
     CacheConstruction(#[from] cached::BuildError),
     #[error("failed to parse {CACHE_SIZE}, expected number of elements: {0}")]
     CacheSize(ParseIntError),
+    #[error("failed to parse {RENDER_HTML}, expected `true` or `false`")]
+    RenderHtml,
     #[error("failed to parse {DATABASE_PATH}, contains non-Unicode data")]
     DatabasePath,
     #[error("failed to parse {MAX_BODY_SIZE}, expected number of bytes: {0}")]
@@ -75,6 +77,18 @@ pub fn cache_size() -> Result<NonZeroUsize, Error> {
             |s| s.parse::<NonZeroUsize>(),
         )
         .map_err(Error::CacheSize)
+}
+
+pub fn render_html() -> Result<bool, Error> {
+    match std::env::var(vars::RENDER_HTML) {
+        Err(VarError::NotPresent) => Ok(false),
+        Err(VarError::NotUnicode(_)) => Err(Error::RenderHtml),
+        Ok(value) => match value.to_ascii_lowercase().as_str() {
+            "true" | "1" => Ok(true),
+            "false" | "0" => Ok(false),
+            _ => Err(Error::RenderHtml),
+        },
+    }
 }
 
 pub fn database_method() -> Result<db::Open, Error> {

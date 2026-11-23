@@ -7,14 +7,10 @@ use crate::cache::{Key, Mode};
 use crate::handlers::NoStore;
 use crate::handlers::extract::{Theme, Uids};
 use crate::handlers::html::paste::PasteForm;
-use crate::handlers::html::{
-    BurnConfirmation, ErrorResponse, FormAction, PasswordInput, make_error,
-};
+use crate::handlers::html::{ErrorResponse, FormAction, Unlock, Unlocked, make_error, unlock};
 use crate::i18n::Lang;
 use crate::{Cache, Database, Highlighter, Page};
-use wastebin_core::crypto::Password;
-use wastebin_core::db;
-use wastebin_core::db::read::{Data, Entry, Metadata};
+use wastebin_core::db::read::{Data, Metadata};
 use wastebin_core::expiration::Expiration;
 use wastebin_highlight::markdown;
 
@@ -30,6 +26,8 @@ pub(crate) struct Rendered {
     is_available: bool,
     /// Always `true` for this view; needed by the inherited paste template.
     is_markdown: bool,
+    /// Always `false` for this view; needed by the inherited paste template.
+    is_html: bool,
     expiration: Option<Expiration>,
     html: String,
     title: Option<String>,
@@ -48,46 +46,17 @@ pub async fn get<E>(
     form: Result<Form<PasteForm>, E>,
 ) -> Result<Response, ErrorResponse> {
     async {
-        let form = form.ok().map(|Form(form)| form);
-        let password = form
-            .as_ref()
-            .and_then(|form| form.password.as_ref())
-            .filter(|password| !password.is_empty())
-            .map(|password| Password::from(password.as_bytes().to_vec()));
-        let confirmed = form.as_ref().and_then(|form| form.confirm_burn.as_deref()) == Some("1");
-        let no_password = password.is_none();
         let key: Key = id.parse()?;
-        let metadata = db.get_metadata(key.id).await?;
-
-        if metadata.must_be_deleted && !confirmed {
-            return Ok(BurnConfirmation {
-                page: page.clone(),
-                theme: theme.clone(),
-                lang,
-                title: metadata.title.clone(),
-                action: FormAction::rendered(&key),
-            }
-            .into_response());
-        }
-
-        let (data, is_available, encrypted) = match db.get(key.id, password).await {
-            Ok(Entry::Regular(data)) => (data, true, false),
-            Ok(Entry::Burned(data)) => (data, false, false),
-            Ok(Entry::Encrypted(data)) => {
-                let is_available = !data.metadata.must_be_deleted;
-                (data, is_available, true)
-            }
-            Err(db::Error::NoPassword) => {
-                return Ok(PasswordInput {
-                    page: page.clone(),
-                    theme: theme.clone(),
-                    lang,
-                    action: FormAction::rendered(&key),
-                }
-                .into_response()
-                .no_store());
-            }
-            Err(err) => return Err(err.into()),
+        let form = form.ok().map(|Form(form)| form);
+        let action = FormAction::rendered(&key);
+        let Unlocked {
+            data,
+            is_available,
+            encrypted,
+            no_password,
+        } = match unlock(&db, &page, theme.as_ref(), lang, &key, form, action).await? {
+            Unlock::Paste(unlocked) => unlocked,
+            Unlock::Prompt(response) => return Ok(response),
         };
 
         let Data { text, metadata } = data;
@@ -128,6 +97,7 @@ pub async fn get<E>(
             can_delete,
             is_available,
             is_markdown: true,
+            is_html: false,
             expiration,
             html,
             title,

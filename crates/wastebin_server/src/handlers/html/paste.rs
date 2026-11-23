@@ -8,15 +8,11 @@ use serde::Deserialize;
 
 use crate::cache::{Key, Mode};
 use crate::handlers::extract::{Theme, Uids, verify_owner_token};
-use crate::handlers::html::{
-    BurnConfirmation, ErrorResponse, FormAction, PasswordInput, make_error,
-};
+use crate::handlers::html::{ErrorResponse, FormAction, Unlock, Unlocked, make_error, unlock};
 use crate::handlers::{NoStore, uid_cookie};
 use crate::i18n::Lang;
 use crate::{Cache, Database, Highlighter, Page};
-use wastebin_core::crypto::Password;
-use wastebin_core::db;
-use wastebin_core::db::read::{Data, Entry, Metadata};
+use wastebin_core::db::read::{Data, Metadata};
 use wastebin_core::expiration::Expiration;
 
 /// Magic-link handoff: when a paste was created via the JSON API, the response contains a signed
@@ -53,11 +49,18 @@ pub(crate) struct Paste {
     title: Option<String>,
     /// Whether the paste's extension identifies it as Markdown, enabling the rendered-view toggle.
     is_markdown: bool,
+    /// Whether the paste's extension identifies it as HTML, enabling the document-view toggle.
+    is_html: bool,
 }
 
 /// Return `true` if `ext` identifies a Markdown paste.
 pub(crate) fn is_markdown_ext(ext: Option<&str>) -> bool {
     ext.is_some_and(|ext| ext.eq_ignore_ascii_case("md") || ext.eq_ignore_ascii_case("markdown"))
+}
+
+/// Return `true` if `ext` identifies an HTML paste.
+pub(crate) fn is_html_ext(ext: Option<&str>) -> bool {
+    ext.is_some_and(|ext| ext.eq_ignore_ascii_case("html") || ext.eq_ignore_ascii_case("htm"))
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -90,46 +93,17 @@ pub async fn get<E>(
     }
 
     async {
-        let form = form.ok().map(|Form(form)| form);
-        let password = form
-            .as_ref()
-            .and_then(|form| form.password.as_ref())
-            .filter(|password| !password.is_empty())
-            .map(|password| Password::from(password.as_bytes().to_vec()));
-        let confirmed = form.as_ref().and_then(|form| form.confirm_burn.as_deref()) == Some("1");
-        let no_password = password.is_none();
         let key: Key = id.parse()?;
-        let metadata = db.get_metadata(key.id).await?;
-
-        if metadata.must_be_deleted && !confirmed {
-            return Ok(BurnConfirmation {
-                page: page.clone(),
-                theme: theme.clone(),
-                lang,
-                title: metadata.title.clone(),
-                action: FormAction::source(&key),
-            }
-            .into_response());
-        }
-
-        let (data, is_available, encrypted) = match db.get(key.id, password).await {
-            Ok(Entry::Regular(data)) => (data, true, false),
-            Ok(Entry::Burned(data)) => (data, false, false),
-            Ok(Entry::Encrypted(data)) => {
-                let is_available = !data.metadata.must_be_deleted;
-                (data, is_available, true)
-            }
-            Err(db::Error::NoPassword) => {
-                return Ok(PasswordInput {
-                    page: page.clone(),
-                    theme: theme.clone(),
-                    lang,
-                    action: FormAction::source(&key),
-                }
-                .into_response()
-                .no_store());
-            }
-            Err(err) => return Err(err.into()),
+        let form = form.ok().map(|Form(form)| form);
+        let action = FormAction::source(&key);
+        let Unlocked {
+            data,
+            is_available,
+            encrypted,
+            no_password,
+        } = match unlock(&db, &page, theme.as_ref(), lang, &key, form, action).await? {
+            Unlock::Paste(unlocked) => unlocked,
+            Unlock::Prompt(response) => return Ok(response),
         };
 
         let Data { text, metadata } = data;
@@ -163,6 +137,7 @@ pub async fn get<E>(
         };
 
         let is_markdown = is_markdown_ext(key.ext.as_deref());
+        let is_html = page.render_html && is_html_ext(key.ext.as_deref());
         let paste = Paste {
             page: page.clone(),
             key,
@@ -174,6 +149,7 @@ pub async fn get<E>(
             html,
             title,
             is_markdown,
+            is_html,
         };
 
         let response = paste.into_response();

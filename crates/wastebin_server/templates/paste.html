@@ -55,7 +55,7 @@
       <tr><td><kbd>d</kbd></td><td>{{ lang.t("paste.help.download") }}</td></tr>
       <tr><td><kbd>q</kbd></td><td>{{ lang.t("paste.help.show_qr") }}</td></tr>
       <tr><td><kbd>w</kbd></td><td>{{ lang.t("paste.help.toggle_wrap") }}</td></tr>
-      {% if is_markdown %}
+      {% if is_markdown || is_html %}
       <tr><td><kbd>m</kbd></td><td>{{ lang.t("paste.help.toggle_rendered") }}</td></tr>
       {% endif %}
       <tr><td><kbd>?</kbd></td><td>{{ lang.t("paste.help.toggle_help") }}</td></tr>

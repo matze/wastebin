@@ -6,14 +6,10 @@ use crate::cache::Key;
 use crate::handlers::NoStore;
 use crate::handlers::extract::Theme;
 use crate::handlers::html::paste::PasteForm;
-use crate::handlers::html::{
-    BurnConfirmation, ErrorResponse, FormAction, PasswordInput, make_error,
-};
+use crate::handlers::html::{ErrorResponse, FormAction, Unlock, Unlocked, make_error, unlock};
 use crate::i18n::Lang;
 use crate::{Database, Page};
-use wastebin_core::crypto::Password;
 use wastebin_core::db;
-use wastebin_core::db::read::Entry;
 
 const CSP_SANDBOX: HeaderValue = HeaderValue::from_static(
     "sandbox; default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com ; font-src https://fonts.gstatic.com data: ; img-src * data: ; base-uri 'none' ; form-action 'none' ; frame-ancestors 'none' ;",
@@ -32,41 +28,14 @@ pub async fn get<E>(
             return Err(db::Error::NotFound.into());
         }
 
-        let form = form.ok().map(|Form(form)| form);
-        let password = form
-            .as_ref()
-            .and_then(|form| form.password.as_ref())
-            .filter(|password| !password.is_empty())
-            .map(|password| Password::from(password.as_bytes().to_vec()));
-        let confirmed = form.as_ref().and_then(|form| form.confirm_burn.as_deref()) == Some("1");
         let key: Key = id.parse()?;
-        let metadata = db.get_metadata(key.id).await?;
-
-        if metadata.must_be_deleted && !confirmed {
-            return Ok(BurnConfirmation {
-                page: page.clone(),
-                theme: theme.clone(),
-                lang,
-                title: metadata.title.clone(),
-                action: FormAction::html(&key),
-            }
-            .into_response());
-        }
-
-        let (text, encrypted) = match db.get(key.id, password).await {
-            Ok(Entry::Regular(data) | Entry::Burned(data)) => (data.text, false),
-            Ok(Entry::Encrypted(data)) => (data.text, true),
-            Err(db::Error::NoPassword) => {
-                return Ok(PasswordInput {
-                    page: page.clone(),
-                    theme: theme.clone(),
-                    lang,
-                    action: FormAction::html(&key),
-                }
-                .into_response()
-                .no_store());
-            }
-            Err(err) => return Err(err.into()),
+        let form = form.ok().map(|Form(form)| form);
+        let action = FormAction::html(&key);
+        let Unlocked {
+            data, encrypted, ..
+        } = match unlock(&db, &page, theme.as_ref(), lang, &key, form, action).await? {
+            Unlock::Paste(unlocked) => unlocked,
+            Unlock::Prompt(response) => return Ok(response),
         };
 
         let response = (
@@ -77,7 +46,7 @@ pub async fn get<E>(
                 ),
                 (header::CONTENT_SECURITY_POLICY, CSP_SANDBOX),
             ],
-            text,
+            data.text,
         )
             .into_response();
 
